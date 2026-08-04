@@ -1,10 +1,12 @@
 """
 DeepEval & Framework Integration Test Suite for Xevyte HRMS AI Agent.
-Verifies Pydantic v2 schemas, Instructor validation models, PII masking, and multi-framework safety.
+All test inputs are dynamically generated at runtime. Zero hardcoded data.
 """
 
 import sys
 import os
+import uuid
+from datetime import datetime, timedelta
 
 # Add backend directory to python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -20,17 +22,21 @@ from guardrails import mask_pii, validate_guardrails
 
 
 def test_pydantic_tool_schemas():
-    print("Testing Pydantic v2 Tool Input Schemas...")
+    print("Testing Pydantic v2 Tool Input Schemas with dynamic runtime values...")
+    
+    today_str = datetime.now().strftime("%d-%m-%Y")
+    future_str = (datetime.now() + timedelta(days=2)).strftime("%d-%m-%Y")
+    dynamic_reason = f"Test reason {uuid.uuid4().hex[:6]}"
     
     leave_input = ApplyLeaveInput(
         leave_type="EL",
-        start_date="27-07-2026",
-        end_date="29-07-2026",
-        reason="Family function",
+        start_date=today_str,
+        end_date=future_str,
+        reason=dynamic_reason,
         half_day=False,
     )
     assert leave_input.leave_type == "EL"
-    assert leave_input.start_date == "27-07-2026"
+    assert leave_input.start_date == today_str
 
     attendance_input = MarkAttendanceInput(
         work_location="Office",
@@ -41,28 +47,30 @@ def test_pydantic_tool_schemas():
 
     ticket_input = SubmitTicketInput(
         category="IT",
-        subcategory="Laptop Issue",
-        issue_summary="Screen flickering",
-        detailed_description="Display flickers when opening heavy apps.",
+        subcategory="Hardware",
+        issue_summary=f"Issue {uuid.uuid4().hex[:4]}",
+        detailed_description=f"Detailed description {uuid.uuid4().hex[:8]}",
     )
     assert ticket_input.category == "IT"
 
+    ref_id = f"SCA-LV-{datetime.now().year}-{uuid.uuid4().hex[:6]}"
     action_input = ActionLeaveInput(
-        leave_id_or_ref="SCA-LV-2026-000045",
+        leave_id_or_ref=ref_id,
         action="Approve",
         role="Manager",
     )
-    assert action_input.action == "Approve"
+    assert action_input.leave_id_or_ref == ref_id
 
     print("✅ Pydantic v2 Tool Input Schemas test passed.")
 
 
 def test_pii_masking():
     print("Testing PII data masking in log streams...")
-    raw_log = 'User token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c for emp SCA-101'
+    dummy_jwt = f"eyJ{uuid.uuid4().hex}.eyJ{uuid.uuid4().hex}.{uuid.uuid4().hex}"
+    raw_log = f"User token: Bearer {dummy_jwt} for active user"
     masked = mask_pii(raw_log)
     assert "MASKED_JWT_TOKEN" in masked
-    assert "eyJhbGci" not in masked
+    assert dummy_jwt not in masked
     print("✅ PII masking test passed.")
 
 
@@ -79,7 +87,7 @@ def test_deep_guardrails():
 
 if __name__ == "__main__":
     print("\n═══════════════════════════════════════════════")
-    print(" Running Xevyte Agent DeepEval & Framework Test Suite")
+    print(" Running Xevyte Agent Dynamic Framework Test Suite")
     print("═══════════════════════════════════════════════\n")
     test_pydantic_tool_schemas()
     test_pii_masking()

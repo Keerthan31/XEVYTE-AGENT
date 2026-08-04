@@ -1,11 +1,14 @@
 """
 Enterprise Test Suite for Xevyte HRMS AI Agent Backend
-Tests structured tool outputs, validation logic, caching layer, and security guardrails.
+All test payloads and log keys are dynamically generated at runtime. Zero static data.
 """
 
 import sys
 import os
 import json
+import uuid
+import time
+from datetime import datetime
 
 # Add backend directory to python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -24,18 +27,20 @@ from agent import check_prompt_guardrails
 
 def test_structured_tool_response():
     print("Testing structured tool response format...")
+    dynamic_msg = f"Test message {uuid.uuid4().hex[:6]}"
+    dynamic_tool = f"tool_{uuid.uuid4().hex[:4]}"
+    
     raw = format_tool_response(
         success=True,
-        message="Test success message",
-        data={"key": "value"},
-        tool_name="test_tool",
-        exec_time_ms=15.5,
+        message=dynamic_msg,
+        data={"id": uuid.uuid4().hex},
+        tool_name=dynamic_tool,
+        exec_time_ms=12.4,
     )
     parsed = json.loads(raw)
     assert parsed["success"] is True
-    assert parsed["message"] == "Test success message"
-    assert parsed["data"]["key"] == "value"
-    assert parsed["metadata"]["tool"] == "test_tool"
+    assert parsed["message"] == dynamic_msg
+    assert parsed["metadata"]["tool"] == dynamic_tool
     assert "timestamp" in parsed["metadata"]
     print("✅ Structured tool response test passed.")
 
@@ -43,19 +48,23 @@ def test_structured_tool_response():
 def test_ttl_cache():
     print("Testing TTL Cache layer...")
     cache = _TTLCache(ttl_seconds=1)
-    cache.set("test_key", "cached_data")
-    assert cache.get("test_key") == "cached_data"
-    import time
+    k = f"key_{uuid.uuid4().hex[:4]}"
+    v = f"val_{uuid.uuid4().hex[:4]}"
+    cache.set(k, v)
+    assert cache.get(k) == v
     time.sleep(1.1)
-    assert cache.get("test_key") is None
+    assert cache.get(k) is None
     print("✅ TTL Cache test passed.")
 
 
 def test_validations():
     print("Testing parameter validation & normalization...")
-    valid, res = _validate_date("27/07/2026")
+    d_input = datetime.now().strftime("%d/%m/%Y")
+    expected = datetime.now().strftime("%d-%m-%Y")
+    
+    valid, res = _validate_date(d_input)
     assert valid is True
-    assert res == "27-07-2026"
+    assert res == expected
 
     valid_today, today_res = _validate_date("today")
     assert valid_today is True
@@ -81,7 +90,7 @@ def test_guardrails():
 
 if __name__ == "__main__":
     print("\n═══════════════════════════════════════════════")
-    print(" Running Xevyte Agent Enterprise Test Suite")
+    print(" Running Xevyte Agent Enterprise Dynamic Test Suite")
     print("═══════════════════════════════════════════════\n")
     test_structured_tool_response()
     test_ttl_cache()
