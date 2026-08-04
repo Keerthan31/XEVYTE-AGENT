@@ -75,31 +75,18 @@ Today's date: {today}.  Employee ID in session: {employee_id}.
 """
 
 
+from guardrails import validate_guardrails, mask_pii
+
+
 # ─── ENTERPRISE GUARDRAILS ───────────────────────────────────────────────────
 def check_prompt_guardrails(user_message: str) -> str | None:
     """
     Pre-inspect user input for prompt injection, jailbreak, or system leakage attempts.
     Returns a safety response if a violation is detected, else None.
     """
-    lowered = user_message.lower().strip()
-    suspicious_patterns = [
-        r"ignore (all )?previous instructions",
-        r"ignore your system prompt",
-        r"reveal (your )?system prompt",
-        r"print (your )?initial prompt",
-        r"override safety rules",
-        r"bypass tool requirements",
-        r"forget your rules",
-        r"system prompt leak",
-    ]
-    for pattern in suspicious_patterns:
-        if re.search(pattern, lowered):
-            logger.warning(f"Guardrail triggered for prompt injection pattern: {pattern}")
-            return (
-                "I am Xeva, an HR assistant for Xevyte Connect. "
-                "I operate strictly within HRMS policy guidelines and cannot reveal or override system safety instructions. "
-                "How can I assist you with your HR requests today?"
-            )
+    inspection = validate_guardrails(user_message)
+    if not inspection["safe"]:
+        return inspection["reason"]
     return None
 
 

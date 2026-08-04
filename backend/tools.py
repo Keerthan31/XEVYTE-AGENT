@@ -49,6 +49,43 @@ def _base():
     return XEVYTE_API_BASE
 
 
+# ─── Pydantic v2 Input Validation Schemas ─────────────────────────────────────
+from pydantic import BaseModel, Field
+
+
+class ApplyLeaveInput(BaseModel):
+    leave_type: str = Field(..., description="Leave type e.g. EL, SL, CL, Optional")
+    start_date: str = Field(..., description="Start date e.g. 27-07-2026 or today")
+    end_date: str = Field(..., description="End date e.g. 29-07-2026")
+    reason: str = Field(..., description="Reason for applying leave")
+    half_day: bool = Field(default=False, description="True for half day leave")
+
+
+class MarkAttendanceInput(BaseModel):
+    work_location: str = Field(..., description="Work location e.g. Office, WFH, Client Location")
+    date: str = Field(default="", description="Date in YYYY-MM-DD format")
+    action: str = Field(default="check_in", description="check_in, check_out, or mark_present")
+    client_name: str = Field(default="", description="Optional client name")
+    project_name: str = Field(default="", description="Optional project name")
+    remarks: str = Field(default="Marked via Xeva Agent", description="Remarks")
+
+
+class SubmitTicketInput(BaseModel):
+    category: str = Field(..., description="Category e.g. IT, HR, Admin")
+    subcategory: str = Field(..., description="Subcategory e.g. Laptop Issue, ID Card")
+    issue_summary: str = Field(..., description="One-line summary")
+    detailed_description: str = Field(..., description="Detailed issue description")
+    cc_to_manager: bool = Field(default=False, description="Copy manager")
+
+
+class ActionLeaveInput(BaseModel):
+    leave_id_or_ref: str = Field(..., description="Numeric ID or Reference ID")
+    action: str = Field(..., description="Approve or Reject")
+    role: str = Field(default="Manager", description="Manager or HR")
+    remarks: str = Field(default="", description="Optional remarks")
+
+
+
 # ─── Structured Response Envelope ─────────────────────────────────────────────
 def format_tool_response(
     success: bool,

@@ -17,7 +17,12 @@ MAX_HTTP_RETRIES = int(os.getenv("MAX_HTTP_RETRIES", "3"))
 HTTP_TIMEOUT_SECONDS = float(os.getenv("HTTP_TIMEOUT_SECONDS", "15.0"))
 
 # ─── Observability & Tracing ──────────────────────────────────────────────────
-LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY", "")
-LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT", "Xevyte-HRMS-Agent")
+# ─── Multi-Model Failover Array ───────────────────────────────────────────────
+FALLBACK_MODELS = [
+    OPENROUTER_MODEL,
+    "deepseek/deepseek-chat",
+    "qwen/qwen-2.5-72b-instruct",
+    "meta-llama/llama-3.1-70b-instruct:free"
+]
+
 
