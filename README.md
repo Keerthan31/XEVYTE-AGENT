@@ -1,120 +1,118 @@
 # Xeva — Xevyte HRMS AI Agent
 
-A conversational AI agent that lets employees interact with the **Xevyte Connect** HRMS platform through natural language. Built with **LangGraph + FastAPI + OpenRouter (free tier) + React**.
+A conversational AI agent that lets employees interact with the **Xevyte Connect** HRMS platform through natural language. Built with **LangGraph + FastAPI + PostgreSQL + OpenRouter + React (Vite & TailwindCSS)**.
 
 ---
 
 ## Architecture
 
 ```
-User ──► React UI (port 3000)
+User ──► React UI (Vite - port 5173 / 3000)
               │
               ▼
          FastAPI Backend (port 8001)
               │
-         LangGraph ReAct Agent
-              │
-    ┌─────────┴──────────┐
-    │   12 HRMS Tools    │
-    └─────────┬──────────┘
-              │
-    Xevyte Connect APIs (port 8080)
+    ┌─────────┴─────────┐
+    │                   │
+PostgreSQL DB      LangGraph ReAct Agent
+(Chat Sessions &        │
+ Message History)  ┌────┴───────────────┐
+                   │  14 HRMS Tools    │
+                   └────┬───────────────┘
+                        │
+             Xevyte Connect REST APIs (port 8082)
 ```
 
 ---
 
-## Features / Tools
+## Key Features & Capabilities
 
-| # | Tool | API Endpoint |
-|---|------|-------------|
-| 1 | Get leave balance | `GET /api/leaves/employee/{id}` |
-| 2 | Get leave history | `GET /api/leaves/employee/{id}` |
-| 3 | Apply for leave | `POST /api/leaves/apply-with-existing-file` |
-| 4 | Cancel leave | `PUT /api/leaves/cancel/{id}` |
-| 5 | Get payslips | `GET /api/payroll/payslips/employee/{id}` |
-| 6 | Raise grievance | `POST /api/grievances/anonymous` |
-| 7 | Submit helpdesk ticket | `POST /api/tickets/submit` |
-| 8 | Get my tickets | `GET /api/tickets/my-tickets/{id}` |
-| 9 | Get notifications | `GET /api/notifications/{id}` |
-| 10 | Attendance summary | `GET /api/v1/analytics/me` |
-| 11 | Employee profile | `GET /api/employees/{id}` |
-| 12 | Task summary | `GET /api/task-counts/{id}` |
+- 💬 **Natural Conversation**: Multi-turn chat memory powered by LangGraph ReAct framework.
+- 🗄️ **PostgreSQL History**: Automatically saves chat sessions, message histories, and pinned threads.
+- 🛡️ **Anti-Hallucination**: Enforces strict tool-calling rules before providing leave data or performing actions.
+- 🔐 **Scaloz IAM Authentication**: Uses JWT token authentication for secure tenant and employee API calls.
+- ⚡ **Real-Time Streaming**: Server-Sent Events (SSE) stream responses chunk-by-chunk with tool indicator statuses.
+
+---
+
+## HRMS Tool Capabilities
+
+| Category | Available Agent Tools |
+|---|---|
+| **Leave Management** | `get_leave_balance`, `get_leave_history`, `get_approved_leave_dates`, `apply_leave`, `cancel_leave`, `get_pending_approvals`, `action_leave` |
+| **Attendance** | `get_attendance_summary`, `check_today_attendance`, `mark_attendance` |
+| **Helpdesk & IT** | `submit_ticket`, `get_my_tickets` |
+| **Grievance** | `raise_grievance` |
+| **Profile & System** | `get_my_profile`, `get_task_summary`, `get_notifications`, `mark_notification_read` |
 
 ---
 
 ## Quick Start
 
-### 1. Backend
+### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+**
+- **PostgreSQL Database** (running locally or remotely)
 
-```bash
-cd backend
-cp ../.env.example ../.env
-# Edit .env — add OPENROUTER_API_KEY and XEVYTE_API_BASE
+---
 
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8001
-```
+### 1. Environment Setup
 
-### 2. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# Opens at http://localhost:3000
-```
-
-### 3. Docker (both services)
+Copy `.env.example` to `.env` in the root directory:
 
 ```bash
 cp .env.example .env
-# Fill in your values
+```
+
+Configure your `.env` variables:
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=openrouter/free
+XEVYTE_API_BASE=http://localhost:8082
+
+DB_NAME=scaloz_super_admin
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password
+DB_HOST=127.0.0.1
+DB_PORT=5432
+```
+
+---
+
+### 2. Backend Setup
+
+```bash
+cd backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start FastAPI server
+uvicorn main:app --reload --port 8001
+```
+> The server will automatically create required PostgreSQL chat tables (`xeva_chat_sessions` and `xeva_chat_messages`) on startup.
+
+---
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start Vite dev server
+npm run dev
+```
+> Open your browser at `http://localhost:5173` (or `http://localhost:3000`).
+
+---
+
+### 4. Docker Deployment
+
+```bash
 docker-compose up --build
-```
-
----
-
-## Configuration
-
-Copy `.env.example` to `.env` and fill in:
-
-| Variable | Description |
-|----------|-------------|
-| `OPENROUTER_API_KEY` | Get free key at https://openrouter.ai |
-| `OPENROUTER_MODEL` | Default: `meta-llama/llama-3.3-70b-instruct:free` |
-| `XEVYTE_API_BASE` | URL of the running Xevyte Connect backend |
-
----
-
-## Authentication
-
-Xevyte Connect uses **Scaloz IAM** for SSO. The agent needs a valid JWT token:
-
-1. Log in at the Scaloz IAM portal (`http://localhost:3001` or production URL)
-2. Open DevTools → Application → LocalStorage, copy the JWT token
-3. Paste it into the ⚙️ Settings panel in the chat UI
-
-The token is sent as `Authorization: Bearer <token>` with every API call.
-
----
-
-## Example Conversations
-
-```
-User: What's my leave balance?
-Xeva: You currently have:
-      • Casual Leave: 8 days remaining (12 granted, 4 consumed)
-      • Sick Leave: 7 days remaining (7 granted, 0 consumed)
-      • Earned Leave: 15 days remaining
-
-User: Apply casual leave from 1st August to 3rd August, reason is personal work
-Xeva: I'll apply Casual Leave from 01-08-2025 to 03-08-2025 (3 days) with
-      reason "personal work". Shall I confirm?
-
-User: Yes
-Xeva: ✅ Leave applied successfully!
-      Reference ID: LR-2025-0892
-      Status: PENDING (awaiting manager approval)
 ```
 
 ---
@@ -123,26 +121,29 @@ Xeva: ✅ Leave applied successfully!
 
 ```
 xevyte-hrms-agent/
+├── .env.example              # Environment variables template
+├── README.md                 # Project documentation
+├── docker-compose.yml        # Multi-container docker compose setup
 ├── backend/
-│   ├── main.py          # FastAPI app + /chat endpoint
-│   ├── agent.py         # LangGraph ReAct agent
-│   ├── tools.py         # 12 HRMS tool functions
-│   ├── config.py        # Env config
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx               # Main chat UI
-│   │   ├── api.js                # Backend API client
-│   │   └── components/
-│   │       ├── MessageBubble.jsx # Chat bubbles with markdown
-│   │       ├── SettingsPanel.jsx # JWT + employee ID config
-│   │       ├── Suggestions.jsx   # Quick-action chips
-│   │       └── TypingIndicator.jsx
-│   ├── package.json
-│   ├── vite.config.js
-│   └── Dockerfile
-├── docker-compose.yml
-├── .env.example
-└── README.md
+│   ├── main.py               # FastAPI entrypoint & SSE stream endpoints
+│   ├── agent.py              # LangGraph ReAct agent workflow & prompt engine
+│   ├── tools.py              # HRMS tool functions calling Xevyte APIs
+│   ├── db.py                 # PostgreSQL connection pool & session queries
+│   ├── config.py             # Environment configuration loader
+│   ├── requirements.txt      # Python dependencies
+│   └── Dockerfile            # Backend Docker build script
+└── frontend/
+    ├── package.json          # Node dependencies and scripts
+    ├── vite.config.js        # Vite configuration
+    ├── Dockerfile            # Frontend Docker build script
+    └── src/
+        ├── App.jsx           # Main chat canvas layout & sidebar controller
+        ├── api.js            # Axios & SSE streaming API client
+        └── components/
+            ├── Sidebar.jsx   # ChatGPT-style chat session history sidebar
+            ├── Login.jsx     # Scaloz IAM authentication login screen
+            ├── MessageBubble.jsx # Markdown message bubble renderer
+            ├── LeaveForm.jsx # Interactive leave request component
+            ├── TicketForm.jsx# Interactive helpdesk ticket component
+            └── TypingIndicator.jsx # Animated AI typing status
 ```
