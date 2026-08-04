@@ -16,7 +16,7 @@ CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "30"))
 MAX_HTTP_RETRIES = int(os.getenv("MAX_HTTP_RETRIES", "3"))
 HTTP_TIMEOUT_SECONDS = float(os.getenv("HTTP_TIMEOUT_SECONDS", "15.0"))
 
-# ─── Observability & LangSmith Tracing ────────────────────────────────────────
+# ─── Observability & Tracing (LangSmith) ──────────────────────────────────────
 LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY", "")
 LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT", "Xevyte-HRMS-Agent")
@@ -28,3 +28,6 @@ FALLBACK_MODELS = [
     "qwen/qwen-2.5-72b-instruct",
     "meta-llama/llama-3.1-70b-instruct:free"
 ]
+
+
+
