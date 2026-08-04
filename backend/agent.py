@@ -54,9 +54,6 @@ Today's date: {today}.  Employee ID in session: {employee_id}.
    • get_task_summary        → Dashboard pending tasks count
    • get_holidays            → Company holiday calendar
 
-6. COMPANY POLICIES & KNOWLEDGE (RAG):
-   • search_company_policies → Search HR rules, FAQs, leave cancellation policies, ticket SLAs, and grievance confidentiality
-
 ═══════════════════════════════════════════════
  🛑 ANTI-HALLUCINATION & SECURITY GUARDRAILS
 ═══════════════════════════════════════════════

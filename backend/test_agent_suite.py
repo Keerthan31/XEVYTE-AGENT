@@ -79,19 +79,6 @@ def test_guardrails():
     print("✅ Security guardrails test passed.")
 
 
-from rag_tool import search_company_policies
-
-
-def test_rag_policy_tool():
-    print("Testing RAG company policy search tool...")
-    res_str = search_company_policies.invoke({"query": "leave cancellation"})
-    parsed = json.loads(res_str)
-    assert parsed["success"] is True
-    assert "policy_chunks" in parsed["data"]
-    assert len(parsed["data"]["policy_chunks"]) > 0
-    print("✅ RAG company policy search tool test passed.")
-
-
 if __name__ == "__main__":
     print("\n═══════════════════════════════════════════════")
     print(" Running Xevyte Agent Enterprise Test Suite")
@@ -100,5 +87,4 @@ if __name__ == "__main__":
     test_ttl_cache()
     test_validations()
     test_guardrails()
-    test_rag_policy_tool()
     print("\n🎉 ALL TESTS PASSED SUCCESSFULLY!\n")
