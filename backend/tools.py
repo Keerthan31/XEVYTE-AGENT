@@ -1218,6 +1218,8 @@ def mark_attendance(
 
 
 # ─── Tool registry ────────────────────────────────────────────────────────────
+from rag_tool import search_company_policies
+
 ALL_TOOLS = [
     get_leave_balance,
     get_leave_history,
@@ -1237,4 +1239,5 @@ ALL_TOOLS = [
     get_holidays,
     get_approved_leave_dates,
     mark_attendance,
+    search_company_policies,
 ]
