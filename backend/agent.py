@@ -12,7 +12,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL
+from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL, FALLBACK_MODELS
 from tools import ALL_TOOLS, set_session
 
 logger = logging.getLogger(__name__)
@@ -95,21 +95,27 @@ class AgentState(TypedDict):
 
 
 def build_agent():
-    llm = ChatOpenAI(
-        model=OPENROUTER_MODEL,
-        openai_api_key=OPENROUTER_API_KEY,
-        openai_api_base=OPENROUTER_BASE_URL,
-        temperature=0.0,
-        default_headers={
-            "HTTP-Referer": "https://xevyte.com",
-            "X-Title": "Xevyte HRMS Agent",
-        },
-    )
+    llms_with_tools = []
+    
+    for model_name in FALLBACK_MODELS:
+        llm = ChatOpenAI(
+            model=model_name,
+            openai_api_key=OPENROUTER_API_KEY,
+            openai_api_base=OPENROUTER_BASE_URL,
+            temperature=0.0,
+            max_retries=1,  # Fail fast to trigger fallback
+            default_headers={
+                "HTTP-Referer": "https://xevyte.com",
+                "X-Title": "Xevyte HRMS Agent",
+            },
+        )
+        llms_with_tools.append(llm.bind_tools(ALL_TOOLS))
 
-    llm_with_tools = llm.bind_tools(ALL_TOOLS)
+    # The first model is primary, the rest are fallbacks
+    llm_router = llms_with_tools[0].with_fallbacks(llms_with_tools[1:])
 
     def call_model(state: AgentState):
-        response = llm_with_tools.invoke(state["messages"])
+        response = llm_router.invoke(state["messages"])
         return {"messages": [response]}
 
     tool_node = ToolNode(ALL_TOOLS)
