@@ -94,6 +94,18 @@ class DebugRequest(BaseModel):
     params: dict = {}
 
 
+import uuid
+from fastapi import Request
+
+@app.middleware("http")
+async def add_trace_id_middleware(request: Request, call_next):
+    trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())
+    request.state.trace_id = trace_id
+    response = await call_next(request)
+    response.headers["X-Trace-ID"] = trace_id
+    return response
+
+
 @app.on_event("startup")
 def startup_db():
     """Initialize DB tables gracefully on server startup."""
@@ -113,7 +125,19 @@ def health():
         db.release_connection(conn)
     except Exception:
         db_ok = False
-    return {"status": "ok", "version": "2.1.0", "database": "connected" if db_ok else "disconnected"}
+
+    from config import CACHE_TTL_SECONDS, MAX_HTTP_RETRIES
+    return {
+        "status": "ok",
+        "version": "2.5.0",
+        "database": "connected" if db_ok else "disconnected",
+        "resilience": {
+            "max_http_retries": MAX_HTTP_RETRIES,
+            "cache_ttl_seconds": CACHE_TTL_SECONDS,
+            "structured_outputs": True,
+            "guardrails": True,
+        }
+    }
 
 
 # ─── Database Chat Session Routes ──────────────────────────────────────────────

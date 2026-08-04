@@ -2,14 +2,23 @@
 HRMS Tool functions — each one calls a Xevyte Connect REST API endpoint.
 All tools receive the JWT token (from Scaloz IAM) via a shared context
 that is injected by the agent before each tool call.
+
+Includes enterprise-grade features:
+- Structured JSON outputs (success, message, data, metadata)
+- Automatic HTTP retries with exponential backoff
+- In-memory TTL caching for read-only tools
+- Parameter validation & sanitization
 """
 
+import json
+import time
 import httpx
 import logging
+import threading
 from contextvars import ContextVar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from langchain_core.tools import tool
-from config import XEVYTE_API_BASE
+from config import XEVYTE_API_BASE, CACHE_TTL_SECONDS, MAX_HTTP_RETRIES, HTTP_TIMEOUT_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +49,108 @@ def _base():
     return XEVYTE_API_BASE
 
 
-# ─── Date helpers ─────────────────────────────────────────────────────────────
+# ─── Structured Response Envelope ─────────────────────────────────────────────
+def format_tool_response(
+    success: bool,
+    message: str,
+    data: dict | list | None = None,
+    tool_name: str = "",
+    exec_time_ms: float = 0.0,
+    cached: bool = False,
+    error_code: str | None = None,
+) -> str:
+    """Standardized JSON response envelope across all tools."""
+    res = {
+        "success": success,
+        "message": message,
+        "data": data if data is not None else {},
+        "metadata": {
+            "tool": tool_name,
+            "timestamp": datetime.now().isoformat(),
+            "execution_time_ms": round(exec_time_ms, 2),
+            "cached": cached,
+        }
+    }
+    if error_code:
+        res["metadata"]["error_code"] = error_code
+    return json.dumps(res, indent=2, default=str)
+
+
+# ─── In-Memory TTL Cache Layer ─────────────────────────────────────────────────
+class _TTLCache:
+    """Thread-safe TTL Cache for read-only tools."""
+
+    def __init__(self, ttl_seconds: int = CACHE_TTL_SECONDS):
+        self.ttl = ttl_seconds
+        self._store: dict[str, tuple[float, str]] = {}
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> str | None:
+        with self._lock:
+            if key in self._store:
+                timestamp, val = self._store[key]
+                if time.time() - timestamp <= self.ttl:
+                    return val
+                del self._store[key]
+        return None
+
+    def set(self, key: str, val: str):
+        with self._lock:
+            self._store[key] = (time.time(), val)
+
+    def invalidate(self, prefix: str = ""):
+        with self._lock:
+            if not prefix:
+                self._store.clear()
+            else:
+                keys = [k for k in self._store if k.startswith(prefix)]
+                for k in keys:
+                    del self._store[k]
+
+
+_cache = _TTLCache(ttl_seconds=CACHE_TTL_SECONDS)
+
+
+# ─── HTTP Connection & Retry Wrapper ──────────────────────────────────────────
+def _httpx_request(
+    method: str,
+    url: str,
+    headers: dict | None = None,
+    params: dict | None = None,
+    json_data: dict | None = None,
+    files: dict | None = None,
+    timeout: float = HTTP_TIMEOUT_SECONDS,
+    max_retries: int = MAX_HTTP_RETRIES,
+) -> httpx.Response:
+    """Execute HTTP request with automatic retries & exponential backoff for 5xx/network errors."""
+    last_exc = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                resp = client.request(
+                    method, url, headers=headers, params=params, json=json_data, files=files
+                )
+            if resp.status_code >= 500 and attempt < max_retries:
+                logger.warning(
+                    f"HTTP {resp.status_code} on {method} {url} (attempt {attempt}/{max_retries}). Retrying..."
+                )
+                time.sleep(0.5 * (2 ** (attempt - 1)))
+                continue
+            return resp
+        except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
+            last_exc = e
+            if attempt < max_retries:
+                logger.warning(
+                    f"Network error {e} on {method} {url} (attempt {attempt}/{max_retries}). Retrying..."
+                )
+                time.sleep(0.5 * (2 ** (attempt - 1)))
+            else:
+                raise e
+    if last_exc:
+        raise last_exc
+
+
+# ─── Date & Validation Helpers ────────────────────────────────────────────────
 _DATE_FORMATS = [
     "%d-%m-%Y",   # 27-07-2026  ← backend requires this
     "%Y-%m-%d",   # 2026-07-27
@@ -53,39 +163,63 @@ _DATE_FORMATS = [
 
 
 def _to_backend_date(date_str: str) -> str:
-    """
-    Accept any common date format from the LLM and return dd-MM-yyyy
-    which is what the Xevyte backend's @JsonFormat annotation expects.
-    """
+    """Accept any common date format from LLM and return dd-MM-yyyy."""
     date_str = date_str.strip().lower()
-    
-    # Handle natural language dates from LLM
+
     if date_str == "today":
         return datetime.now().strftime("%d-%m-%Y")
     if date_str == "tomorrow":
-        from datetime import timedelta
         return (datetime.now() + timedelta(days=1)).strftime("%d-%m-%Y")
     for fmt in _DATE_FORMATS:
         try:
             return datetime.strptime(date_str, fmt).strftime("%d-%m-%Y")
         except ValueError:
             continue
-    # Last resort — return as-is and let the backend error naturally
     logger.warning(f"Could not parse date: {date_str}")
     return date_str
 
 
-def _fmt_error(resp: httpx.Response, action: str) -> str:
-    """Return a clear error string with the backend's actual message."""
+def _validate_date(date_str: str) -> tuple[bool, str]:
+    if not date_str or not date_str.strip():
+        return False, "Date string cannot be empty."
+    parsed = _to_backend_date(date_str)
+    try:
+        datetime.strptime(parsed, "%d-%m-%Y")
+        return True, parsed
+    except ValueError:
+        return False, f"Invalid date format '{date_str}'."
+
+
+def _validate_leave_type(leave_type: str) -> str:
+    l_type_lower = leave_type.strip().lower()
+    if "optional" in l_type_lower:
+        return "Optional"
+    elif "sick" in l_type_lower or l_type_lower == "sl":
+        return "SL"
+    elif "earned" in l_type_lower or l_type_lower == "el":
+        return "EL"
+    elif "casual" in l_type_lower or l_type_lower == "cl":
+        return "CL"
+    elif "lop" in l_type_lower or "loss" in l_type_lower:
+        return "LOP"
+    return leave_type.strip()
+
+
+def _fmt_error(resp: httpx.Response, action: str, tool_name: str, exec_time_ms: float) -> str:
+    """Return formatted structured error json."""
     try:
         body = resp.json()
         msg = body.get("message") or body.get("error") or body.get("detail") or str(body)
     except Exception:
         msg = resp.text[:400] or "(no body)"
-    return (
-        f"❌ {action} failed (HTTP {resp.status_code}).\n"
-        f"Backend says: {msg}\n"
-        f"Please check the details and try again."
+
+    return format_tool_response(
+        success=False,
+        message=f"{action} failed (HTTP {resp.status_code}): {msg}",
+        data={"http_status": resp.status_code, "raw_response": msg},
+        tool_name=tool_name,
+        exec_time_ms=exec_time_ms,
+        error_code=f"HTTP_{resp.status_code}",
     )
 
 
@@ -96,20 +230,45 @@ def get_leave_balance() -> str:
     Fetch the current leave balance for the logged-in employee.
     Returns each leave type with granted, consumed, and remaining days.
     """
-    url = f"{_base()}/api/leaves/balance/details/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    cache_key = f"get_leave_balance:{emp_id}"
+    cached_val = _cache.get(cache_key)
+    if cached_val:
+        return cached_val
+
+    url = f"{_base()}/api/leaves/balance/details/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "No leave balance records found."
-            return str(data)
-        return _fmt_error(resp, "Get leave balance")
+            res_json = format_tool_response(
+                success=True,
+                message=f"Leave balance retrieved for employee {emp_id}.",
+                data=data if data else [],
+                tool_name="get_leave_balance",
+                exec_time_ms=exec_time,
+            )
+            _cache.set(cache_key, res_json)
+            return res_json
+        return _fmt_error(resp, "Get leave balance", "get_leave_balance", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend. Make sure it is running."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend. Please ensure the backend service is running.",
+            tool_name="get_leave_balance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_leave_balance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 2. Get leave history ─────────────────────────────────────────────────────
@@ -119,20 +278,38 @@ def get_leave_history() -> str:
     Get the full leave request history for the logged-in employee,
     including status (Pending, Approved, Rejected, Cancelled).
     """
-    url = f"{_base()}/api/leaves/employee/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/leaves/employee/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "No leave requests found."
-            return str(data[:20])
-        return _fmt_error(resp, "Get leave history")
+            return format_tool_response(
+                success=True,
+                message=f"Leave history retrieved ({len(data)} records found).",
+                data=data[:20] if data else [],
+                tool_name="get_leave_history",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get leave history", "get_leave_history", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_leave_history",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_leave_history",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 3. Apply for leave ───────────────────────────────────────────────────────
@@ -148,90 +325,114 @@ def apply_leave(
     Apply for leave on behalf of the logged-in employee.
 
     Args:
-        leave_type: Exact leave type name exactly as it appears in the leave balance response (e.g. "EL", "SL", "Optional"). Do not use hardcoded mappings like "Sick Leave" if the balance says "SL".
-        start_date: Start date — any common format e.g. "27-07-2026" or "2026-07-27"
-        end_date:   End date — any common format
+        leave_type: Leave type (e.g., "EL", "SL", "Optional", "CL").
+        start_date: Start date e.g. "27-07-2026" or "2026-07-27"
+        end_date:   End date e.g. "29-07-2026"
         reason:     Reason for leave
-        half_day:   True only for a half-day leave
+        half_day:   True only for half-day leave
     """
-    # Normalize dates to dd-MM-yyyy which the backend's @JsonFormat requires
+    t0 = time.time()
+    valid_sd, sd_str = _validate_date(start_date)
+    if not valid_sd:
+        return format_tool_response(
+            success=False,
+            message=f"Invalid start date: {sd_str}",
+            tool_name="apply_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
+
+    valid_ed, ed_str = _validate_date(end_date)
+    if not valid_ed:
+        return format_tool_response(
+            success=False,
+            message=f"Invalid end date: {ed_str}",
+            tool_name="apply_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
+
     try:
-        sd_str = _to_backend_date(start_date)
-        ed_str = _to_backend_date(end_date)
         sd = datetime.strptime(sd_str, "%d-%m-%Y").date()
         ed = datetime.strptime(ed_str, "%d-%m-%Y").date()
-
         if ed < sd:
-            return "❌ End date cannot be before start date."
+            return format_tool_response(
+                success=False,
+                message="End date cannot be before start date.",
+                tool_name="apply_leave",
+                exec_time_ms=(time.time() - t0) * 1000,
+                error_code="VALIDATION_ERROR",
+            )
     except Exception as e:
-        return f"❌ Invalid date format: {e}. Please use a clear date like '27-07-2026'."
+        return format_tool_response(
+            success=False,
+            message=f"Date parsing error: {e}",
+            tool_name="apply_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
 
-    # Auto-correct common LLM leave type hallucinations based on known DB types
-    l_type_lower = leave_type.lower()
-    if "optional" in l_type_lower:
-        leave_type = "Optional"
-    elif "sick" in l_type_lower or l_type_lower == "sl":
-        leave_type = "SL"
-    elif "earned" in l_type_lower or l_type_lower == "el":
-        leave_type = "EL"
-    elif "casual" in l_type_lower or l_type_lower == "cl":
-        leave_type = "CL"
-    elif "lop" in l_type_lower or "loss" in l_type_lower:
-        leave_type = "LOP"
+    norm_leave_type = _validate_leave_type(leave_type)
+    emp_id = _current_employee_id.get()
 
     payload = {
-        "employeeId": _current_employee_id.get(),
-        "type": leave_type,
-        "startDate": sd_str,   # dd-MM-yyyy as required by @JsonFormat
+        "employeeId": emp_id,
+        "type": norm_leave_type,
+        "startDate": sd_str,
         "endDate": ed_str,
         "reason": reason,
         "halfDay": half_day,
-        # totalDays is recalculated server-side; we omit it to avoid conflicts
     }
 
-    import json
     url = f"{_base()}/api/leaves/apply"
-    
-    # Spring expects @RequestPart("dto") to be application/json
-    files = {
-        "dto": (None, json.dumps(payload), "application/json")
-    }
-    
+    files = {"dto": (None, json.dumps(payload), "application/json")}
+
     try:
-        with httpx.Client(timeout=20) as client:
-            resp = client.post(url, files=files, headers=_auth_headers())
+        resp = _httpx_request("POST", url, files=files, headers=_auth_headers(), timeout=20.0)
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 201):
             data = resp.json()
-            ref = data.get("referenceId") or data.get("id") or "N/A"
-            return (
-                f"✅ Leave applied successfully!\n"
-                f"Reference ID : {ref}\n"
-                f"Type         : {data.get('type', leave_type)}\n"
-                f"Dates        : {sd_str} → {ed_str}\n"
-                f"Days         : {data.get('totalDays', '?')}\n"
-                f"Status       : {data.get('status', 'Pending')}"
+            _cache.invalidate(prefix=f"get_leave_balance:{emp_id}")
+            return format_tool_response(
+                success=True,
+                message="Leave application submitted successfully.",
+                data=data,
+                tool_name="apply_leave",
+                exec_time_ms=exec_time,
             )
-        return _fmt_error(resp, "Apply leave")
+        return _fmt_error(resp, "Apply leave", "apply_leave", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="apply_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="apply_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 4. Cancel leave ──────────────────────────────────────────────────────────
 @tool
 def cancel_leave(leave_id_or_ref: str) -> str:
     """
-    Cancel a pending leave request. You can provide either the numeric ID or the string Reference ID (e.g., 'SCA-LV-2026-000043').
+    Cancel a pending leave request by numeric ID or Reference ID (e.g., 'SCA-LV-2026-000043').
     """
+    t0 = time.time()
     leave_id = str(leave_id_or_ref).strip()
-    
-    # If the provided ID is not strictly numeric, we must look up the numeric ID
+    emp_id = _current_employee_id.get()
+
     if not leave_id.isdigit():
-        history_url = f"{_base()}/api/leaves/employee/{_current_employee_id.get()}"
+        history_url = f"{_base()}/api/leaves/employee/{emp_id}"
         try:
-            with httpx.Client(timeout=15) as client:
-                resp = client.get(history_url, headers=_auth_headers())
+            resp = _httpx_request("GET", history_url, headers=_auth_headers())
             if resp.status_code == 200:
                 history_data = resp.json()
                 found_id = None
@@ -240,29 +441,184 @@ def cancel_leave(leave_id_or_ref: str) -> str:
                         found_id = req.get("id")
                         break
                 if not found_id:
-                    return f"❌ Could not find a leave request matching reference '{leave_id}'."
+                    return format_tool_response(
+                        success=False,
+                        message=f"Could not find a leave request matching reference '{leave_id}'.",
+                        tool_name="cancel_leave",
+                        exec_time_ms=(time.time() - t0) * 1000,
+                        error_code="NOT_FOUND",
+                    )
                 leave_id = str(found_id)
             else:
-                return f"❌ Could not look up leave reference '{leave_id}' (HTTP {resp.status_code})."
+                return _fmt_error(resp, "Lookup leave reference", "cancel_leave", (time.time() - t0) * 1000)
         except Exception as e:
-            return f"❌ Error looking up leave reference: {e}"
+            return format_tool_response(
+                success=False,
+                message=f"Error looking up leave reference: {e}",
+                tool_name="cancel_leave",
+                exec_time_ms=(time.time() - t0) * 1000,
+                error_code="LOOKUP_ERROR",
+            )
 
     url = f"{_base()}/api/leaves/cancel/{leave_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.put(url, headers=_auth_headers())
+        resp = _httpx_request("PUT", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 204):
-            return f"✅ Leave request {leave_id_or_ref} cancelled successfully."
-        return _fmt_error(resp, f"Cancel leave {leave_id_or_ref}")
+            _cache.invalidate(prefix=f"get_leave_balance:{emp_id}")
+            return format_tool_response(
+                success=True,
+                message=f"Leave request #{leave_id_or_ref} cancelled successfully.",
+                data={"leave_id": leave_id, "reference_id": leave_id_or_ref},
+                tool_name="cancel_leave",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, f"Cancel leave {leave_id_or_ref}", "cancel_leave", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="cancel_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="cancel_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
+
+# ─── 5. Approve/Reject Leave (Manager/Admin) ──────────────────────────────────
+@tool
+def action_leave(leave_id_or_ref: str, action: str, role: str = "Manager", remarks: str = "") -> str:
+    """
+    Approve or Reject a leave request. (For Managers, HR, or Admins).
+    """
+    t0 = time.time()
+    leave_id = str(leave_id_or_ref).strip()
+    emp_id = _current_employee_id.get()
+
+    if not leave_id.isdigit():
+        manager_url = f"{_base()}/api/leaves/manager/{emp_id}"
+        try:
+            resp = _httpx_request("GET", manager_url, headers=_auth_headers())
+            if resp.status_code == 200:
+                manager_data = resp.json()
+                found_id = None
+                for req in manager_data:
+                    if req.get("referenceId") == leave_id or str(req.get("id")) == leave_id:
+                        found_id = req.get("id")
+                        break
+                if not found_id:
+                    return format_tool_response(
+                        success=False,
+                        message=f"Could not find leave request matching reference '{leave_id}' for your approval.",
+                        tool_name="action_leave",
+                        exec_time_ms=(time.time() - t0) * 1000,
+                        error_code="NOT_FOUND",
+                    )
+                leave_id = str(found_id)
+            else:
+                return _fmt_error(resp, "Lookup leave reference", "action_leave", (time.time() - t0) * 1000)
+        except Exception as e:
+            return format_tool_response(
+                success=False,
+                message=f"Error looking up leave reference: {e}",
+                tool_name="action_leave",
+                exec_time_ms=(time.time() - t0) * 1000,
+                error_code="LOOKUP_ERROR",
+            )
+
+    url = f"{_base()}/api/leaves/action"
+    payload = {
+        "leaveRequestId": int(leave_id),
+        "approverId": emp_id,
+        "role": role,
+        "action": action,
+        "remarks": remarks
+    }
+
+    try:
+        resp = _httpx_request("POST", url, json_data=payload, headers=_json_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            return format_tool_response(
+                success=True,
+                message=f"Leave request #{leave_id_or_ref} {action}d successfully.",
+                data=data,
+                tool_name="action_leave",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, f"{action} leave {leave_id_or_ref}", "action_leave", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="action_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
+    except Exception as e:
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="action_leave",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
+
+
+@tool
+def get_pending_approvals() -> str:
+    """
+    Get the list of leave requests waiting for your approval as a Manager.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/leaves/manager/{emp_id}"
+    try:
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code == 200:
+            data = resp.json()
+            pending = []
+            if data:
+                for req in data:
+                    status = req.get("status", "").upper()
+                    if status.startswith("PENDING") or status == "SENT BACK FOR REVISION":
+                        pending.append(req)
+            return format_tool_response(
+                success=True,
+                message=f"Retrieved {len(pending)} pending leave requests for approval.",
+                data=pending[:15],
+                tool_name="get_pending_approvals",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get pending approvals", "get_pending_approvals", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_pending_approvals",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
+    except Exception as e:
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_pending_approvals",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 6. Raise a grievance ─────────────────────────────────────────────────────
-
 @tool
 def raise_grievance(
     subject: str,
@@ -272,19 +628,20 @@ def raise_grievance(
 ) -> str:
     """
     Raise a grievance (can be anonymous).
-
-    Args:
-        subject:        Short subject/title of the grievance (max 150 chars)
-        description:    Full detailed description of the issue
-        category:       One of: "Harassment", "Payroll", "Work Environment",
-                        "Policy Violation", "Discrimination", "General"
-        grievance_type: Optional subtype e.g. "Verbal", "Written" (can be empty)
     """
-    # Backend uses @RequestPart — must send as multipart/form-data
-    # employeeId goes in a REQUEST HEADER, not the body
+    t0 = time.time()
+    if not subject or not subject.strip():
+        return format_tool_response(
+            success=False,
+            message="Grievance subject cannot be empty.",
+            tool_name="raise_grievance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
+
     parts = {
         "category": (None, category),
-        "subject":  (None, subject),
+        "subject": (None, subject),
         "description": (None, description),
     }
     if grievance_type:
@@ -292,28 +649,39 @@ def raise_grievance(
 
     headers = {
         "Authorization": f"Bearer {_current_token.get()}",
-        "employeeId": _current_employee_id.get(),   # required as request header
+        "employeeId": _current_employee_id.get(),
     }
 
     url = f"{_base()}/api/grievances/anonymous"
     try:
-        with httpx.Client(timeout=20) as client:
-            resp = client.post(url, files=parts, headers=headers)
+        resp = _httpx_request("POST", url, files=parts, headers=headers, timeout=20.0)
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 201):
             data = resp.json()
-            gid = data.get("grievanceId") or data.get("id") or "N/A"
-            return (
-                f"✅ Grievance raised successfully!\n"
-                f"Grievance ID : {gid}\n"
-                f"Subject      : {subject}\n"
-                f"Category     : {category}\n"
-                f"Status       : Submitted (under review)"
+            return format_tool_response(
+                success=True,
+                message="Grievance raised successfully.",
+                data=data,
+                tool_name="raise_grievance",
+                exec_time_ms=exec_time,
             )
-        return _fmt_error(resp, "Raise grievance")
+        return _fmt_error(resp, "Raise grievance", "raise_grievance", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="raise_grievance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="raise_grievance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 7. Submit helpdesk ticket ────────────────────────────────────────────────
@@ -327,68 +695,96 @@ def submit_ticket(
 ) -> str:
     """
     Submit a helpdesk support ticket.
-
-    Args:
-        category:             Main category e.g. "IT", "HR", "Admin", "Finance", "Facilities"
-        subcategory:          Sub-category e.g. "Laptop Issue", "Software Access",
-                              "ID Card", "Salary Query", "Reimbursement"
-        issue_summary:        One-line summary of the issue
-        detailed_description: Complete description of the problem
-        cc_to_manager:        Set True to copy the manager on this ticket
     """
-    # @RequestParam with MultipartFile — Spring requires multipart/form-data
-    # Use files= with (None, value) tuples for text fields
+    t0 = time.time()
+    if not issue_summary or not issue_summary.strip():
+        return format_tool_response(
+            success=False,
+            message="Ticket issue summary cannot be empty.",
+            tool_name="submit_ticket",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
+
     parts = {
-        "employeeId":          (None, _current_employee_id.get()),
-        "category":            (None, category),
-        "subcategory":         (None, subcategory),
-        "issueSummary":        (None, issue_summary),
+        "employeeId": (None, _current_employee_id.get()),
+        "category": (None, category),
+        "subcategory": (None, subcategory),
+        "issueSummary": (None, issue_summary),
         "detailedDescription": (None, detailed_description),
-        "ccToManager":         (None, "true" if cc_to_manager else "false"),
+        "ccToManager": (None, "true" if cc_to_manager else "false"),
     }
 
     url = f"{_base()}/api/tickets/submit"
     try:
-        with httpx.Client(timeout=20) as client:
-            resp = client.post(url, files=parts, headers=_auth_headers())
+        resp = _httpx_request("POST", url, files=parts, headers=_auth_headers(), timeout=20.0)
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 201):
             data = resp.json()
-            tid = data.get("id") or data.get("ticketId") or "N/A"
-            return (
-                f"✅ Ticket submitted successfully!\n"
-                f"Ticket ID    : {tid}\n"
-                f"Category     : {category} → {subcategory}\n"
-                f"Summary      : {issue_summary}\n"
-                f"CC Manager   : {'Yes' if cc_to_manager else 'No'}"
+            return format_tool_response(
+                success=True,
+                message="Support ticket submitted successfully.",
+                data=data,
+                tool_name="submit_ticket",
+                exec_time_ms=exec_time,
             )
-        return _fmt_error(resp, "Submit ticket")
+        return _fmt_error(resp, "Submit ticket", "submit_ticket", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="submit_ticket",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="submit_ticket",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 8. Get my tickets ────────────────────────────────────────────────────────
 @tool
 def get_my_tickets() -> str:
     """
-    Retrieve all helpdesk tickets submitted by the logged-in employee
-    with their current status.
+    Retrieve all helpdesk tickets submitted by the logged-in employee.
     """
-    url = f"{_base()}/api/tickets/my-tickets/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/tickets/my-tickets/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "You have no helpdesk tickets."
-            return str(data[:15])
-        return _fmt_error(resp, "Get tickets")
+            return format_tool_response(
+                success=True,
+                message=f"Retrieved {len(data) if data else 0} tickets.",
+                data=data[:15] if data else [],
+                tool_name="get_my_tickets",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get tickets", "get_my_tickets", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_my_tickets",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_my_tickets",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 9. Get notifications ─────────────────────────────────────────────────────
@@ -397,24 +793,39 @@ def get_notifications() -> str:
     """
     Get all notifications for the logged-in employee (read and unread).
     """
-    url = f"{_base()}/api/notifications/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/notifications/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "No notifications found."
-            unread = [n for n in data if not n.get("read", False)]
-            return (
-                f"You have {len(unread)} unread notification(s) out of {len(data)} total.\n"
-                + str(data[:10])
+            unread_count = len([n for n in data if not n.get("read", False)]) if data else 0
+            return format_tool_response(
+                success=True,
+                message=f"Retrieved {len(data) if data else 0} notifications ({unread_count} unread).",
+                data=data[:10] if data else [],
+                tool_name="get_notifications",
+                exec_time_ms=exec_time,
             )
-        return _fmt_error(resp, "Get notifications")
+        return _fmt_error(resp, "Get notifications", "get_notifications", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_notifications",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_notifications",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 10. Get attendance summary ───────────────────────────────────────────────
@@ -422,12 +833,8 @@ def get_notifications() -> str:
 def get_attendance_summary(start_date: str, end_date: str) -> str:
     """
     Get attendance analytics for the logged-in employee over a date range.
-
-    Args:
-        start_date: Start date in YYYY-MM-DD format e.g. "2026-07-01"
-        end_date:   End date in YYYY-MM-DD format e.g. "2026-07-31"
     """
-    # This endpoint expects YYYY-MM-DD (ISO format)
+    t0 = time.time()
     try:
         sd = datetime.strptime(_to_backend_date(start_date), "%d-%m-%Y").strftime("%Y-%m-%d")
         ed = datetime.strptime(_to_backend_date(end_date), "%d-%m-%Y").strftime("%Y-%m-%d")
@@ -436,15 +843,33 @@ def get_attendance_summary(start_date: str, end_date: str) -> str:
 
     url = f"{_base()}/api/v1/analytics/me"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, params={"startDate": sd, "endDate": ed}, headers=_auth_headers())
+        resp = _httpx_request("GET", url, params={"startDate": sd, "endDate": ed}, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
-            return str(resp.json())
-        return _fmt_error(resp, "Get attendance")
+            return format_tool_response(
+                success=True,
+                message=f"Attendance summary retrieved for range {sd} to {ed}.",
+                data=resp.json(),
+                tool_name="get_attendance_summary",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get attendance", "get_attendance_summary", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_attendance_summary",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_attendance_summary",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 10b. Check Today's Attendance ────────────────────────────────────────────
@@ -452,64 +877,135 @@ def get_attendance_summary(start_date: str, end_date: str) -> str:
 def check_today_attendance() -> str:
     """
     Check if the logged-in employee has already marked their attendance for today.
-    Use this to verify attendance status before attempting to mark attendance.
     """
+    t0 = time.time()
     today = datetime.now().strftime("%Y-%m-%d")
-    url = f"{_base()}/api/daily-entry/employee/{_current_employee_id.get()}"
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/daily-entry/employee/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             entries = resp.json()
             for entry in entries:
                 if entry.get("date") == today:
-                    return f"Attendance already marked for today ({today}). Status: {entry.get('status')}, Location: {entry.get('workLocation')}"
-            return "Attendance NOT marked for today yet."
-        return _fmt_error(resp, "Check today's attendance")
+                    return format_tool_response(
+                        success=True,
+                        message=f"Attendance already marked for today ({today}).",
+                        data={"marked": True, "entry": entry},
+                        tool_name="check_today_attendance",
+                        exec_time_ms=exec_time,
+                    )
+            return format_tool_response(
+                success=True,
+                message="Attendance NOT marked for today yet.",
+                data={"marked": False},
+                tool_name="check_today_attendance",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Check today's attendance", "check_today_attendance", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="check_today_attendance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="check_today_attendance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 11. Get employee profile ─────────────────────────────────────────────────
 @tool
 def get_my_profile() -> str:
     """
-    Retrieve the logged-in employee's full profile: department, designation,
-    manager, contact info, joining date, and personal details.
+    Retrieve the logged-in employee's full profile details.
     """
-    url = f"{_base()}/api/employees/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    cache_key = f"get_my_profile:{emp_id}"
+    cached_val = _cache.get(cache_key)
+    if cached_val:
+        return cached_val
+
+    url = f"{_base()}/api/employees/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
-            return str(resp.json())
-        return _fmt_error(resp, "Get profile")
+            data = resp.json()
+            res_json = format_tool_response(
+                success=True,
+                message=f"Profile retrieved for employee {emp_id}.",
+                data=data,
+                tool_name="get_my_profile",
+                exec_time_ms=exec_time,
+            )
+            _cache.set(cache_key, res_json)
+            return res_json
+        return _fmt_error(resp, "Get profile", "get_my_profile", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_my_profile",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_my_profile",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 12. Get task summary ─────────────────────────────────────────────────────
 @tool
 def get_task_summary() -> str:
     """
-    Get a dashboard summary of pending tasks for the logged-in employee:
-    pending leave approvals, open tickets, grievances, etc.
+    Get a dashboard summary of pending tasks for the logged-in employee.
     """
-    url = f"{_base()}/api/task-counts/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/task-counts/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
-            return str(resp.json())
-        return _fmt_error(resp, "Get task summary")
+            return format_tool_response(
+                success=True,
+                message=f"Task summary retrieved for employee {emp_id}.",
+                data=resp.json(),
+                tool_name="get_task_summary",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get task summary", "get_task_summary", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_task_summary",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_task_summary",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 13. Mark notification as read ───────────────────────────────────────────
@@ -517,21 +1013,37 @@ def get_task_summary() -> str:
 def mark_notification_read(notification_id: int) -> str:
     """
     Mark a specific notification as read by its ID.
-
-    Args:
-        notification_id: Numeric ID of the notification to mark as read
     """
+    t0 = time.time()
     url = f"{_base()}/api/notifications/read/{notification_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.post(url, headers=_auth_headers())
+        resp = _httpx_request("POST", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
-            return f"✅ Notification #{notification_id} marked as read."
-        return _fmt_error(resp, "Mark notification read")
+            return format_tool_response(
+                success=True,
+                message=f"Notification #{notification_id} marked as read.",
+                data={"notification_id": notification_id},
+                tool_name="mark_notification_read",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Mark notification read", "mark_notification_read", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="mark_notification_read",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="mark_notification_read",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 14. Get holidays list ────────────────────────────────────────────────────
@@ -540,20 +1052,44 @@ def get_holidays() -> str:
     """
     Get the list of company holidays for the current year.
     """
+    t0 = time.time()
+    cache_key = "get_holidays:all"
+    cached_val = _cache.get(cache_key)
+    if cached_val:
+        return cached_val
+
     url = f"{_base()}/api/leaves/holidays"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "No holidays found."
-            return str(data[:30])
-        return _fmt_error(resp, "Get holidays")
+            res_json = format_tool_response(
+                success=True,
+                message=f"Company holiday list retrieved ({len(data) if data else 0} holidays).",
+                data=data[:30] if data else [],
+                tool_name="get_holidays",
+                exec_time_ms=exec_time,
+            )
+            _cache.set(cache_key, res_json)
+            return res_json
+        return _fmt_error(resp, "Get holidays", "get_holidays", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_holidays",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_holidays",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 15. Get approved leave dates ────────────────────────────────────────────
@@ -561,22 +1097,39 @@ def get_holidays() -> str:
 def get_approved_leave_dates() -> str:
     """
     Get all approved leave dates for the logged-in employee.
-    Useful to check which dates are already blocked.
     """
-    url = f"{_base()}/api/leaves/approved-dates/{_current_employee_id.get()}"
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/leaves/approved-dates/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
-            if not data:
-                return "No approved leave dates found."
-            return str(data)
-        return _fmt_error(resp, "Get approved leave dates")
+            return format_tool_response(
+                success=True,
+                message=f"Approved leave dates retrieved for employee {emp_id}.",
+                data=data if data else [],
+                tool_name="get_approved_leave_dates",
+                exec_time_ms=exec_time,
+            )
+        return _fmt_error(resp, "Get approved leave dates", "get_approved_leave_dates", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_approved_leave_dates",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_approved_leave_dates",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 16. Mark attendance ───────────────────────────────────────────────────────
@@ -591,28 +1144,31 @@ def mark_attendance(
 ) -> str:
     """
     Mark attendance, check-in, or check-out for the logged-in employee.
-
-    Args:
-        work_location: REQUIRED. Location e.g. "Office", "WFH", "Client Location". You must ask the user for this before calling the tool.
-        date: Date in YYYY-MM-DD format (defaults to today if empty)
-        action: Either "check_in", "check_out", or "mark_present"
-        client_name: Optional client name if working on a client project
-        project_name: Optional project name if working on a specific project
-        remarks: Optional remarks or notes
     """
+    t0 = time.time()
+    if not work_location or not work_location.strip():
+        return format_tool_response(
+            success=False,
+            message="Work location is required to mark attendance.",
+            tool_name="mark_attendance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="VALIDATION_ERROR",
+        )
+
     if not date:
-        date = datetime.now().strftime("%Y-%m-%d")
+        date_iso = datetime.now().strftime("%Y-%m-%d")
     else:
         d_str = _to_backend_date(date)
         try:
-            date = datetime.strptime(d_str, "%d-%m-%Y").strftime("%Y-%m-%d")
+            date_iso = datetime.strptime(d_str, "%d-%m-%Y").strftime("%Y-%m-%d")
         except Exception:
-            pass
+            date_iso = date
 
     now_time = datetime.now().strftime("%H:%M")
-    
+    emp_id = _current_employee_id.get()
+
     payload = {
-        "date": date,
+        "date": date_iso,
         "workLocation": work_location,
         "loginWorkLocation": work_location,
         "remarks": remarks,
@@ -629,118 +1185,36 @@ def mark_attendance(
     elif action == "check_out":
         payload["logoutTime"] = now_time
 
-    url = f"{_base()}/api/daily-entry/submit/{_current_employee_id.get()}"
+    url = f"{_base()}/api/daily-entry/submit/{emp_id}"
     try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.post(url, json=payload, headers=_auth_headers())
+        resp = _httpx_request("POST", url, json_data=payload, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 201):
             action_desc = "Check-in" if action == "check_in" else ("Check-out" if action == "check_out" else "Attendance")
-            return (
-                f"✅ {action_desc} marked successfully for {_current_employee_id.get()}!\n"
-                f"Date          : {date}\n"
-                f"Time          : {now_time}\n"
-                f"Work Location : {work_location}\n"
-                f"Status        : Present"
+            return format_tool_response(
+                success=True,
+                message=f"{action_desc} marked successfully for employee {emp_id}.",
+                data=payload,
+                tool_name="mark_attendance",
+                exec_time_ms=exec_time,
             )
-        return _fmt_error(resp, "Mark attendance")
+        return _fmt_error(resp, "Mark attendance", "mark_attendance", exec_time)
     except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="mark_attendance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return f"❌ Unexpected error: {e}"
-
-
-
-# ─── 5. Approve/Reject Leave (Manager/Admin) ──────────────────────────────────
-@tool
-def action_leave(leave_id_or_ref: str, action: str, role: str = "Manager", remarks: str = "") -> str:
-    """
-    Approve or Reject a leave request. (For Managers, HR, or Admins).
-    You can provide either the numeric ID or the string Reference ID (e.g., 'SCA-LV-2026-000045').
-
-    Args:
-        leave_id_or_ref: Numeric ID or Reference ID of the leave request.
-        action: "Approve" or "Reject"
-        role: Your role, e.g. "Manager" or "HR". Defaults to "Manager".
-        remarks: Optional comments explaining the decision.
-    """
-    leave_id = str(leave_id_or_ref).strip()
-    
-    # If the provided ID is not strictly numeric, we must look up the numeric ID
-    if not leave_id.isdigit():
-        manager_url = f"{_base()}/api/leaves/manager/{_current_employee_id.get()}"
-        try:
-            with httpx.Client(timeout=15) as client:
-                resp = client.get(manager_url, headers=_auth_headers())
-            if resp.status_code == 200:
-                manager_data = resp.json()
-                found_id = None
-                for req in manager_data:
-                    if req.get("referenceId") == leave_id or str(req.get("id")) == leave_id:
-                        found_id = req.get("id")
-                        break
-                if not found_id:
-                    return f"❌ Could not find a leave request matching reference '{leave_id}' for your approval."
-                leave_id = str(found_id)
-            else:
-                return f"❌ Could not look up leave reference '{leave_id}' (HTTP {resp.status_code})."
-        except Exception as e:
-            return f"❌ Error looking up leave reference: {e}"
-
-    url = f"{_base()}/api/leaves/action"
-    payload = {
-        "leaveRequestId": int(leave_id),
-        "approverId": _current_employee_id.get(),
-        "role": role,
-        "action": action,
-        "remarks": remarks
-    }
-    
-    try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.post(url, json=payload, headers=_json_headers())
-        if resp.status_code in (200, 201):
-            data = resp.json()
-            return (
-                f"✅ Leave {leave_id_or_ref} {action}d successfully.\n"
-                f"Status: {data.get('status', 'Unknown')}"
-            )
-        return _fmt_error(resp, f"{action} leave {leave_id_or_ref}")
-    except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
-    except Exception as e:
-        return f"❌ Unexpected error: {e}"
-
-
-@tool
-def get_pending_approvals() -> str:
-    """
-    Get the list of leave requests waiting for your approval as a Manager.
-    Use this to find reference IDs or numeric IDs for leaves you need to approve.
-    """
-    url = f"{_base()}/api/leaves/manager/{_current_employee_id.get()}"
-    try:
-        with httpx.Client(timeout=15) as client:
-            resp = client.get(url, headers=_auth_headers())
-        if resp.status_code == 200:
-            data = resp.json()
-            if not data:
-                return "No pending leave requests for your approval."
-            
-            # Match backend task-counts logic: starts with pending or is sent back
-            pending = []
-            for req in data:
-                status = req.get("status", "").upper()
-                if status.startswith("PENDING") or status == "SENT BACK FOR REVISION":
-                    pending.append(req)
-                    
-            if not pending:
-                return "You have no PENDING leave requests for approval."
-            return str(pending[:15])
-        return _fmt_error(resp, "Get pending approvals")
-    except httpx.ConnectError:
-        return "❌ Cannot connect to Xevyte backend."
-    except Exception as e:
-        return f"❌ Unexpected error: {e}"
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="mark_attendance",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── Tool registry ────────────────────────────────────────────────────────────
