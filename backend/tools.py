@@ -67,7 +67,7 @@ class MarkAttendanceInput(BaseModel):
     action: str = Field(default="check_in", description="check_in, check_out, or mark_present")
     client_name: str = Field(default="", description="Optional client name")
     project_name: str = Field(default="", description="Optional project name")
-    remarks: str = Field(default="Marked via Xeva Agent", description="Remarks")
+    remarks: str = Field(default="", description="Remarks")
 
 
 class SubmitTicketInput(BaseModel):
@@ -1177,7 +1177,7 @@ def mark_attendance(
     action: str = "check_in",
     client_name: str = "",
     project_name: str = "",
-    remarks: str = "Marked via Xeva Agent",
+    remarks: str = "",
 ) -> str:
     """
     Mark attendance, check-in, or check-out for the logged-in employee.
