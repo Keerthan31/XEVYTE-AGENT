@@ -18,6 +18,7 @@ import threading
 from contextvars import ContextVar
 from datetime import datetime, date, timedelta
 from langchain_core.tools import tool
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, retry_if_result
 from config import XEVYTE_API_BASE, CACHE_TTL_SECONDS, MAX_HTTP_RETRIES, HTTP_TIMEOUT_SECONDS
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,36 @@ _cache = _TTLCache(ttl_seconds=CACHE_TTL_SECONDS)
 
 
 # ─── HTTP Connection & Retry Wrapper ──────────────────────────────────────────
+def _is_server_error(resp: httpx.Response | BaseException) -> bool:
+    if isinstance(resp, httpx.Response):
+        return resp.status_code >= 500
+    return False
+
+@retry(
+    stop=stop_after_attempt(MAX_HTTP_RETRIES),
+    wait=wait_exponential(multiplier=0.5, min=1, max=10),
+    retry=(
+        retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError)) |
+        retry_if_result(_is_server_error)
+    ),
+    reraise=True,
+)
+def _httpx_request_tenacity(
+    method: str,
+    url: str,
+    headers: dict | None = None,
+    params: dict | None = None,
+    json_data: dict | None = None,
+    files: dict | None = None,
+    timeout: float = HTTP_TIMEOUT_SECONDS,
+) -> httpx.Response:
+    """Execute HTTP request with Tenacity exponential backoff for 5xx/network errors."""
+    with httpx.Client(timeout=timeout) as client:
+        resp = client.request(
+            method, url, headers=headers, params=params, json=json_data, files=files
+        )
+        return resp
+
 def _httpx_request(
     method: str,
     url: str,
@@ -157,34 +188,12 @@ def _httpx_request(
     json_data: dict | None = None,
     files: dict | None = None,
     timeout: float = HTTP_TIMEOUT_SECONDS,
-    max_retries: int = MAX_HTTP_RETRIES,
 ) -> httpx.Response:
-    """Execute HTTP request with automatic retries & exponential backoff for 5xx/network errors."""
-    last_exc = None
-    for attempt in range(1, max_retries + 1):
-        try:
-            with httpx.Client(timeout=timeout) as client:
-                resp = client.request(
-                    method, url, headers=headers, params=params, json=json_data, files=files
-                )
-            if resp.status_code >= 500 and attempt < max_retries:
-                logger.warning(
-                    f"HTTP {resp.status_code} on {method} {url} (attempt {attempt}/{max_retries}). Retrying..."
-                )
-                time.sleep(0.5 * (2 ** (attempt - 1)))
-                continue
-            return resp
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
-            last_exc = e
-            if attempt < max_retries:
-                logger.warning(
-                    f"Network error {e} on {method} {url} (attempt {attempt}/{max_retries}). Retrying..."
-                )
-                time.sleep(0.5 * (2 ** (attempt - 1)))
-            else:
-                raise e
-    if last_exc:
-        raise last_exc
+    try:
+        return _httpx_request_tenacity(method, url, headers, params, json_data, files, timeout)
+    except Exception as e:
+        logger.warning(f"HTTP request failed after retries: {e}")
+        raise e
 
 
 # ─── Date & Validation Helpers ────────────────────────────────────────────────
@@ -326,7 +335,7 @@ def get_leave_history() -> str:
             return format_tool_response(
                 success=True,
                 message=f"Leave history retrieved ({len(data)} records found).",
-                data=data[:20] if data else [],
+                data=data[::-1][:20] if data else [],
                 tool_name="get_leave_history",
                 exec_time_ms=exec_time,
             )
@@ -350,7 +359,7 @@ def get_leave_history() -> str:
 
 
 # ─── 3. Apply for leave ───────────────────────────────────────────────────────
-@tool
+@tool(args_schema=ApplyLeaveInput)
 def apply_leave(
     leave_type: str,
     start_date: str,
@@ -530,7 +539,7 @@ def cancel_leave(leave_id_or_ref: str) -> str:
 
 
 # ─── 5. Approve/Reject Leave (Manager/Admin) ──────────────────────────────────
-@tool
+@tool(args_schema=ActionLeaveInput)
 def action_leave(leave_id_or_ref: str, action: str, role: str = "Manager", remarks: str = "") -> str:
     """
     Approve or Reject a leave request. (For Managers, HR, or Admins).
@@ -632,7 +641,7 @@ def get_pending_approvals() -> str:
             return format_tool_response(
                 success=True,
                 message=f"Retrieved {len(pending)} pending leave requests for approval.",
-                data=pending[:15],
+                data=pending[::-1][:15],
                 tool_name="get_pending_approvals",
                 exec_time_ms=exec_time,
             )
@@ -722,7 +731,7 @@ def raise_grievance(
 
 
 # ─── 7. Submit helpdesk ticket ────────────────────────────────────────────────
-@tool
+@tool(args_schema=SubmitTicketInput)
 def submit_ticket(
     category: str,
     subcategory: str,
@@ -801,7 +810,7 @@ def get_my_tickets() -> str:
             return format_tool_response(
                 success=True,
                 message=f"Retrieved {len(data) if data else 0} tickets.",
-                data=data[:15] if data else [],
+                data=data[::-1][:15] if data else [],
                 tool_name="get_my_tickets",
                 exec_time_ms=exec_time,
             )
@@ -842,7 +851,7 @@ def get_notifications() -> str:
             return format_tool_response(
                 success=True,
                 message=f"Retrieved {len(data) if data else 0} notifications ({unread_count} unread).",
-                data=data[:10] if data else [],
+                data=data[::-1][:15] if data else [],
                 tool_name="get_notifications",
                 exec_time_ms=exec_time,
             )
@@ -1170,7 +1179,7 @@ def get_approved_leave_dates() -> str:
 
 
 # ─── 16. Mark attendance ───────────────────────────────────────────────────────
-@tool
+@tool(args_schema=MarkAttendanceInput)
 def mark_attendance(
     work_location: str,
     date: str = "",
