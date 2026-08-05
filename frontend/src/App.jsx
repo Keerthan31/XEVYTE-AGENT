@@ -5,6 +5,8 @@ import MessageBubble from './components/MessageBubble.jsx'
 import TypingIndicator from './components/TypingIndicator.jsx'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import ThoughtProcess from './components/ThoughtProcess.jsx'
+import { getThoughtText } from './utils/formatters.js'
 import { 
   streamMessage, 
   fetchSessionsDB, 
@@ -57,7 +59,7 @@ export default function App() {
 
   const [input, setInput] = useState('')
   const [loadingMap, setLoadingMap] = useState({})
-  const [toolStatusMap, setToolStatusMap] = useState({})
+  const [thoughtsMap, setThoughtsMap] = useState({})
   const loading = loadingMap[activeSessionId] || false
   const [error, setError] = useState('')
   const [imgError, setImgError] = useState(false)
@@ -259,13 +261,19 @@ export default function App() {
           const startMatches = [...fullReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
           const endMatches = [...fullReply.matchAll(/__TOOL_END__/g)]
           
-          if (startMatches.length > endMatches.length) {
-            currentTool = startMatches[startMatches.length - 1][1] || 'tool'
+          let thoughts = []
+          for (let i = 0; i < startMatches.length; i++) {
+            const toolName = startMatches[i][1] || 'tool'
+            const isDone = i < endMatches.length
+            thoughts.push({
+              text: getThoughtText(toolName),
+              status: isDone ? 'done' : 'loading'
+            })
           }
           
           displayReply = displayReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
           
-          setToolStatusMap(prev => ({ ...prev, [currentId]: currentTool }))
+          setThoughtsMap(prev => ({ ...prev, [currentId]: thoughts }))
 
           setSessions(prev => prev.map(s => {
             if (s.id === currentId) {
@@ -282,7 +290,15 @@ export default function App() {
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
           const cleanReply = fullReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
-          setToolStatusMap(prevStatus => ({ ...prevStatus, [currentId]: null }))
+          
+          // Mark all thoughts as done when the final response is received
+          setThoughtsMap(prevStatus => {
+            const currentThoughts = prevStatus[currentId] || []
+            return {
+              ...prevStatus,
+              [currentId]: currentThoughts.map(t => ({ ...t, status: 'done' }))
+            }
+          })
           
           const newMsgs = [...s.messages]
           newMsgs[newMsgs.length - 1] = { role: 'assistant', content: cleanReply, ts: Date.now() }
@@ -467,14 +483,16 @@ export default function App() {
 
             {/* Render Chat Messages */}
             {messages.map((m, i) => (
-              <MessageBubble key={i} role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
+              <React.Fragment key={i}>
+                <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
+                
+                {/* If this is the active loading message, render the thoughts below it */}
+                {i === messages.length - 1 && loading && thoughtsMap[activeSessionId] && (
+                  <ThoughtProcess thoughts={thoughtsMap[activeSessionId]} />
+                )}
+              </React.Fragment>
             ))}
 
-            {toolStatusMap[activeSessionId] && (
-              <div className="flex items-center gap-2 text-sm text-teal-600 font-medium px-4 py-2 animate-pulse">
-                <span className="text-lg">⚙️</span> Executing: {toolStatusMap[activeSessionId].replace(/_/g, ' ')}...
-              </div>
-            )}
             <div ref={bottomRef} />
           </div>
         </main>
