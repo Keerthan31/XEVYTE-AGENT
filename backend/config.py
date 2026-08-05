@@ -5,9 +5,8 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path, override=True)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 XEVYTE_API_BASE = os.getenv("XEVYTE_API_BASE", "http://localhost:8080")
 
@@ -23,10 +22,8 @@ LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT", "Xevyte-HRMS-Agent")
 
 # ─── Multi-Model Failover Array ───────────────────────────────────────────────
 FALLBACK_MODELS = [
-    OPENROUTER_MODEL,
-    "deepseek/deepseek-chat",
-    "qwen/qwen-2.5-72b-instruct",
-    "meta-llama/llama-3.1-70b-instruct:free"
+    OPENAI_MODEL,
+    "gpt-3.5-turbo"
 ]
 
 
