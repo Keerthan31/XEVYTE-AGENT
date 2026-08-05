@@ -104,6 +104,12 @@ class UpdateBankDetailsInput(BaseModel):
     esi_dispensary: str = Field(default="", description="ESI Dispensary / Clinic Name")
 
 
+class AddNomineeInput(BaseModel):
+    nominee_name: str = Field(..., description="Full name of the nominee")
+    relationship: str = Field(..., description="Relationship to the employee (e.g. Spouse, Father, Mother)")
+    date_of_birth: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Date of birth in YYYY-MM-DD format")
+
+
 # ─── Structured Response Envelope ─────────────────────────────────────────────
 def format_tool_response(
     success: bool,
@@ -1379,6 +1385,58 @@ def update_bank_details(bank_name: str, account_number: str, ifsc_code: str, uan
         return format_tool_response(False, str(e), tool_name="update_bank_details", error_code="INTERNAL_ERROR")
 
 
+# ─── 22. Get Nominees ───────────────────────────────────────────────────────────
+@tool
+def get_my_nominees() -> str:
+    """
+    Get the list of insurance nominees for the logged-in employee.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    cache_key = f"get_my_nominees:{emp_id}"
+    cached_val = _cache.get(cache_key)
+    if cached_val:
+        return cached_val
+
+    url = f"{_base()}/api/employees/{emp_id}/insurance-nominees"
+    try:
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code == 200:
+            data = resp.json()
+            res_json = format_tool_response(True, f"Retrieved {len(data) if data else 0} nominees.", data=data, tool_name="get_my_nominees", exec_time_ms=exec_time)
+            _cache.set(cache_key, res_json)
+            return res_json
+        return _fmt_error(resp, "Get nominees", "get_my_nominees", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="get_my_nominees", error_code="INTERNAL_ERROR")
+
+
+# ─── 23. Add Nominee ────────────────────────────────────────────────────────────
+@tool(args_schema=AddNomineeInput)
+def add_nominee(nominee_name: str, relationship: str, date_of_birth: str) -> str:
+    """
+    Add a new insurance nominee for the logged-in employee.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/employees/{emp_id}/insurance-nominees"
+    payload = {
+        "nomineeName": nominee_name,
+        "relationship": relationship,
+        "dateOfBirth": date_of_birth
+    }
+    try:
+        resp = _httpx_request("POST", url, json_data=payload, headers=_json_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code in (200, 201):
+            _cache.invalidate(f"get_my_nominees:{emp_id}")
+            return format_tool_response(True, f"Successfully added nominee: {nominee_name}.", data=payload, tool_name="add_nominee", exec_time_ms=exec_time)
+        return _fmt_error(resp, "Add nominee", "add_nominee", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="add_nominee", error_code="INTERNAL_ERROR")
+
+
 # ─── Tool registry ────────────────────────────────────────────────────────────
 ALL_TOOLS = [
     get_leave_balance,
@@ -1402,4 +1460,6 @@ ALL_TOOLS = [
     get_my_allocations,
     update_personal_details,
     update_bank_details,
+    get_my_nominees,
+    add_nominee,
 ]
