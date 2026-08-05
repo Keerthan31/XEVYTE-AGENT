@@ -98,6 +98,10 @@ class UpdateBankDetailsInput(BaseModel):
     bank_name: str = Field(..., description="Name of the bank")
     account_number: str = Field(..., description="Bank account number")
     ifsc_code: str = Field(..., description="Bank IFSC code")
+    uan_number: str = Field(default="", description="UAN Number (12 digits)")
+    pf_member_id: str = Field(default="", description="PF Member ID")
+    esi_number: str = Field(default="", description="ESI Number")
+    esi_dispensary: str = Field(default="", description="ESI Dispensary / Clinic Name")
 
 
 # ─── Structured Response Envelope ─────────────────────────────────────────────
@@ -1348,24 +1352,28 @@ def update_personal_details(phone_number: str, emergency_contact: str, current_a
 
 # ─── 21. Update Bank Details ──────────────────────────────────────────────────
 @tool(args_schema=UpdateBankDetailsInput)
-def update_bank_details(bank_name: str, account_number: str, ifsc_code: str) -> str:
+def update_bank_details(bank_name: str, account_number: str, ifsc_code: str, uan_number: str = "", pf_member_id: str = "", esi_number: str = "", esi_dispensary: str = "") -> str:
     """
-    Update the bank details (bank name, account number, IFSC code) of the logged-in employee.
+    Update the bank and statutory details (bank name, account number, IFSC code, UAN, PF, ESI) of the logged-in employee.
     """
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/employees/{emp_id}/bank-details"
     payload = {
         "bankName": bank_name,
-        "accountNumber": account_number,
-        "ifscCode": ifsc_code
+        "bankAccountNumber": account_number,  # Updated to match entity field bankAccountNumber
+        "bankIfscCode": ifsc_code,            # Updated to match entity field bankIfscCode
+        "uanNumber": uan_number,
+        "pfMemberId": pf_member_id,
+        "esiNumber": esi_number,
+        "esiDispensary": esi_dispensary
     }
     try:
         resp = _httpx_request("PUT", url, json_data=payload, headers=_json_headers())
         exec_time = (time.time() - t0) * 1000
         if resp.status_code in (200, 204):
             _cache.invalidate(f"get_my_profile:{emp_id}")
-            return format_tool_response(True, "Bank details updated successfully.", data=payload, tool_name="update_bank_details", exec_time_ms=exec_time)
+            return format_tool_response(True, "Bank & Statutory details updated successfully.", data=payload, tool_name="update_bank_details", exec_time_ms=exec_time)
         return _fmt_error(resp, "Update bank details", "update_bank_details", exec_time)
     except Exception as e:
         return format_tool_response(False, str(e), tool_name="update_bank_details", error_code="INTERNAL_ERROR")
