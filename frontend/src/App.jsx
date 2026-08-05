@@ -233,6 +233,7 @@ export default function App() {
     }))
 
     setLoadingMap(prev => ({ ...prev, [currentId]: true }))
+    setThoughtsMap(prev => ({ ...prev, [currentId]: [] }))
 
     try {
       // Append initial assistant placeholder
@@ -484,12 +485,12 @@ export default function App() {
             {/* Render Chat Messages */}
             {messages.map((m, i) => (
               <React.Fragment key={i}>
-                <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
-                
-                {/* If this is the active loading message, render the thoughts below it */}
-                {i === messages.length - 1 && loading && thoughtsMap[activeSessionId] && (
+                {/* If this is the active loading message, render the thoughts above it */}
+                {i === messages.length - 1 && thoughtsMap[activeSessionId] && thoughtsMap[activeSessionId].length > 0 && (
                   <ThoughtProcess thoughts={thoughtsMap[activeSessionId]} />
                 )}
+                
+                <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
               </React.Fragment>
             ))}
 
