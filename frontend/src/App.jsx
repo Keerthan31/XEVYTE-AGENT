@@ -23,16 +23,16 @@ const WELCOME = {
   content:
     "Hi! I'm **Xeva**, your Xevyte HRMS assistant.\n\n" +
     'I can help you with leave management, raising grievances, helpdesk tickets, ' +
-    'attendance, and more — all through natural conversation.',
+    'attendance, and profile updates — all through natural conversation.',
 }
 
-const ACTION_TILES = [
-  { icon: Calendar, label: 'Leave Balance', prompt: 'Show me my current leave balance', color: 'text-teal-600 bg-teal-50' },
-  { icon: Calendar, label: 'Apply Leave', prompt: 'I want to apply for leave', color: 'text-cyan-600 bg-cyan-50' },
-  { icon: Ticket, label: 'Raise IT Ticket', prompt: 'I want to raise an IT helpdesk ticket', color: 'text-blue-600 bg-blue-50' },
-  { icon: User, label: 'My Profile', prompt: 'Show me my employee profile', color: 'text-indigo-600 bg-indigo-50' },
-  { icon: Bell, label: 'Notifications', prompt: 'Do I have any new notifications?', color: 'text-amber-600 bg-amber-50' },
-]
+function getEmployeeDisplayName(empId) {
+  if (!empId) return 'Employee'
+  if (empId.toLowerCase().includes('koushik')) return 'Koushik Viswanadha'
+  if (empId.toLowerCase() === 'scaloz_admin' || empId.toLowerCase() === 'admin') return 'Koushik Viswanadha'
+  const clean = empId.replace(/\d+$/g, '').replace(/[._-]/g, ' ').trim()
+  return clean.charAt(0).toUpperCase() + clean.slice(1)
+}
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -437,7 +437,7 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-teal-500/20 bg-teal-500/10 text-teal-800 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-              <span>{employeeId}</span>
+              <span>{getEmployeeDisplayName(employeeId)}</span>
             </div>
 
             <button
@@ -496,10 +496,10 @@ export default function App() {
                       </p>
                       <h1 className="text-3xl font-bold text-slate-900 mb-3">
                         Good {getGreeting()},{' '}
-                        <span className="text-teal-600">{employeeId}</span> 👋
+                        <span className="text-teal-600">{getEmployeeDisplayName(employeeId)}</span> 👋
                       </h1>
                       <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">
-                        Ask me anything about your leave balance, attendance, grievances, or HR policies.
+                        Ask me anything about your leave balance, attendance, grievances, or profile updates.
                         I can perform tasks directly on your behalf.
                       </p>
                     </div>

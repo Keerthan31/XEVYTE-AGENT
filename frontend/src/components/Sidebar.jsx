@@ -15,6 +15,14 @@ import {
   X
 } from 'lucide-react'
 
+function getEmployeeDisplayName(empId) {
+  if (!empId) return 'User'
+  if (empId.toLowerCase().includes('koushik')) return 'Koushik Viswanadha'
+  if (empId.toLowerCase() === 'scaloz_admin' || empId.toLowerCase() === 'admin') return 'Koushik Viswanadha'
+  const clean = empId.replace(/\d+$/g, '').replace(/[._-]/g, ' ').trim()
+  return clean.charAt(0).toUpperCase() + clean.slice(1)
+}
+
 export default function Sidebar({
   sessions = [],
   activeSessionId,
@@ -157,10 +165,10 @@ export default function Sidebar({
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-7 h-7 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-bold text-xs flex items-center justify-center shrink-0">
-              {employeeId ? employeeId[0].toUpperCase() : 'U'}
+              {getEmployeeDisplayName(employeeId)[0]}
             </div>
             <span className="text-xs font-semibold text-white truncate">
-              {employeeId || 'User'}
+              {getEmployeeDisplayName(employeeId)}
             </span>
           </div>
 
