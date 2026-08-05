@@ -86,6 +86,18 @@ class ActionLeaveInput(BaseModel):
     remarks: str = Field(default="", description="Optional remarks")
 
 
+class UpdatePersonalDetailsInput(BaseModel):
+    phone_number: str = Field(..., description="Phone number")
+    emergency_contact: str = Field(..., description="Emergency contact number")
+    current_address: str = Field(..., description="Current Address")
+    permanent_address: str = Field(..., description="Permanent Address")
+
+
+class UpdateBankDetailsInput(BaseModel):
+    bank_name: str = Field(..., description="Name of the bank")
+    account_number: str = Field(..., description="Bank account number")
+    ifsc_code: str = Field(..., description="Bank IFSC code")
+
 
 # ─── Structured Response Envelope ─────────────────────────────────────────────
 def format_tool_response(
@@ -1263,6 +1275,91 @@ def mark_attendance(
         )
 
 
+
+# ─── 19. Get Allocations ──────────────────────────────────────────────────────
+@tool
+def get_my_allocations() -> str:
+    """
+    Get the project allocations for the logged-in employee.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    cache_key = f"get_my_allocations:{emp_id}"
+    cached_val = _cache.get(cache_key)
+    if cached_val:
+        return cached_val
+
+    url = f"{_base()}/api/allocations/employee/{emp_id}"
+    try:
+        resp = _httpx_request("GET", url, headers=_auth_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code == 200:
+            data = resp.json()
+            res_json = format_tool_response(
+                success=True,
+                message=f"Retrieved {len(data) if data else 0} allocations.",
+                data=data,
+                tool_name="get_my_allocations",
+                exec_time_ms=exec_time,
+            )
+            _cache.set(cache_key, res_json)
+            return res_json
+        return _fmt_error(resp, "Get allocations", "get_my_allocations", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="get_my_allocations", error_code="INTERNAL_ERROR")
+
+
+# ─── 20. Update Personal Details ──────────────────────────────────────────────
+@tool(args_schema=UpdatePersonalDetailsInput)
+def update_personal_details(phone_number: str, emergency_contact: str, current_address: str, permanent_address: str) -> str:
+    """
+    Update the personal details (phone, emergency contact, address) of the logged-in employee.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/employees/{emp_id}/personal-details"
+    payload = {
+        "phoneNumber": phone_number,
+        "emergencyContact": emergency_contact,
+        "currentAddress": current_address,
+        "permanentAddress": permanent_address
+    }
+    try:
+        resp = _httpx_request("PUT", url, json_data=payload, headers=_json_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code in (200, 204):
+            _cache.invalidate(f"get_my_profile:{emp_id}")
+            return format_tool_response(True, "Personal details updated successfully.", data=payload, tool_name="update_personal_details", exec_time_ms=exec_time)
+        return _fmt_error(resp, "Update personal details", "update_personal_details", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="update_personal_details", error_code="INTERNAL_ERROR")
+
+
+# ─── 21. Update Bank Details ──────────────────────────────────────────────────
+@tool(args_schema=UpdateBankDetailsInput)
+def update_bank_details(bank_name: str, account_number: str, ifsc_code: str) -> str:
+    """
+    Update the bank details (bank name, account number, IFSC code) of the logged-in employee.
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/employees/{emp_id}/bank-details"
+    payload = {
+        "bankName": bank_name,
+        "accountNumber": account_number,
+        "ifscCode": ifsc_code
+    }
+    try:
+        resp = _httpx_request("PUT", url, json_data=payload, headers=_json_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code in (200, 204):
+            _cache.invalidate(f"get_my_profile:{emp_id}")
+            return format_tool_response(True, "Bank details updated successfully.", data=payload, tool_name="update_bank_details", exec_time_ms=exec_time)
+        return _fmt_error(resp, "Update bank details", "update_bank_details", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="update_bank_details", error_code="INTERNAL_ERROR")
+
+
 # ─── Tool registry ────────────────────────────────────────────────────────────
 ALL_TOOLS = [
     get_leave_balance,
@@ -1283,4 +1380,7 @@ ALL_TOOLS = [
     get_holidays,
     get_approved_leave_dates,
     mark_attendance,
+    get_my_allocations,
+    update_personal_details,
+    update_bank_details,
 ]
