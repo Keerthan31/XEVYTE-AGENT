@@ -110,6 +110,12 @@ class AddNomineeInput(BaseModel):
     date_of_birth: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Date of birth in YYYY-MM-DD format")
 
 
+class UpdateEmployeeBioInput(BaseModel):
+    about: str = Field(default="", description="About the employee (Tell us about yourself...)")
+    what_i_love_about_my_job: str = Field(default="", description="What the employee loves about their job")
+    interests_and_hobbies: str = Field(default="", description="Employee's interests and hobbies")
+
+
 # ─── Structured Response Envelope ─────────────────────────────────────────────
 def format_tool_response(
     success: bool,
@@ -1437,6 +1443,31 @@ def add_nominee(nominee_name: str, relationship: str, date_of_birth: str) -> str
         return format_tool_response(False, str(e), tool_name="add_nominee", error_code="INTERNAL_ERROR")
 
 
+# ─── 24. Update Employee Bio ──────────────────────────────────────────────────────
+@tool(args_schema=UpdateEmployeeBioInput)
+def update_employee_bio(about: str = "", what_i_love_about_my_job: str = "", interests_and_hobbies: str = "") -> str:
+    """
+    Update the employee's biography (About, What I love about my job, Interests and hobbies).
+    """
+    t0 = time.time()
+    emp_id = _current_employee_id.get()
+    url = f"{_base()}/api/employees/{emp_id}/personal-details"
+    payload = {
+        "about": about,
+        "whatILoveAboutMyJob": what_i_love_about_my_job,
+        "interestsAndHobbies": interests_and_hobbies
+    }
+    try:
+        resp = _httpx_request("PUT", url, json_data=payload, headers=_json_headers())
+        exec_time = (time.time() - t0) * 1000
+        if resp.status_code in (200, 204):
+            _cache.invalidate(f"get_my_profile:{emp_id}")
+            return format_tool_response(True, "Employee bio updated successfully.", data=payload, tool_name="update_employee_bio", exec_time_ms=exec_time)
+        return _fmt_error(resp, "Update bio", "update_employee_bio", exec_time)
+    except Exception as e:
+        return format_tool_response(False, str(e), tool_name="update_employee_bio", error_code="INTERNAL_ERROR")
+
+
 # ─── Tool registry ────────────────────────────────────────────────────────────
 ALL_TOOLS = [
     get_leave_balance,
@@ -1462,4 +1493,5 @@ ALL_TOOLS = [
     update_bank_details,
     get_my_nominees,
     add_nominee,
+    update_employee_bio,
 ]
