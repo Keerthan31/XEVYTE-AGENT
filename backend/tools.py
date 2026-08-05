@@ -91,6 +91,7 @@ class UpdatePersonalDetailsInput(BaseModel):
     emergency_contact: str = Field(..., description="Emergency contact number")
     current_address: str = Field(..., description="Current Address")
     permanent_address: str = Field(..., description="Permanent Address")
+    personal_mail: str = Field(default="", description="Personal Email Address")
 
 
 class UpdateBankDetailsInput(BaseModel):
@@ -1311,19 +1312,29 @@ def get_my_allocations() -> str:
 
 # ─── 20. Update Personal Details ──────────────────────────────────────────────
 @tool(args_schema=UpdatePersonalDetailsInput)
-def update_personal_details(phone_number: str, emergency_contact: str, current_address: str, permanent_address: str) -> str:
+def update_personal_details(phone_number: str, emergency_contact: str, current_address: str, permanent_address: str, personal_mail: str = "") -> str:
     """
     Update the personal details (phone, emergency contact, address) of the logged-in employee.
     """
     t0 = time.time()
     emp_id = _current_employee_id.get()
-    url = f"{_base()}/api/employees/{emp_id}/personal-details"
+    
+    # In the Xevyte Spring Boot backend, these fields live on the main Employee entity, 
+    # not the EmployeePersonalDetails table.
+    url = f"{_base()}/api/employees/{emp_id}"
+    
     payload = {
-        "phoneNumber": phone_number,
-        "emergencyContact": emergency_contact,
-        "currentAddress": current_address,
-        "permanentAddress": permanent_address
+        "contactNo": phone_number,
+        "emergencyContactNumber": emergency_contact,
+        "presentAddress": current_address,
+        "address": permanent_address,
+        "personalMail": personal_mail
     }
+    
+    # We remove empty fields from payload to avoid nullifying existing data, 
+    # but since this is a PUT we probably just send what we want to update.
+    # Actually, EmployeeController.updateEmployeeProfile does a partial update check.
+    
     try:
         resp = _httpx_request("PUT", url, json_data=payload, headers=_json_headers())
         exec_time = (time.time() - t0) * 1000
