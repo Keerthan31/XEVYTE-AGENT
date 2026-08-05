@@ -1322,8 +1322,22 @@ def get_my_allocations() -> str:
             _cache.set(cache_key, res_json)
             return res_json
         return _fmt_error(resp, "Get allocations", "get_my_allocations", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_my_allocations",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="get_my_allocations", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_my_allocations",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 20. Update Personal Details ──────────────────────────────────────────────
@@ -1358,8 +1372,22 @@ def update_personal_details(phone_number: str, emergency_contact: str, current_a
             _cache.invalidate(f"get_my_profile:{emp_id}")
             return format_tool_response(True, "Personal details updated successfully.", data=payload, tool_name="update_personal_details", exec_time_ms=exec_time)
         return _fmt_error(resp, "Update personal details", "update_personal_details", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="update_personal_details",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="update_personal_details", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="update_personal_details",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 21. Update Bank Details ──────────────────────────────────────────────────
@@ -1387,8 +1415,22 @@ def update_bank_details(bank_name: str, account_number: str, ifsc_code: str, uan
             _cache.invalidate(f"get_my_profile:{emp_id}")
             return format_tool_response(True, "Bank & Statutory details updated successfully.", data=payload, tool_name="update_bank_details", exec_time_ms=exec_time)
         return _fmt_error(resp, "Update bank details", "update_bank_details", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="update_bank_details",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="update_bank_details", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="update_bank_details",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 22. Get Nominees ───────────────────────────────────────────────────────────
@@ -1414,8 +1456,22 @@ def get_my_nominees() -> str:
             _cache.set(cache_key, res_json)
             return res_json
         return _fmt_error(resp, "Get nominees", "get_my_nominees", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="get_my_nominees",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="get_my_nominees", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="get_my_nominees",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 23. Add Nominee ────────────────────────────────────────────────────────────
@@ -1439,8 +1495,22 @@ def add_nominee(nominee_name: str, relationship: str, date_of_birth: str) -> str
             _cache.invalidate(f"get_my_nominees:{emp_id}")
             return format_tool_response(True, f"Successfully added nominee: {nominee_name}.", data=payload, tool_name="add_nominee", exec_time_ms=exec_time)
         return _fmt_error(resp, "Add nominee", "add_nominee", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="add_nominee",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="add_nominee", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="add_nominee",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── 24. Update Employee Bio ──────────────────────────────────────────────────────
@@ -1464,8 +1534,22 @@ def update_employee_bio(about: str = "", what_i_love_about_my_job: str = "", int
             _cache.invalidate(f"get_my_profile:{emp_id}")
             return format_tool_response(True, "Employee bio updated successfully.", data=payload, tool_name="update_employee_bio", exec_time_ms=exec_time)
         return _fmt_error(resp, "Update bio", "update_employee_bio", exec_time)
+    except httpx.ConnectError:
+        return format_tool_response(
+            success=False,
+            message="Cannot connect to Xevyte backend.",
+            tool_name="update_employee_bio",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="CONNECT_ERROR",
+        )
     except Exception as e:
-        return format_tool_response(False, str(e), tool_name="update_employee_bio", error_code="INTERNAL_ERROR")
+        return format_tool_response(
+            success=False,
+            message=f"Unexpected error: {str(e)}",
+            tool_name="update_employee_bio",
+            exec_time_ms=(time.time() - t0) * 1000,
+            error_code="INTERNAL_ERROR",
+        )
 
 
 # ─── Tool registry ────────────────────────────────────────────────────────────

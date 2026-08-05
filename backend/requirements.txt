@@ -13,3 +13,4 @@ instructor==1.3.7
 litellm==1.44.0
 langsmith==0.1.99
 deepeval==1.2.0
+tenacity>=8.3.0

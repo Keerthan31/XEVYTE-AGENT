@@ -4,23 +4,41 @@ Xevyte HRMS Agent — FastAPI entrypoint
 
 import os
 import re
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+import uuid
+import json
+import time
+import logging
+import threading
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import logging
-import json
-import db
 
+import db
 from agent import run_agent, stream_agent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+# ─── Lifespan (replaces deprecated @app.on_event) ────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize DB tables gracefully on server startup."""
+    try:
+        db.init_db()
+    except Exception as e:
+        logger.error(f"Startup DB init error: {e}")
+    yield
+
+
 app = FastAPI(
     title="Xevyte HRMS AI Agent",
     description="Conversational AI agent for Xevyte Connect HRMS",
-    version="2.0.0",
+    version="2.5.1",
+    lifespan=lifespan,
 )
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
@@ -45,6 +63,64 @@ _TOOL_MARKER_RE = re.compile(r"__TOOL_START:[\s\S]*?__|__TOOL_END__")
 def _strip_tool_markers(text: str) -> str:
     """Remove internal tool execution markers before saving to DB."""
     return _TOOL_MARKER_RE.sub("", text).strip() if text else text
+
+
+# ─── In-Memory Rate Limiter ───────────────────────────────────────────────────
+RATE_LIMIT_MAX = int(os.getenv("RATE_LIMIT_MAX", "10"))       # max requests
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))  # per N seconds
+
+
+class _RateLimiter:
+    """Thread-safe sliding-window rate limiter keyed by employee_id."""
+
+    def __init__(self, max_requests: int = RATE_LIMIT_MAX, window_seconds: int = RATE_LIMIT_WINDOW):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self._store: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def is_allowed(self, key: str) -> bool:
+        now = time.time()
+        with self._lock:
+            timestamps = self._store.get(key, [])
+            # Remove expired timestamps outside the window
+            timestamps = [t for t in timestamps if now - t < self.window]
+            if len(timestamps) >= self.max_requests:
+                self._store[key] = timestamps
+                return False
+            timestamps.append(now)
+            self._store[key] = timestamps
+            return True
+
+
+_rate_limiter = _RateLimiter()
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global unhandled exception: {exc}", exc_info=True)
+    trace_id = getattr(request.state, "trace_id", "unknown")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred. Please try again later.",
+            "trace_id": trace_id
+        }
+    )
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    logger.warning(f"Validation error: {exc}")
+    trace_id = getattr(request.state, "trace_id", "unknown")
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": "Bad Request",
+            "message": str(exc),
+            "trace_id": trace_id
+        }
+    )
 
 
 # ─── Models ───────────────────────────────────────────────────────────────────
@@ -94,9 +170,6 @@ class DebugRequest(BaseModel):
     params: dict = {}
 
 
-import uuid
-from fastapi import Request
-
 @app.middleware("http")
 async def add_trace_id_middleware(request: Request, call_next):
     trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())
@@ -104,15 +177,6 @@ async def add_trace_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Trace-ID"] = trace_id
     return response
-
-
-@app.on_event("startup")
-def startup_db():
-    """Initialize DB tables gracefully on server startup."""
-    try:
-        db.init_db()
-    except Exception as e:
-        logger.error(f"Startup DB init error: {e}")
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
@@ -126,14 +190,35 @@ def health():
     except Exception:
         db_ok = False
 
-    from config import CACHE_TTL_SECONDS, MAX_HTTP_RETRIES
+    # OpenAI API key check
+    openai_ok = False
+    openai_model = "unknown"
+    try:
+        from config import OPENAI_API_KEY, OPENAI_MODEL, CACHE_TTL_SECONDS, MAX_HTTP_RETRIES
+        openai_model = OPENAI_MODEL
+        if OPENAI_API_KEY and len(OPENAI_API_KEY) > 10:
+            import httpx
+            resp = httpx.get(
+                "https://api.openai.com/v1/models",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                timeout=5.0,
+            )
+            openai_ok = resp.status_code == 200
+    except Exception:
+        pass
+
     return {
         "status": "ok",
-        "version": "2.5.0",
+        "version": "2.6.0",
         "database": "connected" if db_ok else "disconnected",
+        "openai": {
+            "status": "connected" if openai_ok else "disconnected",
+            "model": openai_model,
+        },
         "resilience": {
             "max_http_retries": MAX_HTTP_RETRIES,
             "cache_ttl_seconds": CACHE_TTL_SECONDS,
+            "rate_limit": f"{RATE_LIMIT_MAX} req / {RATE_LIMIT_WINDOW}s per employee",
             "structured_outputs": True,
             "guardrails": True,
         }
@@ -195,6 +280,10 @@ async def chat(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
+    # Rate limiting per employee
+    if not _rate_limiter.is_allowed(req.employee_id):
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Max {RATE_LIMIT_MAX} requests per {RATE_LIMIT_WINDOW} seconds.")
+
     history_dicts = [{"role": m.role, "content": m.content} for m in req.history]
 
     try:
@@ -230,6 +319,10 @@ async def chat_stream(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
+    # Rate limiting per employee
+    if not _rate_limiter.is_allowed(req.employee_id):
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Max {RATE_LIMIT_MAX} requests per {RATE_LIMIT_WINDOW} seconds.")
+
     history_dicts = [{"role": m.role, "content": m.content} for m in req.history]
 
     # Save user message to DB immediately
@@ -262,6 +355,15 @@ async def chat_stream(req: ChatRequest):
 
 @app.post("/debug/tool")
 async def debug_tool(req: DebugRequest):
+    """Debug endpoint — restricted to non-production environments."""
+    # Block in production
+    if os.getenv("ENV", "development").lower() == "production":
+        raise HTTPException(status_code=403, detail="Debug endpoint is disabled in production.")
+
+    # Require a valid token (same as agent endpoints)
+    if not req.token:
+        raise HTTPException(status_code=401, detail="JWT token required for debug endpoint.")
+
     from tools import ALL_TOOLS, set_session
     set_session(req.token, req.employee_id)
 

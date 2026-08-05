@@ -78,53 +78,72 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
+
+        # Performance indexes
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_employee ON xeva_chat_sessions(employee_id);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_session ON xeva_chat_messages(session_id);")
         
         conn.commit()
         cur.close()
         logger.info("Xeva PostgreSQL chat tables initialized successfully.")
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)
 
 def get_employee_sessions(employee_id: str):
-    """Retrieve all chat sessions and their messages for a given employee."""
+    """Retrieve all chat sessions and their messages for a given employee using a single JOIN query."""
     conn = None
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
+        # Single JOIN query eliminates N+1 problem
         cur.execute("""
-            SELECT id, employee_id, title, is_pinned, 
-                   EXTRACT(EPOCH FROM created_at)*1000 AS created_at
-            FROM xeva_chat_sessions
-            WHERE employee_id = %s
-            ORDER BY is_pinned DESC, updated_at DESC;
+            SELECT 
+                s.id AS session_id, s.employee_id, s.title, s.is_pinned,
+                EXTRACT(EPOCH FROM s.created_at)*1000 AS session_created_at,
+                m.role, m.content, EXTRACT(EPOCH FROM m.created_at)*1000 AS ts
+            FROM xeva_chat_sessions s
+            LEFT JOIN xeva_chat_messages m ON m.session_id = s.id
+            WHERE s.employee_id = %s
+            ORDER BY s.is_pinned DESC, s.updated_at DESC, m.id ASC;
         """, (employee_id,))
         
-        sessions = cur.fetchall()
-        
-        for sess in sessions:
-            cur.execute("""
-                SELECT role, content, EXTRACT(EPOCH FROM created_at)*1000 AS ts
-                FROM xeva_chat_messages
-                WHERE session_id = %s
-                ORDER BY id ASC;
-            """, (sess["id"],))
-            
-            sess["messages"] = cur.fetchall()
-            
-            # Reconstruct history format for agent
-            msgs = sess["messages"]
-            sess["history"] = [{"role": m["role"], "content": m["content"]} for m in msgs]
-            sess["isPinned"] = sess["is_pinned"]
-            sess["createdAt"] = sess["created_at"]
-            
+        rows = cur.fetchall()
         cur.close()
-        return sessions
+        
+        # Group rows by session
+        sessions_map = {}
+        session_order = []
+        for row in rows:
+            sid = row["session_id"]
+            if sid not in sessions_map:
+                sessions_map[sid] = {
+                    "id": sid,
+                    "employee_id": row["employee_id"],
+                    "title": row["title"],
+                    "is_pinned": row["is_pinned"],
+                    "isPinned": row["is_pinned"],
+                    "created_at": row["session_created_at"],
+                    "createdAt": row["session_created_at"],
+                    "messages": [],
+                    "history": [],
+                }
+                session_order.append(sid)
+            if row["role"]:
+                msg = {"role": row["role"], "content": row["content"], "ts": row["ts"]}
+                sessions_map[sid]["messages"].append(msg)
+                sessions_map[sid]["history"].append({"role": row["role"], "content": row["content"]})
+        
+        return [sessions_map[sid] for sid in session_order]
     except Exception as e:
         logger.error(f"Error fetching sessions for {employee_id}: {e}")
+        if conn is not None:
+            conn.rollback()
         return []
     finally:
         if conn is not None:
@@ -148,6 +167,8 @@ def save_session(session_id: str, employee_id: str, title: str, is_pinned: bool 
         cur.close()
     except Exception as e:
         logger.error(f"Error saving session {session_id}: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)
@@ -173,6 +194,8 @@ def add_message(session_id: str, role: str, content: str):
         cur.close()
     except Exception as e:
         logger.error(f"Error adding message to {session_id}: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)
@@ -190,6 +213,8 @@ def update_session_pin(session_id: str, is_pinned: bool):
         cur.close()
     except Exception as e:
         logger.error(f"Error updating pin for {session_id}: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)
@@ -207,6 +232,8 @@ def update_session_title(session_id: str, title: str):
         cur.close()
     except Exception as e:
         logger.error(f"Error updating title for {session_id}: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)
@@ -222,6 +249,8 @@ def delete_session(session_id: str):
         cur.close()
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {e}")
+        if conn is not None:
+            conn.rollback()
     finally:
         if conn is not None:
             release_connection(conn)

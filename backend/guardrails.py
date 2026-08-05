@@ -39,6 +39,10 @@ def validate_guardrails(user_message: str) -> dict:
         r"bypass tool requirements",
         r"forget your rules",
         r"system prompt leak",
+        r"you are now (an? )?unrestricted",
+        r"do anything now",
+        r"act as a linux terminal",
+        r"print internal code",
     ]
     
     for pattern in injection_patterns:
@@ -54,3 +58,24 @@ def validate_guardrails(user_message: str) -> dict:
             }
             
     return {"safe": True, "reason": None}
+
+
+def sanitize_output(response: str) -> str:
+    """
+    Ensure the LLM does not leak internal API schemas, internal network URLs, or raw SQL.
+    This runs right before sending the final response to the user.
+    """
+    if not response:
+        return response
+    
+    # Mask internal API base paths if the LLM accidentally dumps them
+    response = re.sub(r"https?://(?:localhost|127\.0\.0\.1|api\.xevyte\.local)(:\d+)?/api/[a-zA-Z0-9/\-_?=]+", "[INTERNAL_API_CALL]", response)
+    
+    # Check for raw JSON envelope leakage
+    if '{"success":' in response and '"metadata":' in response:
+        logger.warning("Sanitizer caught raw JSON envelope leak in output.")
+        # Attempt to strip the JSON, or just return a safe fallback if it's purely a JSON dump
+        if response.strip().startswith('{"success":'):
+            return "I apologize, but I encountered an internal formatting error while generating my response. Please try again."
+
+    return response

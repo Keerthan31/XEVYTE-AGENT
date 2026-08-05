@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import logoUrl from '../../assests/image.png'
 import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff, Users, Layers, Shield, ArrowLeft, CheckCircle } from 'lucide-react'
 
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "8f4c2a91-b7e3-4d5f-9a2c-7e1b6d3f8a9e"
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || ""
 
 // Web Crypto helper matching Scaloz backend AES-GCM key derivation
 async function getEncryptionKey(passphrase = ENCRYPTION_KEY) {
