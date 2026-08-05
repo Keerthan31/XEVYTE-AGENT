@@ -87,20 +87,20 @@ class ActionLeaveInput(BaseModel):
 
 
 class UpdatePersonalDetailsInput(BaseModel):
-    phone_number: str = Field(..., description="Phone number")
-    emergency_contact: str = Field(..., description="Emergency contact number")
-    current_address: str = Field(..., description="Current Address")
-    permanent_address: str = Field(..., description="Permanent Address")
-    personal_mail: str = Field(default="", description="Personal Email Address")
+    phone_number: str = Field(..., pattern=r"^\d{10}$", description="Must be exactly 10 digits")
+    emergency_contact: str = Field(..., pattern=r"^\d{10}$", description="Must be exactly 10 digits")
+    current_address: str = Field(..., min_length=5, description="Current Address")
+    permanent_address: str = Field(..., min_length=5, description="Permanent Address")
+    personal_mail: str = Field(default="", pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$", description="Valid email format")
 
 
 class UpdateBankDetailsInput(BaseModel):
-    bank_name: str = Field(..., description="Name of the bank")
-    account_number: str = Field(..., description="Bank account number")
-    ifsc_code: str = Field(..., description="Bank IFSC code")
-    uan_number: str = Field(default="", description="UAN Number (12 digits)")
+    bank_name: str = Field(..., min_length=2, description="Name of the bank")
+    account_number: str = Field(..., pattern=r"^\d{9,18}$", description="Bank account number (9-18 digits)")
+    ifsc_code: str = Field(..., pattern=r"^[A-Z]{4}0[A-Z0-9]{6}$", description="Valid Indian Bank IFSC code")
+    uan_number: str = Field(default="", pattern=r"^(?:\d{12})?$", description="UAN Number (exactly 12 digits if provided)")
     pf_member_id: str = Field(default="", description="PF Member ID")
-    esi_number: str = Field(default="", description="ESI Number")
+    esi_number: str = Field(default="", pattern=r"^(?:\d{17})?$", description="ESI Number (exactly 17 digits if provided)")
     esi_dispensary: str = Field(default="", description="ESI Dispensary / Clinic Name")
 
 
