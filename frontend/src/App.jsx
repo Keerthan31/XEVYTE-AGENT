@@ -233,7 +233,7 @@ export default function App() {
     }))
 
     setLoadingMap(prev => ({ ...prev, [currentId]: true }))
-    setThoughtsMap(prev => ({ ...prev, [currentId]: [] }))
+    setThoughtsMap(prev => ({ ...prev, [currentId]: [{ text: 'Analyzing request...', status: 'loading' }] }))
 
     try {
       // Append initial assistant placeholder
@@ -262,7 +262,7 @@ export default function App() {
           const startMatches = [...fullReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
           const endMatches = [...fullReply.matchAll(/__TOOL_END__/g)]
           
-          let thoughts = []
+          let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
           for (let i = 0; i < startMatches.length; i++) {
             const toolName = startMatches[i][1] || 'tool'
             const isDone = i < endMatches.length
