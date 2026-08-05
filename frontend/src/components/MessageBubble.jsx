@@ -66,7 +66,7 @@ export default function MessageBubble({ role, content, ts, onSend }) {
           </div>
         ) : (
           <div className="flex flex-col w-full max-w-full relative">
-            {displayContent && (
+            {displayContent ? (
               <div className="chat-bubble-ai text-sm leading-relaxed prose prose-sm max-w-none text-slate-800 relative group/bubble">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -119,6 +119,12 @@ export default function MessageBubble({ role, content, ts, onSend }) {
                 >
                   {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
                 </button>
+              </div>
+            ) : (
+              <div className="chat-bubble-ai flex items-center gap-1.5 py-3 px-5 w-fit">
+                <span className="typing-dot w-2 h-2 bg-[#00b3a4] rounded-full" />
+                <span className="typing-dot w-2 h-2 bg-[#00b3a4] rounded-full" />
+                <span className="typing-dot w-2 h-2 bg-[#00b3a4] rounded-full" />
               </div>
             )}
             

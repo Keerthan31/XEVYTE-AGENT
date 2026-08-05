@@ -256,7 +256,7 @@ export default function App() {
           let displayReply = fullReply
           let currentTool = null
           
-          const startMatches = [...fullReply.matchAll(/__TOOL_START:[\s\S]*?__/g)]
+          const startMatches = [...fullReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
           const endMatches = [...fullReply.matchAll(/__TOOL_END__/g)]
           
           if (startMatches.length > endMatches.length) {
@@ -475,7 +475,6 @@ export default function App() {
                 <span className="text-lg">⚙️</span> Executing: {toolStatusMap[activeSessionId].replace(/_/g, ' ')}...
               </div>
             )}
-            {loading && !toolStatusMap[activeSessionId] && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>
         </main>
