@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Trash2, LogOut, Bot, PanelLeftOpen, Sparkles, Download, Calendar, Ticket, Bell, User, Clock } from 'lucide-react'
+import { Send, Trash2, LogOut, Bot, PanelLeftOpen, Sparkles, Download, Calendar, Ticket, Bell, User, Clock, Cpu, Sliders } from 'lucide-react'
 import logoUrl from '../assests/image.png'
 import MessageBubble from './components/MessageBubble.jsx'
 import TypingIndicator from './components/TypingIndicator.jsx'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ThoughtProcess from './components/ThoughtProcess.jsx'
+import AgentInspector from './components/AgentInspector.jsx'
+import EnterpriseCapabilityGrid from './components/EnterpriseCapabilityGrid.jsx'
 import { getThoughtText } from './utils/formatters.js'
 import { 
   streamMessage, 
@@ -52,6 +54,7 @@ export default function App() {
   const [employeeId, setEmployeeId] = useState(getInitialEmp)
   const [configured, setConfigured] = useState(() => Boolean(getInitialEmp()))
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isInspectorOpen, setIsInspectorOpen] = useState(true)
 
   // Sessions management
   const [sessions, setSessions] = useState([])
@@ -438,6 +441,19 @@ export default function App() {
             </div>
 
             <button
+              onClick={() => setIsInspectorOpen(!isInspectorOpen)}
+              title="Toggle Agent Operations & Telemetry"
+              className={`p-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer border ${
+                isInspectorOpen 
+                  ? 'bg-teal-500/10 text-teal-700 border-teal-500/30 shadow-xs' 
+                  : 'text-slate-500 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              <Cpu size={15} />
+              <span className="hidden md:inline">Operations</span>
+            </button>
+
+            <button
               onClick={handleExportThread}
               title="Export Thread (.md)"
               className="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all cursor-pointer"
@@ -464,8 +480,10 @@ export default function App() {
           </div>
         </header>
 
-        {/* ── MESSAGES CANVAS (WIDE FULL-WIDTH DISPLAY) ── */}
-        <main className="flex-1 overflow-y-auto w-full px-6 lg:px-12 py-6">
+        {/* ── WORKSPACE CONTENT WRAPPER (CANVAS + OPERATIONS INSPECTOR) ── */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* ── MESSAGES CANVAS (WIDE FULL-WIDTH DISPLAY) ── */}
+          <main className="flex-1 overflow-y-auto w-full px-6 lg:px-12 py-6">
           <div className="max-w-full mx-auto w-full space-y-6">
 
             {!chatStarted && (
@@ -488,24 +506,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quick Suggestion Links */}
-                <div>
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">
-                    Suggested Quick Actions
-                  </h3>
-                  <div className="flex flex-wrap gap-4 px-1">
-                    {ACTION_TILES.map((tile, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSend(tile.prompt)}
-                        className="text-sm font-medium text-teal-600 hover:text-teal-800 hover:underline transition-colors text-left cursor-pointer"
-                      >
-                        {tile.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+                {/* Enterprise HRMS Capability Grid */}
+                <EnterpriseCapabilityGrid onSelectPrompt={handleSend} />
               </div>
             )}
 
@@ -524,6 +526,14 @@ export default function App() {
             <div ref={bottomRef} />
           </div>
         </main>
+
+        {/* Right-side Agent Operations Panel */}
+        <AgentInspector 
+          isOpen={isInspectorOpen} 
+          onClose={() => setIsInspectorOpen(false)} 
+          thoughts={thoughtsMap[activeSessionId]} 
+        />
+      </div>
 
         {/* ── BOTTOM FLOATING INPUT BAR (MIC REMOVED) ── */}
         <div className="sticky bottom-0 flex-shrink-0 z-20 border-t border-slate-200/80 bg-white/90 backdrop-blur-md px-6 py-4">
