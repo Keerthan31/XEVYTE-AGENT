@@ -292,13 +292,11 @@ export default function App() {
         if (s.id === currentId) {
           const cleanReply = fullReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
           
-          // Mark all thoughts as done when the final response is received
+          // Hide the thoughts when the final response is complete
           setThoughtsMap(prevStatus => {
-            const currentThoughts = prevStatus[currentId] || []
-            return {
-              ...prevStatus,
-              [currentId]: currentThoughts.map(t => ({ ...t, status: 'done' }))
-            }
+            const newMap = { ...prevStatus }
+            delete newMap[currentId]
+            return newMap
           })
           
           const newMsgs = [...s.messages]
