@@ -245,6 +245,8 @@ export default function App() {
       }))
 
       let fullReply = ''
+      let lastUpdateTime = 0
+      let pendingUpdate = null
 
       await streamMessage({
         message: msg,
@@ -253,14 +255,38 @@ export default function App() {
         employeeId,
         sessionId: currentId,
         onChunk: (chunk) => {
-          setLoadingMap(prev => ({ ...prev, [currentId]: false }))
+          if (chunk.includes('__TOKEN_EXPIRED__')) {
+            handleLogout()
+            setError('Your session has expired. Please log in again.')
+            if (pendingUpdate) clearTimeout(pendingUpdate)
+            throw new Error('Session Expired')
+          }
           fullReply += chunk
           
-          let displayReply = fullReply
-          let currentTool = null
+          // Throttle updates to at most once every 50ms to prevent massive React re-render lag
+          const now = Date.now()
+          if (now - lastUpdateTime < 50) {
+             if (pendingUpdate) clearTimeout(pendingUpdate)
+             pendingUpdate = setTimeout(() => {
+                applyChunkUpdate(fullReply)
+             }, 50)
+             return
+          }
           
-          const startMatches = [...fullReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
-          const endMatches = [...fullReply.matchAll(/__TOOL_END__/g)]
+          lastUpdateTime = now
+          applyChunkUpdate(fullReply)
+        }
+      })
+      
+      if (pendingUpdate) clearTimeout(pendingUpdate)
+
+      function applyChunkUpdate(currentReply) {
+          setLoadingMap(prev => ({ ...prev, [currentId]: false }))
+          
+          let displayReply = currentReply
+          
+          const startMatches = [...currentReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
+          const endMatches = [...currentReply.matchAll(/__TOOL_END__/g)]
           
           let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
           for (let i = 0; i < startMatches.length; i++) {
@@ -284,8 +310,7 @@ export default function App() {
             }
             return s
           }))
-        }
-      })
+      }
 
       // Update history and messages in current session
       setSessions(prev => prev.map(s => {
@@ -315,6 +340,10 @@ export default function App() {
         return s
       }))
     } catch (err) {
+      if (err.message === 'Session Expired') {
+        // We already handled logout and set error in onChunk
+        return
+      }
       const detail = err.response?.data?.detail || err.message || 'Unknown error'
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
