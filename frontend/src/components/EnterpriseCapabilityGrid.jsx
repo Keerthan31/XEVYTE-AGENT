@@ -16,7 +16,7 @@ const ENTERPRISE_MODULES = [
     ]
   },
   {
-    title: 'Payroll & Statutory',
+    title: 'Bank & Statutory Details',
     desc: 'View & update Bank details, IFSC, UAN, PF, ESI & Insurance Nominees',
     icon: CreditCard,
     color: 'from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-700',
