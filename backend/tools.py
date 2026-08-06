@@ -1125,23 +1125,34 @@ def mark_notification_read(notification_id: int) -> str:
 @tool
 def get_holidays() -> str:
     """
-    Get the list of company holidays for the current year.
+    Get the list of company holidays for the logged-in employee based on their work location, filtered for the current year.
     """
     t0 = time.time()
-    cache_key = "get_holidays:all"
+    emp_id = _current_employee_id.get()
+    
+    import datetime
+    current_year = str(datetime.datetime.now().year)
+    
+    cache_key = f"get_holidays:{emp_id}:{current_year}"
     cached_val = _cache.get(cache_key)
     if cached_val:
         return cached_val
 
-    url = f"{_base()}/api/leaves/holidays"
+    # Use the employee-specific endpoint that filters by location (e.g. bengaluru)
+    url = f"{_base()}/api/v1/holidays/employee/{emp_id}"
     try:
         resp = _httpx_request("GET", url, headers=_auth_headers())
         exec_time = (time.time() - t0) * 1000
         if resp.status_code == 200:
             data = resp.json()
+            
+            # Filter for the current year to match the UI
+            if data:
+                data = [h for h in data if h.get("date", "").startswith(current_year)]
+                
             res_json = format_tool_response(
                 success=True,
-                message=f"Company holiday list retrieved ({len(data) if data else 0} holidays).",
+                message=f"Company holiday list retrieved ({len(data) if data else 0} holidays for employee location in {current_year}).",
                 data=data[:30] if data else [],
                 tool_name="get_holidays",
                 exec_time_ms=exec_time,
