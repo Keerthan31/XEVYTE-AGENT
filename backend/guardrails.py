@@ -1,7 +1,4 @@
-"""
-Guardrails & PII Security Module for Xevyte HRMS AI Agent.
-Provides PII data masking for logs and prompt injection security inspections.
-"""
+"""Guardrails & PII Security Module for Xevyte HRMS AI Agent. Provides PII data masking for logs and prompt injection security inspections."""
 
 import re
 import logging
@@ -23,10 +20,7 @@ def mask_pii(text: str) -> str:
 
 
 def validate_guardrails(user_message: str) -> dict:
-    """
-    Perform deep security inspection on incoming user prompts.
-    Returns dict: {"safe": bool, "reason": str | None}
-    """
+    """Perform deep security inspection on incoming user prompts. Returns dict: {"safe": bool, "reason": str | None}"""
     lowered = user_message.lower().strip()
     
     # Prompt injection & jailbreak patterns
@@ -61,10 +55,7 @@ def validate_guardrails(user_message: str) -> dict:
 
 
 def sanitize_output(response: str) -> str:
-    """
-    Ensure the LLM does not leak internal API schemas, internal network URLs, or raw SQL.
-    This runs right before sending the final response to the user.
-    """
+    """Ensure the LLM does not leak internal API schemas, internal network URLs, or raw SQL. This runs right before sending the final response to the user."""
     if not response:
         return response
     

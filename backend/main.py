@@ -1,6 +1,4 @@
-"""
-Xevyte HRMS Agent — FastAPI entrypoint
-"""
+"""Xevyte HRMS Agent — FastAPI entrypoint"""
 
 import os
 import re

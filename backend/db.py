@@ -58,26 +58,9 @@ def init_db():
         conn = get_connection()
         cur = conn.cursor()
         
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS xeva_chat_sessions (
-                id VARCHAR(100) PRIMARY KEY,
-                employee_id VARCHAR(100) NOT NULL,
-                title VARCHAR(255) NOT NULL,
-                is_pinned BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
+        cur.execute("""CREATE TABLE IF NOT EXISTS xeva_chat_sessions ( id VARCHAR(100) PRIMARY KEY, employee_id VARCHAR(100) NOT NULL, title VARCHAR(255) NOT NULL, is_pinned BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );""")
         
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS xeva_chat_messages (
-                id SERIAL PRIMARY KEY,
-                session_id VARCHAR(100) REFERENCES xeva_chat_sessions(id) ON DELETE CASCADE,
-                role VARCHAR(20) NOT NULL,
-                content TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
+        cur.execute("""CREATE TABLE IF NOT EXISTS xeva_chat_messages ( id SERIAL PRIMARY KEY, session_id VARCHAR(100) REFERENCES xeva_chat_sessions(id) ON DELETE CASCADE, role VARCHAR(20) NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );""")
 
         # Performance indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_employee ON xeva_chat_sessions(employee_id);")
@@ -102,16 +85,7 @@ def get_employee_sessions(employee_id: str):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Single JOIN query eliminates N+1 problem
-        cur.execute("""
-            SELECT 
-                s.id AS session_id, s.employee_id, s.title, s.is_pinned,
-                EXTRACT(EPOCH FROM s.created_at)*1000 AS session_created_at,
-                m.role, m.content, EXTRACT(EPOCH FROM m.created_at)*1000 AS ts
-            FROM xeva_chat_sessions s
-            LEFT JOIN xeva_chat_messages m ON m.session_id = s.id
-            WHERE s.employee_id = %s
-            ORDER BY s.is_pinned DESC, s.updated_at DESC, m.id ASC;
-        """, (employee_id,))
+        cur.execute("""SELECT s.id AS session_id, s.employee_id, s.title, s.is_pinned, EXTRACT(EPOCH FROM s.created_at)*1000 AS session_created_at, m.role, m.content, EXTRACT(EPOCH FROM m.created_at)*1000 AS ts FROM xeva_chat_sessions s LEFT JOIN xeva_chat_messages m ON m.session_id = s.id WHERE s.employee_id = %s ORDER BY s.is_pinned DESC, s.updated_at DESC, m.id ASC;""", (employee_id,))
         
         rows = cur.fetchall()
         cur.close()
@@ -155,14 +129,15 @@ def save_session(session_id: str, employee_id: str, title: str, is_pinned: bool 
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO xeva_chat_sessions (id, employee_id, title, is_pinned, updated_at)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (id) 
-            DO UPDATE SET 
-                updated_at = CURRENT_TIMESTAMP,
-                title = CASE WHEN xeva_chat_sessions.title = 'New Chat' THEN EXCLUDED.title ELSE xeva_chat_sessions.title END;
-        """, (session_id, employee_id, title, is_pinned))
+        cur.execute(
+            "INSERT INTO xeva_chat_sessions (id, employee_id, title, is_pinned, updated_at) "
+            "VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP) "
+            "ON CONFLICT (id) "
+            "DO UPDATE SET "
+            "    updated_at = CURRENT_TIMESTAMP, "
+            "    title = CASE WHEN xeva_chat_sessions.title = 'New Chat' THEN EXCLUDED.title ELSE xeva_chat_sessions.title END;", 
+            (session_id, employee_id, title, is_pinned)
+        )
         conn.commit()
         cur.close()
     except Exception as e:
@@ -179,16 +154,18 @@ def add_message(session_id: str, role: str, content: str):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO xeva_chat_messages (session_id, role, content)
-            VALUES (%s, %s, %s);
-        """, (session_id, role, content))
+        cur.execute(
+            "INSERT INTO xeva_chat_messages (session_id, role, content) "
+            "VALUES (%s, %s, %s);", 
+            (session_id, role, content)
+        )
         
-        cur.execute("""
-            UPDATE xeva_chat_sessions 
-            SET updated_at = CURRENT_TIMESTAMP 
-            WHERE id = %s;
-        """, (session_id,))
+        cur.execute(
+            "UPDATE xeva_chat_sessions "
+            "SET updated_at = CURRENT_TIMESTAMP "
+            "WHERE id = %s;", 
+            (session_id,)
+        )
         
         conn.commit()
         cur.close()
@@ -206,9 +183,10 @@ def update_session_pin(session_id: str, is_pinned: bool):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            UPDATE xeva_chat_sessions SET is_pinned = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;
-        """, (is_pinned, session_id))
+        cur.execute(
+            "UPDATE xeva_chat_sessions SET is_pinned = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;", 
+            (is_pinned, session_id)
+        )
         conn.commit()
         cur.close()
     except Exception as e:
@@ -225,9 +203,10 @@ def update_session_title(session_id: str, title: str):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            UPDATE xeva_chat_sessions SET title = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;
-        """, (title, session_id))
+        cur.execute(
+            "UPDATE xeva_chat_sessions SET title = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s;", 
+            (title, session_id)
+        )
         conn.commit()
         cur.close()
     except Exception as e:

@@ -1,7 +1,4 @@
-"""
-DeepEval & Framework Integration Test Suite for Xevyte HRMS AI Agent.
-All test inputs are dynamically generated at runtime. Zero hardcoded data.
-"""
+"""DeepEval & Framework Integration Test Suite for Xevyte HRMS AI Agent. All test inputs are dynamically generated at runtime. Zero hardcoded data."""
 
 import sys
 import os

@@ -1,14 +1,4 @@
-"""
-HRMS Tool functions — each one calls a Xevyte Connect REST API endpoint.
-All tools receive the JWT token (from Scaloz IAM) via a shared context
-that is injected by the agent before each tool call.
-
-Includes enterprise-grade features:
-- Structured JSON outputs (success, message, data, metadata)
-- Automatic HTTP retries with exponential backoff
-- In-memory TTL caching for read-only tools
-- Parameter validation & sanitization
-"""
+"""HRMS Tool functions — each one calls a Xevyte Connect REST API endpoint. All tools receive the JWT token (from Scaloz IAM) via a shared context that is injected by the agent before each tool call. Includes enterprise-grade features: - Structured JSON outputs (success, message, data, metadata) - Automatic HTTP retries with exponential backoff - In-memory TTL caching for read-only tools - Parameter validation & sanitization"""
 
 import json
 import time
@@ -301,10 +291,7 @@ def _fmt_error(resp: httpx.Response, action: str, tool_name: str, exec_time_ms: 
 # ─── 1. Get leave balance (detailed) ─────────────────────────────────────────
 @tool
 def get_leave_balance() -> str:
-    """
-    Fetch the current leave balance for the logged-in employee.
-    Returns each leave type with granted, consumed, and remaining days.
-    """
+    """Fetch the current leave balance for the logged-in employee. Returns each leave type with granted, consumed, and remaining days."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     cache_key = f"get_leave_balance:{emp_id}"
@@ -349,10 +336,7 @@ def get_leave_balance() -> str:
 # ─── 2. Get leave history ─────────────────────────────────────────────────────
 @tool
 def get_leave_history() -> str:
-    """
-    Get the full leave request history for the logged-in employee,
-    including status (Pending, Approved, Rejected, Cancelled).
-    """
+    """Get the full leave request history for the logged-in employee, including status (Pending, Approved, Rejected, Cancelled)."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/leaves/employee/{emp_id}"
@@ -396,16 +380,7 @@ def apply_leave(
     reason: str,
     half_day: bool = False,
 ) -> str:
-    """
-    Apply for leave on behalf of the logged-in employee.
-
-    Args:
-        leave_type: Leave type (e.g., "EL", "SL", "Optional", "CL").
-        start_date: Start date e.g. "27-07-2026" or "2026-07-27"
-        end_date:   End date e.g. "29-07-2026"
-        reason:     Reason for leave
-        half_day:   True only for half-day leave
-    """
+    """Apply for leave on behalf of the logged-in employee. Args: leave_type: Leave type (e.g., "EL", "SL", "Optional", "CL"). start_date: Start date e.g. "27-07-2026" or "2026-07-27" end_date: End date e.g. "29-07-2026" reason: Reason for leave half_day: True only for half-day leave"""
     t0 = time.time()
     valid_sd, sd_str = _validate_date(start_date)
     if not valid_sd:
@@ -497,9 +472,7 @@ def apply_leave(
 # ─── 4. Cancel leave ──────────────────────────────────────────────────────────
 @tool
 def cancel_leave(leave_id_or_ref: str) -> str:
-    """
-    Cancel a pending leave request by numeric ID or Reference ID (e.g., 'SCA-LV-2026-000043').
-    """
+    """Cancel a pending leave request by numeric ID or Reference ID (e.g., 'SCA-LV-2026-000043')."""
     t0 = time.time()
     leave_id = str(leave_id_or_ref).strip()
     emp_id = _current_employee_id.get()
@@ -570,9 +543,7 @@ def cancel_leave(leave_id_or_ref: str) -> str:
 # ─── 5. Approve/Reject Leave (Manager/Admin) ──────────────────────────────────
 @tool(args_schema=ActionLeaveInput)
 def action_leave(leave_id_or_ref: str, action: str, role: str = "Manager", remarks: str = "") -> str:
-    """
-    Approve or Reject a leave request. (For Managers, HR, or Admins).
-    """
+    """Approve or Reject a leave request. (For Managers, HR, or Admins)."""
     t0 = time.time()
     leave_id = str(leave_id_or_ref).strip()
     emp_id = _current_employee_id.get()
@@ -650,9 +621,7 @@ def action_leave(leave_id_or_ref: str, action: str, role: str = "Manager", remar
 
 @tool
 def get_pending_approvals() -> str:
-    """
-    Get the list of leave requests waiting for your approval as a Manager.
-    """
+    """Get the list of leave requests waiting for your approval as a Manager."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/leaves/manager/{emp_id}"
@@ -701,9 +670,7 @@ def raise_grievance(
     category: str = "General",
     grievance_type: str = "",
 ) -> str:
-    """
-    Raise a grievance (can be anonymous).
-    """
+    """Raise a grievance (can be anonymous)."""
     t0 = time.time()
     if not subject or not subject.strip():
         return format_tool_response(
@@ -768,9 +735,7 @@ def submit_ticket(
     detailed_description: str,
     cc_to_manager: bool = False,
 ) -> str:
-    """
-    Submit a helpdesk support ticket.
-    """
+    """Submit a helpdesk support ticket."""
     t0 = time.time()
     if not issue_summary or not issue_summary.strip():
         return format_tool_response(
@@ -825,9 +790,7 @@ def submit_ticket(
 # ─── 8. Get my tickets ────────────────────────────────────────────────────────
 @tool
 def get_my_tickets() -> str:
-    """
-    Retrieve all helpdesk tickets submitted by the logged-in employee.
-    """
+    """Retrieve all helpdesk tickets submitted by the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/tickets/my-tickets/{emp_id}"
@@ -865,9 +828,7 @@ def get_my_tickets() -> str:
 # ─── 9. Get notifications ─────────────────────────────────────────────────────
 @tool
 def get_notifications() -> str:
-    """
-    Get all notifications for the logged-in employee (read and unread).
-    """
+    """Get all notifications for the logged-in employee (read and unread)."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/notifications/{emp_id}"
@@ -906,9 +867,7 @@ def get_notifications() -> str:
 # ─── 10. Get attendance summary ───────────────────────────────────────────────
 @tool
 def get_attendance_summary(start_date: str, end_date: str) -> str:
-    """
-    Get attendance analytics for the logged-in employee over a date range.
-    """
+    """Get attendance analytics for the logged-in employee over a date range."""
     t0 = time.time()
     try:
         sd = datetime.strptime(_to_backend_date(start_date), "%d-%m-%Y").strftime("%Y-%m-%d")
@@ -950,9 +909,7 @@ def get_attendance_summary(start_date: str, end_date: str) -> str:
 # ─── 10b. Check Today's Attendance ────────────────────────────────────────────
 @tool
 def check_today_attendance() -> str:
-    """
-    Check if the logged-in employee has already marked their attendance for today.
-    """
+    """Check if the logged-in employee has already marked their attendance for today."""
     t0 = time.time()
     today = datetime.now().strftime("%Y-%m-%d")
     emp_id = _current_employee_id.get()
@@ -1000,9 +957,7 @@ def check_today_attendance() -> str:
 # ─── 11. Get employee profile ─────────────────────────────────────────────────
 @tool
 def get_my_profile() -> str:
-    """
-    Retrieve the logged-in employee's full profile details.
-    """
+    """Retrieve the logged-in employee's full profile details."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     cache_key = f"get_my_profile:{emp_id}"
@@ -1047,9 +1002,7 @@ def get_my_profile() -> str:
 # ─── 12. Get task summary ─────────────────────────────────────────────────────
 @tool
 def get_task_summary() -> str:
-    """
-    Get a dashboard summary of pending tasks for the logged-in employee.
-    """
+    """Get a dashboard summary of pending tasks for the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/task-counts/{emp_id}"
@@ -1086,9 +1039,7 @@ def get_task_summary() -> str:
 # ─── 13. Mark notification as read ───────────────────────────────────────────
 @tool
 def mark_notification_read(notification_id: int) -> str:
-    """
-    Mark a specific notification as read by its ID.
-    """
+    """Mark a specific notification as read by its ID."""
     t0 = time.time()
     url = f"{_base()}/api/notifications/read/{notification_id}"
     try:
@@ -1124,9 +1075,7 @@ def mark_notification_read(notification_id: int) -> str:
 # ─── 14. Get holidays list ────────────────────────────────────────────────────
 @tool
 def get_holidays() -> str:
-    """
-    Get the list of company holidays for the logged-in employee based on their work location, filtered for the current year.
-    """
+    """Get the list of company holidays for the logged-in employee based on their work location, filtered for the current year."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     
@@ -1181,9 +1130,7 @@ def get_holidays() -> str:
 # ─── 15. Get approved leave dates ────────────────────────────────────────────
 @tool
 def get_approved_leave_dates() -> str:
-    """
-    Get all approved leave dates for the logged-in employee.
-    """
+    """Get all approved leave dates for the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/leaves/approved-dates/{emp_id}"
@@ -1228,9 +1175,7 @@ def mark_attendance(
     project_name: str = "",
     remarks: str = "",
 ) -> str:
-    """
-    Mark attendance, check-in, or check-out for the logged-in employee.
-    """
+    """Mark attendance, check-in, or check-out for the logged-in employee."""
     t0 = time.time()
     if not work_location or not work_location.strip():
         return format_tool_response(
@@ -1307,9 +1252,7 @@ def mark_attendance(
 # ─── 19. Get Allocations ──────────────────────────────────────────────────────
 @tool
 def get_my_allocations() -> str:
-    """
-    Get the project allocations for the logged-in employee.
-    """
+    """Get the project allocations for the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     cache_key = f"get_my_allocations:{emp_id}"
@@ -1354,9 +1297,7 @@ def get_my_allocations() -> str:
 # ─── 20. Update Personal Details ──────────────────────────────────────────────
 @tool(args_schema=UpdatePersonalDetailsInput)
 def update_personal_details(phone_number: str, emergency_contact: str, current_address: str, permanent_address: str, personal_mail: str = "") -> str:
-    """
-    Update the personal details (phone, emergency contact, address) of the logged-in employee.
-    """
+    """Update the personal details (phone, emergency contact, address) of the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     
@@ -1404,9 +1345,7 @@ def update_personal_details(phone_number: str, emergency_contact: str, current_a
 # ─── 21. Update Bank Details ──────────────────────────────────────────────────
 @tool(args_schema=UpdateBankDetailsInput)
 def update_bank_details(bank_name: str, account_number: str, ifsc_code: str, uan_number: str = "", pf_member_id: str = "", esi_number: str = "", esi_dispensary: str = "") -> str:
-    """
-    Update the bank and statutory details (bank name, account number, IFSC code, UAN, PF, ESI) of the logged-in employee.
-    """
+    """Update the bank and statutory details (bank name, account number, IFSC code, UAN, PF, ESI) of the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/employees/{emp_id}/bank-details"
@@ -1447,9 +1386,7 @@ def update_bank_details(bank_name: str, account_number: str, ifsc_code: str, uan
 # ─── 22. Get Nominees ───────────────────────────────────────────────────────────
 @tool
 def get_my_nominees() -> str:
-    """
-    Get the list of insurance nominees for the logged-in employee.
-    """
+    """Get the list of insurance nominees for the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     cache_key = f"get_my_nominees:{emp_id}"
@@ -1488,9 +1425,7 @@ def get_my_nominees() -> str:
 # ─── 23. Add Nominee ────────────────────────────────────────────────────────────
 @tool(args_schema=AddNomineeInput)
 def add_nominee(nominee_name: str, relationship: str, date_of_birth: str) -> str:
-    """
-    Add a new insurance nominee for the logged-in employee.
-    """
+    """Add a new insurance nominee for the logged-in employee."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/employees/{emp_id}/insurance-nominees"
@@ -1527,9 +1462,7 @@ def add_nominee(nominee_name: str, relationship: str, date_of_birth: str) -> str
 # ─── 24. Update Employee Bio ──────────────────────────────────────────────────────
 @tool(args_schema=UpdateEmployeeBioInput)
 def update_employee_bio(about: str = "", what_i_love_about_my_job: str = "", interests_and_hobbies: str = "") -> str:
-    """
-    Update the employee's biography (About, What I love about my job, Interests and hobbies).
-    """
+    """Update the employee's biography (About, What I love about my job, Interests and hobbies)."""
     t0 = time.time()
     emp_id = _current_employee_id.get()
     url = f"{_base()}/api/employees/{emp_id}/personal-details"
@@ -1590,3 +1523,12 @@ ALL_TOOLS = [
     add_nominee,
     update_employee_bio,
 ]
+
+from rag import query_hr_knowledge_base
+
+@tool
+def search_hr_knowledge_base(query: str = Field(description="The search query related to HR policies, leave rules, insurance, or guidelines.")):
+    """Search the company knowledge base (HR policies, handbooks, etc.) for answers to general policy questions."""
+    return query_hr_knowledge_base(query)
+
+ALL_TOOLS.append(search_hr_knowledge_base)
