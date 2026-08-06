@@ -9,13 +9,13 @@ import ThoughtProcess from './components/ThoughtProcess.jsx'
 import AgentInspector from './components/AgentInspector.jsx'
 import EnterpriseCapabilityGrid from './components/EnterpriseCapabilityGrid.jsx'
 import { getThoughtText } from './utils/formatters.js'
-import { 
-  streamMessage, 
-  fetchSessionsDB, 
-  createSessionDB, 
-  pinSessionDB, 
-  renameSessionDB, 
-  deleteSessionDB 
+import {
+  streamMessage,
+  fetchSessionsDB,
+  createSessionDB,
+  pinSessionDB,
+  renameSessionDB,
+  deleteSessionDB
 } from './api.js'
 
 const WELCOME = {
@@ -27,6 +27,9 @@ const WELCOME = {
 }
 
 function getEmployeeDisplayName(empId) {
+  const storedName = localStorage.getItem('xeva_standalone_emp_name');
+  if (storedName) return storedName;
+
   if (!empId) return 'Employee'
   if (empId.toLowerCase().includes('koushik')) return 'Koushik Viswanadha'
   if (empId.toLowerCase() === 'scaloz_admin' || empId.toLowerCase() === 'admin') return 'Koushik Viswanadha'
@@ -42,12 +45,54 @@ function getGreeting() {
 }
 
 export default function App() {
-  // Safely read from localStorage
+  // Safely read from localStorage and URL
   const getInitialToken = () => {
-    try { return localStorage.getItem('xeva_standalone_token') || '' } catch { return '' }
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromURL = params.get('scaloz_token');
+      if (tokenFromURL) {
+        localStorage.setItem('xeva_standalone_token', tokenFromURL);
+        sessionStorage.setItem('token', tokenFromURL);
+        
+        // Decode JWT to extract details
+        try {
+          const payload = JSON.parse(atob(tokenFromURL.split('.')[1]));
+          if (payload.employeeId) {
+            localStorage.setItem('xeva_standalone_emp', payload.employeeId);
+            sessionStorage.setItem('employeeId', payload.employeeId);
+          }
+          if (payload.name || payload.employeeName) {
+            localStorage.setItem('xeva_standalone_emp_name', payload.name || payload.employeeName);
+          }
+        } catch (e) {
+          console.error('Failed to parse SSO token', e);
+        }
+        
+        // Clean URL
+        params.delete('scaloz_token');
+        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+        window.history.replaceState({}, document.title, newUrl);
+        return tokenFromURL;
+      }
+      
+      const stored = localStorage.getItem('xeva_standalone_token') || '';
+      // Force clear old dev tokens to log the user out automatically
+      if (stored && stored.includes('xeva_dev_token')) {
+        localStorage.removeItem('xeva_standalone_token');
+        localStorage.removeItem('xeva_standalone_emp');
+        localStorage.removeItem('xeva_standalone_emp_name');
+        sessionStorage.clear();
+        return '';
+      }
+      return stored;
+    } catch { return '' }
   }
   const getInitialEmp = () => {
-    try { return localStorage.getItem('xeva_standalone_emp') || '' } catch { return '' }
+    try { 
+      const token = localStorage.getItem('xeva_standalone_token') || '';
+      if (token.includes('xeva_dev_token')) return ''; // ignore dev emp
+      return localStorage.getItem('xeva_standalone_emp') || '';
+    } catch { return '' }
   }
 
   const [token, setToken] = useState(getInitialToken)
@@ -265,71 +310,71 @@ export default function App() {
             throw new Error('Session Expired')
           }
           fullReply += chunk
-          
+
           // Throttle updates to at most once every 50ms to prevent massive React re-render lag
           const now = Date.now()
           if (now - lastUpdateTime < 50) {
-             if (pendingUpdate) clearTimeout(pendingUpdate)
-             pendingUpdate = setTimeout(() => {
-                applyChunkUpdate(fullReply)
-             }, 50)
-             return
+            if (pendingUpdate) clearTimeout(pendingUpdate)
+            pendingUpdate = setTimeout(() => {
+              applyChunkUpdate(fullReply)
+            }, 50)
+            return
           }
-          
+
           lastUpdateTime = now
           applyChunkUpdate(fullReply)
         }
       })
-      
+
       if (pendingUpdate) clearTimeout(pendingUpdate)
 
       function applyChunkUpdate(currentReply) {
-          setLoadingMap(prev => ({ ...prev, [currentId]: false }))
-          
-          let displayReply = currentReply
-          
-          const startMatches = [...currentReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
-          const endMatches = [...currentReply.matchAll(/__TOOL_END__/g)]
-          
-          let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
-          for (let i = 0; i < startMatches.length; i++) {
-            const toolName = startMatches[i][1] || 'tool'
-            const isDone = i < endMatches.length
-            thoughts.push({
-              text: getThoughtText(toolName),
-              status: isDone ? 'done' : 'loading'
-            })
-          }
-          
-          displayReply = displayReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
-          
-          setThoughtsMap(prev => ({ ...prev, [currentId]: thoughts }))
+        setLoadingMap(prev => ({ ...prev, [currentId]: false }))
 
-          setSessions(prev => prev.map(s => {
-            if (s.id === currentId) {
-              const newMsgs = [...s.messages]
-              newMsgs[newMsgs.length - 1] = { role: 'assistant', content: displayReply, ts: Date.now() }
-              return { ...s, messages: newMsgs }
-            }
-            return s
-          }))
+        let displayReply = currentReply
+
+        const startMatches = [...currentReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
+        const endMatches = [...currentReply.matchAll(/__TOOL_END__/g)]
+
+        let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
+        for (let i = 0; i < startMatches.length; i++) {
+          const toolName = startMatches[i][1] || 'tool'
+          const isDone = i < endMatches.length
+          thoughts.push({
+            text: getThoughtText(toolName),
+            status: isDone ? 'done' : 'loading'
+          })
+        }
+
+        displayReply = displayReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
+
+        setThoughtsMap(prev => ({ ...prev, [currentId]: thoughts }))
+
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentId) {
+            const newMsgs = [...s.messages]
+            newMsgs[newMsgs.length - 1] = { role: 'assistant', content: displayReply, ts: Date.now() }
+            return { ...s, messages: newMsgs }
+          }
+          return s
+        }))
       }
 
       // Update history and messages in current session
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
           const cleanReply = fullReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
-          
+
           // Hide the thoughts when the final response is complete
           setThoughtsMap(prevStatus => {
             const newMap = { ...prevStatus }
             delete newMap[currentId]
             return newMap
           })
-          
+
           const newMsgs = [...s.messages]
           newMsgs[newMsgs.length - 1] = { role: 'assistant', content: cleanReply, ts: Date.now() }
-          
+
           return {
             ...s,
             messages: newMsgs,
@@ -384,7 +429,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen bg-slate-50 overflow-hidden font-sans">
-      
+
       {/* ── CHATGPT-STYLE SIDEBAR ── */}
       <Sidebar
         sessions={sessions}
@@ -440,18 +485,6 @@ export default function App() {
               <span>{getEmployeeDisplayName(employeeId)}</span>
             </div>
 
-            <button
-              onClick={() => setIsInspectorOpen(!isInspectorOpen)}
-              title="Toggle Agent Operations & Telemetry"
-              className={`p-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer border ${
-                isInspectorOpen 
-                  ? 'bg-teal-500/10 text-teal-700 border-teal-500/30 shadow-xs' 
-                  : 'text-slate-500 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <Cpu size={15} />
-              <span className="hidden md:inline">Operations</span>
-            </button>
 
             <button
               onClick={handleExportThread}
@@ -484,62 +517,56 @@ export default function App() {
         <div className="flex-1 flex overflow-hidden">
           {/* ── MESSAGES CANVAS (WIDE FULL-WIDTH DISPLAY) ── */}
           <main className="flex-1 overflow-y-auto w-full px-6 lg:px-12 py-6">
-          <div className="max-w-full mx-auto w-full space-y-6">
+            <div className="max-w-full mx-auto w-full space-y-6">
 
-            {!chatStarted && (
-              <div className="space-y-6 my-4">
-                <div className="hero-card p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
-                  <div className="flex items-start justify-between gap-6 flex-wrap">
-                    <div>
-                      <p className="text-xs text-teal-600 font-semibold uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                        <Sparkles size={14} /> HRMS AI Assistant
-                      </p>
-                      <h1 className="text-3xl font-bold text-slate-900 mb-3">
-                        Good {getGreeting()},{' '}
-                        <span className="text-teal-600">{getEmployeeDisplayName(employeeId)}</span> 👋
-                      </h1>
-                      <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">
-                        Ask me anything about your leave balance, attendance, grievances, or profile updates.
-                        I can perform tasks directly on your behalf.
-                      </p>
+              {!chatStarted && (
+                <div className="space-y-6 my-4">
+                  <div className="hero-card p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
+                    <div className="flex items-start justify-between gap-6 flex-wrap">
+                      <div>
+                        <p className="text-xs text-teal-600 font-semibold uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                          <Sparkles size={14} /> HRMS AI Assistant
+                        </p>
+                        <h1 className="text-3xl font-bold text-slate-900 mb-3">
+                          Good {getGreeting()},{' '}
+                          <span className="text-teal-600">{getEmployeeDisplayName(employeeId)}</span> 👋
+                        </h1>
+                        <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">
+                          Ask me anything about your leave balance, attendance, grievances, or profile updates.
+                          I can perform tasks directly on your behalf.
+                        </p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Enterprise HRMS Capability Grid */}
+                  <EnterpriseCapabilityGrid onSelectPrompt={handleSend} />
                 </div>
+              )}
 
-                {/* Enterprise HRMS Capability Grid */}
-                <EnterpriseCapabilityGrid onSelectPrompt={handleSend} />
-              </div>
-            )}
+              {/* Render Chat Messages */}
+              {messages.map((m, i) => (
+                <React.Fragment key={i}>
+                  {/* If this is the active loading message, render the thoughts above it */}
+                  {i === messages.length - 1 && thoughtsMap[activeSessionId] && thoughtsMap[activeSessionId].length > 0 && (
+                    <ThoughtProcess thoughts={thoughtsMap[activeSessionId]} />
+                  )}
 
-            {/* Render Chat Messages */}
-            {messages.map((m, i) => (
-              <React.Fragment key={i}>
-                {/* If this is the active loading message, render the thoughts above it */}
-                {i === messages.length - 1 && thoughtsMap[activeSessionId] && thoughtsMap[activeSessionId].length > 0 && (
-                  <ThoughtProcess thoughts={thoughtsMap[activeSessionId]} />
-                )}
-                
-                <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
-              </React.Fragment>
-            ))}
+                  <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
+                </React.Fragment>
+              ))}
 
-            <div ref={bottomRef} />
-          </div>
-        </main>
+              <div ref={bottomRef} />
+            </div>
+          </main>
 
-        {/* Right-side Agent Operations Panel */}
-        <AgentInspector 
-          isOpen={isInspectorOpen} 
-          onClose={() => setIsInspectorOpen(false)} 
-          thoughts={thoughtsMap[activeSessionId]} 
-        />
-      </div>
+        </div>
 
         {/* ── BOTTOM FLOATING INPUT BAR (MIC REMOVED) ── */}
         <div className="sticky bottom-0 flex-shrink-0 z-20 border-t border-slate-200/80 bg-white/90 backdrop-blur-md px-6 py-4">
           <div className="max-w-full mx-auto w-full space-y-2">
             {error && <p className="text-xs text-red-500 px-1 font-medium">⚠ {error}</p>}
-            
+
             <div className="flex items-end gap-3">
               <textarea
                 ref={inputRef}
@@ -566,7 +593,7 @@ export default function App() {
                 <Send size={16} />
               </button>
             </div>
-            
+
             <p className="text-[11px] text-center text-slate-400 pt-1">
               Xeva HRMS Assistant • Powered by Scaloz AI
             </p>
