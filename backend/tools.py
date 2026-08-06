@@ -171,7 +171,9 @@ _cache = _TTLCache(ttl_seconds=CACHE_TTL_SECONDS)
 # ─── HTTP Connection & Retry Wrapper ──────────────────────────────────────────
 def _is_server_error(resp: httpx.Response | BaseException) -> bool:
     if isinstance(resp, httpx.Response):
-        return resp.status_code >= 500
+        # 500 is often a business exception from Spring Boot (e.g. unassigned project, insufficient balance)
+        # 502, 503, 504 are transient network/gateway errors
+        return resp.status_code in (502, 503, 504)
     return False
 
 @retry(
