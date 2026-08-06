@@ -70,14 +70,14 @@ async function decryptPayload(data) {
 export default function Login({ onLoginSuccess }) {
   // View state: 'login' | 'forgot'
   const [view, setView] = useState('login')
-  
+
   // Login form states
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  
+
   // Forgot password states
   const [forgotInput, setForgotInput] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -105,7 +105,7 @@ export default function Login({ onLoginSuccess }) {
       try {
         const rawPayload = { email: rawInput, password }
         const encryptedBody = await encryptPayload(rawPayload)
-        
+
         // Try Scaloz IAM endpoints (8080, 8085, 8082) with both encrypted and raw payloads
         const endpoints = [
           { url: 'http://localhost:8080/api/auth/login', body: rawPayload },
@@ -134,6 +134,13 @@ export default function Login({ onLoginSuccess }) {
                 if (resData.employeeId || resData.user?.employeeId) {
                   empId = resData.employeeId || resData.user?.employeeId
                 }
+
+                // Extract real employee name
+                const empName = resData.employeeName || resData.name || resData.user?.name || resData.user?.employeeName
+                if (empName) {
+                  localStorage.setItem('xeva_standalone_emp_name', empName)
+                }
+
                 break
               } else if (resData && (resData.message || resData.error)) {
                 authErrorMessage = resData.message || resData.error
@@ -147,16 +154,11 @@ export default function Login({ onLoginSuccess }) {
         console.warn('Backend login request error:', err)
       }
 
-      // If token not received from remote backend or if direct login was disabled on HRMS Resource Server,
-      // allow seamless local dev authentication for Xeva Agent
+      // If token not received from remote backend, throw an error
       if (!token) {
-        if (authErrorMessage && !authErrorMessage.includes('disabled')) {
-          setError(authErrorMessage)
-          setLoading(false)
-          return
-        }
-        // Dev fallback token for Xeva Standalone Agent
-        token = `xeva_dev_token_${Date.now()}`
+        setError(authErrorMessage || 'Backend server did not return a valid token. Ensure Java backend is running and credentials are correct.')
+        setLoading(false)
+        return
       }
 
       localStorage.setItem('xeva_standalone_token', token)
@@ -211,10 +213,10 @@ export default function Login({ onLoginSuccess }) {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen w-screen font-sans bg-[#F4F6F8] overflow-x-hidden">
-      
+
       {/* ── LEFT SIDE (Dark Navy Brand Banner matching Scaloz UI) ── */}
       <div className="w-full lg:w-1/2 bg-[#0B1528] text-white p-8 lg:p-14 flex flex-col justify-between relative overflow-hidden min-h-[480px] lg:min-h-screen">
-        
+
         {/* Exact Scaloz 3D Flow Circular Graphic Illustration */}
         <div className="absolute right-[-120px] top-1/2 -translate-y-1/2 w-[580px] lg:w-[680px] pointer-events-none opacity-90 z-0">
           <img src="/scaloz-flow.png" alt="Scaloz Flow Graphic" className="w-full h-auto object-contain" />
@@ -279,17 +281,17 @@ export default function Login({ onLoginSuccess }) {
 
       {/* ── RIGHT SIDE (Light Grey Container with Centered White Card) ── */}
       <div className="w-full lg:w-1/2 p-6 lg:p-12 flex flex-col justify-between items-center my-auto min-h-screen">
-        
+
         {/* LOGIN VIEW */}
         {view === 'login' && (
           <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80 my-auto animate-fadeIn">
-            
+
             {/* Logo Badge Icon */}
             <div className="flex justify-center mb-5">
               <div className="w-14 h-14 bg-[#1B365D] rounded-2xl p-2.5 flex items-center justify-center shadow-md overflow-hidden">
-                <img 
-                  src="/imp.png" 
-                  alt="Scaloz Logo" 
+                <img
+                  src="/imp.png"
+                  alt="Scaloz Logo"
                   className="w-full h-full object-contain"
                   onError={(e) => { e.target.onerror = null; e.target.src = logoUrl; }}
                 />
@@ -309,70 +311,24 @@ export default function Login({ onLoginSuccess }) {
               </div>
             )}
 
-            {/* Form */}
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  Employee ID or Work Email
-                </label>
-                <input
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Type your email or employee ID..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white transition-all placeholder-slate-400"
-                  required
-                />
+            {/* SSO Login Button */}
+            <div className="space-y-4">
+              <div className="p-4 bg-teal-50 border border-teal-100 rounded-xl mb-4">
+                <p className="text-sm text-teal-800 text-center font-medium">
+                  Authentication is now centrally managed by Scaloz IAM.
+                </p>
               </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-600">
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setView('forgot'); setError(''); setForgotError(''); setForgotSuccess(false); }}
-                    className="text-xs text-teal-600 hover:underline font-medium cursor-pointer"
-                  >
-                    Reset Password
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password..."
-                    className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white transition-all placeholder-slate-400"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-3 py-3 px-4 bg-[#1B365D] hover:bg-[#142947] text-white font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer text-sm"
+                type="button"
+                onClick={() => {
+                  window.location.href = `http://localhost:3001/?redirect_to=${encodeURIComponent(window.location.href)}`;
+                }}
+                className="w-full py-3.5 px-4 bg-[#1B365D] hover:bg-[#142947] text-white font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer text-sm"
               >
-                {loading ? (
-                  <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Secure Sign In</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </>
-                )}
+                <span>Login via Scaloz IAM (SSO)</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
-            </form>
+            </div>
 
           </div>
         )}
@@ -380,7 +336,7 @@ export default function Login({ onLoginSuccess }) {
         {/* FORGOT PASSWORD VIEW */}
         {view === 'forgot' && (
           <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80 my-auto animate-fadeIn">
-            
+
             {forgotSuccess ? (
               <div className="text-center py-4 space-y-5">
                 <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white mx-auto shadow-lg shadow-emerald-500/25">

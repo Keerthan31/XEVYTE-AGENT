@@ -281,7 +281,4 @@ async def stream_agent(
             yield f"__TOOL_START:{tool_name}__"
 
         elif event["event"] == "on_tool_end":
-            output = event.get("data", {}).get("output")
-            if output and hasattr(output, "content") and "HTTP_401" in output.content:
-                yield "__TOKEN_EXPIRED__"
             yield "__TOOL_END__"

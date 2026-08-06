@@ -119,7 +119,7 @@ export default function AgentInspector({ isOpen, onClose, thoughts = [] }) {
           </div>
           <div className="mt-1 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-bold text-slate-800">GPT-4o</span>
+            <span className="text-xs font-bold text-slate-800">GPT-4o-mini</span>
           </div>
         </div>
 
