@@ -36,10 +36,24 @@ def create_session(db: DBSession, token: str) -> AgentSession:
         if exp
         else datetime.now(timezone.utc) + timedelta(hours=settings.SESSION_TTL_HOURS)
     )
+    
+    employee_id = claims.get("employeeId") or claims.get("sub")
+
+    # If cookies are blocked by the browser (CORS), every request falls back to the Bearer token.
+    # To prevent creating a new AgentSession (and thus breaking Conversation links) on every request,
+    # we first check if there's an active session for this employee.
+    existing = db.query(AgentSession).filter(
+        AgentSession.employee_id == employee_id,
+        AgentSession.revoked == False,
+        AgentSession.expires_at > datetime.now(timezone.utc)
+    ).order_by(AgentSession.created_at.desc()).first()
+    
+    if existing:
+        return existing
 
     session = AgentSession(
         encrypted_token=_fernet().encrypt(token.encode()).decode(),
-        employee_id=claims.get("employeeId") or claims.get("sub"),
+        employee_id=employee_id,
         employee_name=claims.get("name"),
         role=claims.get("role"),
         tenant_id=claims.get("tenantId"),
