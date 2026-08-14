@@ -11,6 +11,7 @@ import EnterpriseCapabilityGrid from './components/EnterpriseCapabilityGrid.jsx'
 import { getThoughtText } from './utils/formatters.js'
 import {
   streamMessage,
+  confirmAction,
   fetchSessionsDB,
   createSessionDB,
   pinSessionDB,
@@ -345,11 +346,166 @@ export default function App() {
       return s
     }))
 
+    const lastMsg = currentSession?.messages?.[currentSession.messages.length - 1]
+    const pendingToken = lastMsg?.pending_confirmation_token
+
     setLoadingMap(prev => ({ ...prev, [currentId]: true }))
     setThoughtsMap(prev => ({ ...prev, [currentId]: [{ text: 'Analyzing request...', status: 'loading' }] }))
 
+    // Helper to process response chunking
+    const processStreamResponse = async (apiCallPromise) => {
+      let fullReply = ''
+      let lastUpdateTime = 0
+      let pendingUpdate = null
+      let newPendingToken = null
+
+      try {
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentId) {
+            return { ...s, messages: [...s.messages, { role: 'assistant', content: '', ts: Date.now() }] }
+          }
+          return s
+        }))
+
+        await apiCallPromise({
+          onResponse: (res) => {
+            if (res.pending_confirmation_token) newPendingToken = res.pending_confirmation_token
+          },
+          onChunk: (chunk) => {
+            if (chunk.includes('__TOKEN_EXPIRED__')) {
+              handleLogout()
+              setError('Your session has expired. Please log in again.')
+              if (pendingUpdate) clearTimeout(pendingUpdate)
+              throw new Error('Session Expired')
+            }
+            fullReply += chunk
+
+            const now = Date.now()
+            if (now - lastUpdateTime < 50) {
+              if (pendingUpdate) clearTimeout(pendingUpdate)
+              pendingUpdate = setTimeout(() => applyChunkUpdate(fullReply), 50)
+              return
+            }
+
+            lastUpdateTime = now
+            applyChunkUpdate(fullReply)
+          }
+        })
+
+        if (pendingUpdate) clearTimeout(pendingUpdate)
+
+        function applyChunkUpdate(currentReply) {
+          setLoadingMap(prev => ({ ...prev, [currentId]: false }))
+          let displayReply = currentReply
+          const startMatches = [...currentReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
+          const endMatches = [...currentReply.matchAll(/__TOOL_END__/g)]
+          let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
+          for (let i = 0; i < startMatches.length; i++) {
+            const toolName = startMatches[i][1] || 'tool'
+            const isDone = i < endMatches.length
+            thoughts.push({
+              text: getThoughtText(toolName),
+              status: isDone ? 'done' : 'loading'
+            })
+          }
+          displayReply = displayReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
+          setThoughtsMap(prev => ({ ...prev, [currentId]: thoughts }))
+          setSessions(prev => prev.map(s => {
+            if (s.id === currentId) {
+              const newMsgs = [...s.messages]
+              newMsgs[newMsgs.length - 1] = { role: 'assistant', content: displayReply, ts: Date.now(), pending_confirmation_token: newPendingToken }
+              return { ...s, messages: newMsgs }
+            }
+            return s
+          }))
+        }
+
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentId) {
+            const cleanReply = fullReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
+            setThoughtsMap(prevStatus => {
+              const newMap = { ...prevStatus }
+              delete newMap[currentId]
+              return newMap
+            })
+            const newMsgs = [...s.messages]
+            newMsgs[newMsgs.length - 1] = { role: 'assistant', content: cleanReply, ts: Date.now(), pending_confirmation_token: newPendingToken }
+            return {
+              ...s,
+              messages: newMsgs,
+              history: [
+                ...s.history,
+                { role: 'user', content: msg },
+                { role: 'assistant', content: cleanReply }
+              ]
+            }
+          }
+          return s
+        }))
+      } catch (err) {
+        if (err.message === 'Session Expired') return
+        const detail = err.response?.data?.detail || err.message || 'Unknown error'
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentId) {
+            return {
+              ...s,
+              messages: [...s.messages.slice(0, -1), { role: 'assistant', content: `Error: ${detail}`, ts: Date.now() }]
+            }
+          }
+          return s
+        }))
+      } finally {
+        setLoadingMap(prev => ({ ...prev, [currentId]: false }))
+        inputRef.current?.focus()
+      }
+    }
+
+    const lowerMsg = msg.toLowerCase().trim()
+    const isApproval = ['yes', 'y', 'sure', 'ok', 'go ahead', 'approve', 'confirm'].includes(lowerMsg)
+    const isDecline = ['no', 'n', 'cancel', 'stop', 'decline'].includes(lowerMsg)
+
+    if (pendingToken && (isApproval || isDecline)) {
+      await processStreamResponse(async ({ onResponse, onChunk }) => {
+        const res = await confirmAction({
+          conversationId: currentId,
+          pendingToken,
+          approve: isApproval,
+          token,
+        })
+        if (onResponse) onResponse(res)
+        onChunk(res.reply)
+      })
+    } else {
+      await processStreamResponse(async ({ onResponse, onChunk }) => {
+        await streamMessage({
+          message: outgoingMsg,
+          history,
+          token,
+          employeeId,
+          sessionId: currentId,
+          onResponse,
+          onChunk
+        })
+      })
+    }
+  }
+
+  const handleConfirmBtn = async (pendingToken, approve) => {
+    if (!configured) return
+    const currentId = activeSessionId
+    setLoadingMap(prev => ({ ...prev, [currentId]: true }))
+    setThoughtsMap(prev => ({ ...prev, [currentId]: [{ text: approve ? 'Approving action...' : 'Declining action...', status: 'loading' }] }))
+
+    // Add a fake user message reflecting the button click
+    const msg = approve ? 'Approve action' : 'Decline action'
+    setSessions(prev => prev.map(s => {
+      if (s.id === currentId) {
+        return { ...s, messages: [...s.messages, { role: 'user', content: msg, ts: Date.now() }] }
+      }
+      return s
+    }))
+
     try {
-      // Append initial assistant placeholder
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
           return { ...s, messages: [...s.messages, { role: 'assistant', content: '', ts: Date.now() }] }
@@ -357,89 +513,18 @@ export default function App() {
         return s
       }))
 
-      let fullReply = ''
-      let lastUpdateTime = 0
-      let pendingUpdate = null
-
-      await streamMessage({
-        message: outgoingMsg,
-        history,
-        token,
-        employeeId,
-        sessionId: currentId,
-        onChunk: (chunk) => {
-          if (chunk.includes('__TOKEN_EXPIRED__')) {
-            handleLogout()
-            setError('Your session has expired. Please log in again.')
-            if (pendingUpdate) clearTimeout(pendingUpdate)
-            throw new Error('Session Expired')
-          }
-          fullReply += chunk
-
-          // Throttle updates to at most once every 50ms to prevent massive React re-render lag
-          const now = Date.now()
-          if (now - lastUpdateTime < 50) {
-            if (pendingUpdate) clearTimeout(pendingUpdate)
-            pendingUpdate = setTimeout(() => {
-              applyChunkUpdate(fullReply)
-            }, 50)
-            return
-          }
-
-          lastUpdateTime = now
-          applyChunkUpdate(fullReply)
-        }
+      const res = await confirmAction({ conversationId: currentId, pendingToken, approve, token })
+      const cleanReply = res.reply
+      setThoughtsMap(prevStatus => {
+        const newMap = { ...prevStatus }
+        delete newMap[currentId]
+        return newMap
       })
 
-      if (pendingUpdate) clearTimeout(pendingUpdate)
-
-      function applyChunkUpdate(currentReply) {
-        setLoadingMap(prev => ({ ...prev, [currentId]: false }))
-
-        let displayReply = currentReply
-
-        const startMatches = [...currentReply.matchAll(/__TOOL_START:([\s\S]*?)__/g)]
-        const endMatches = [...currentReply.matchAll(/__TOOL_END__/g)]
-
-        let thoughts = [{ text: 'Analyzing request...', status: startMatches.length > 0 ? 'done' : 'loading' }]
-        for (let i = 0; i < startMatches.length; i++) {
-          const toolName = startMatches[i][1] || 'tool'
-          const isDone = i < endMatches.length
-          thoughts.push({
-            text: getThoughtText(toolName),
-            status: isDone ? 'done' : 'loading'
-          })
-        }
-
-        displayReply = displayReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
-
-        setThoughtsMap(prev => ({ ...prev, [currentId]: thoughts }))
-
-        setSessions(prev => prev.map(s => {
-          if (s.id === currentId) {
-            const newMsgs = [...s.messages]
-            newMsgs[newMsgs.length - 1] = { role: 'assistant', content: displayReply, ts: Date.now() }
-            return { ...s, messages: newMsgs }
-          }
-          return s
-        }))
-      }
-
-      // Update history and messages in current session
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
-          const cleanReply = fullReply.replace(/__TOOL_START:[\s\S]*?__/g, '').replace(/__TOOL_END__/g, '')
-
-          // Hide the thoughts when the final response is complete
-          setThoughtsMap(prevStatus => {
-            const newMap = { ...prevStatus }
-            delete newMap[currentId]
-            return newMap
-          })
-
           const newMsgs = [...s.messages]
           newMsgs[newMsgs.length - 1] = { role: 'assistant', content: cleanReply, ts: Date.now() }
-
           return {
             ...s,
             messages: newMsgs,
@@ -453,23 +538,15 @@ export default function App() {
         return s
       }))
     } catch (err) {
-      if (err.message === 'Session Expired') {
-        // We already handled logout and set error in onChunk
-        return
-      }
       const detail = err.response?.data?.detail || err.message || 'Unknown error'
       setSessions(prev => prev.map(s => {
         if (s.id === currentId) {
-          return {
-            ...s,
-            messages: [...s.messages.slice(0, -1), { role: 'assistant', content: `Error: ${detail}`, ts: Date.now() }]
-          }
+          return { ...s, messages: [...s.messages.slice(0, -1), { role: 'assistant', content: `Error: ${detail}`, ts: Date.now() }] }
         }
         return s
       }))
     } finally {
       setLoadingMap(prev => ({ ...prev, [currentId]: false }))
-      inputRef.current?.focus()
     }
   }
 
@@ -626,14 +703,23 @@ export default function App() {
                 </div>
               )}
 
-              {/* Render Chat Messages */}
-              {messages.map((m, i) => (
-                <React.Fragment key={i}>
-                  {/* Main chat bubble */}
-
-                  <MessageBubble role={m.role} content={m.content} ts={m.ts} onSend={handleSend} />
-                </React.Fragment>
-              ))}
+              {messages.map((m, i) => {
+                const isLast = i === messages.length - 1
+                return (
+                  <React.Fragment key={i}>
+                    {/* Main chat bubble */}
+                    <MessageBubble 
+                      role={m.role} 
+                      content={m.content} 
+                      ts={m.ts} 
+                      onSend={handleSend}
+                      pendingToken={m.pending_confirmation_token}
+                      isLast={isLast}
+                      onConfirmBtn={handleConfirmBtn}
+                    />
+                  </React.Fragment>
+                )
+              })}
 
               <div ref={bottomRef} />
             </div>

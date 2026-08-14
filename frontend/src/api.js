@@ -31,14 +31,36 @@ export async function sendMessage({ message, history, token, employeeId, session
   return res.data
 }
 
-export async function streamMessage({ message, history, token, employeeId, sessionId, onChunk }) {
+export async function streamMessage({ message, history, token, employeeId, sessionId, onResponse, onChunk }) {
   try {
     const res = await sendMessage({ message, history, token, employeeId, sessionId })
+    if (onResponse) onResponse(res)
     if (res && res.reply) {
       onChunk(res.reply)
     } else {
       onChunk(JSON.stringify(res))
     }
+  } catch (e) {
+    if (e.response && e.response.data && e.response.data.detail) {
+      throw new Error(e.response.data.detail)
+    }
+    throw e;
+  }
+}
+
+export async function confirmAction({ conversationId, pendingToken, approve, token }) {
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await axios.post(
+      `${BASE}/confirm`,
+      {
+        conversation_id: conversationId,
+        pending_confirmation_token: pendingToken,
+        approve,
+      },
+      { headers }
+    )
+    return res.data
   } catch (e) {
     if (e.response && e.response.data && e.response.data.detail) {
       throw new Error(e.response.data.detail)

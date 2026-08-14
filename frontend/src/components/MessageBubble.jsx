@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Bot, User, Copy, Check, Terminal } from 'lucide-react'
+import { Bot, User, Copy, Check, Terminal, X } from 'lucide-react'
 import TicketForm from './TicketForm.jsx'
 import LeaveForm from './LeaveForm.jsx'
 
@@ -11,7 +11,7 @@ function formatTime(ts) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function MessageBubble({ role, content, ts, onSend }) {
+export default function MessageBubble({ role, content, ts, onSend, pendingToken, isLast, onConfirmBtn }) {
   const isUser = role === 'user'
   const [copied, setCopied] = useState(false)
 
@@ -142,6 +142,23 @@ export default function MessageBubble({ role, content, ts, onSend }) {
         {formType === 'GRIEVANCE' && (
           <div className="bg-agent-amber/10 text-agent-amber p-3 rounded-lg text-xs border border-agent-amber/25 my-2 flex items-center gap-2">
             <Terminal size={13} /> Grievance form under construction
+          </div>
+        )}
+
+        {pendingToken && isLast && (
+          <div className="flex items-center gap-3 mt-3 w-full border-t border-slate-200/60 pt-3">
+            <button
+              onClick={() => onConfirmBtn(pendingToken, true)}
+              className="flex-1 flex items-center justify-center gap-2 bg-agent-accent hover:bg-agent-accent/90 text-white font-medium py-2 px-4 rounded-xl transition-colors text-sm"
+            >
+              <Check size={16} /> Approve Action
+            </button>
+            <button
+              onClick={() => onConfirmBtn(pendingToken, false)}
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-xl transition-colors text-sm"
+            >
+              <X size={16} /> Decline
+            </button>
           </div>
         )}
 
