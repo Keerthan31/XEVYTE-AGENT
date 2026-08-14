@@ -28,11 +28,15 @@ async def get_sessions(
     session: AgentSession = Depends(get_current_session),
     db: DBSession = Depends(get_db)
 ) -> Any:
-    # Always scope to the authenticated session — the employee_id URL param
-    # is accepted for frontend convenience but never trusted over the session.
+    # Fetch all AgentSessions for this employee so we can load all their history
+    # even across different login sessions or orphaned sessions from the CORS bug.
+    employee_sessions = db.query(AgentSession.id).filter(
+        AgentSession.employee_id == employee_id
+    ).subquery()
+
     conversations = (
         db.query(Conversation)
-        .filter(Conversation.session_id == session.id)
+        .filter(Conversation.session_id.in_(employee_sessions))
         .order_by(Conversation.created_at.desc())
         .all()
     )
