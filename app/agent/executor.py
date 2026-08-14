@@ -146,10 +146,31 @@ async def execute(
         headers["Authorization"] = f"Bearer {bearer_token}"
 
     request_kwargs: dict = {"method": endpoint.http_method, "url": url, "params": params, "headers": headers}
-    if endpoint.has_file_upload and files:
-        request_kwargs["files"] = files
-        if isinstance(body, dict):
-            request_kwargs["data"] = {k: str(v) for k, v in body.items()}
+    
+    consumes = getattr(endpoint, "consumes", "application/json")
+    if "multipart/form-data" in consumes or endpoint.has_file_upload:
+        import json
+        request_kwargs["files"] = files or {}
+        mp_parts = endpoint.get_multipart_parts() if hasattr(endpoint, "get_multipart_parts") else getattr(endpoint, "multipart_parts", [])
+        
+        if mp_parts:
+            for pt in mp_parts:
+                if pt["part_type"] == "json_dto" and body is not None:
+                    # Inject the JSON DTO as a multipart part with proper content type
+                    request_kwargs["files"][pt["name"]] = (None, json.dumps(body).encode("utf-8"), "application/json")
+                elif pt["part_type"] == "scalar" and isinstance(body, dict) and pt["name"] in body:
+                    if "data" not in request_kwargs:
+                        request_kwargs["data"] = {}
+                    request_kwargs["data"][pt["name"]] = str(body[pt["name"]])
+        else:
+            # Fallback
+            if isinstance(body, dict):
+                request_kwargs["data"] = {k: str(v) if v is not None else "" for k, v in body.items()}
+                
+        # If files dictionary ends up empty but we need multipart, httpx might fall back to urlencoded if we just pass files={}.
+        # Wait, httpx handles files={} by NOT sending multipart, but we MUST send multipart. 
+        # A trick in httpx is to provide a dummy empty byte string if it's completely empty, but here 
+        # we have at least the 'dto' part from above in most cases.
     elif body is not None and endpoint.http_method in ("POST", "PUT", "PATCH"):
         request_kwargs["json"] = body
 
