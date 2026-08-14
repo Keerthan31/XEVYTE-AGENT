@@ -30,6 +30,12 @@ def _get_or_create_conversation(db: DBSession, session: AgentSession, conversati
         conv = db.get(Conversation, conversation_id)
         if conv and conv.session_id == session.id:
             return conv
+        elif not conv:
+            conv = Conversation(id=conversation_id, session_id=session.id)
+            db.add(conv)
+            db.commit()
+            db.refresh(conv)
+            return conv
     conv = Conversation(session_id=session.id)
     db.add(conv)
     db.commit()
