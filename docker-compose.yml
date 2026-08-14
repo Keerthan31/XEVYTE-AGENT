@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: xevyte_agent
+      POSTGRES_PASSWORD: xevyte_agent
+      POSTGRES_DB: xevyte_agent
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xevyte_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  agent:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://xevyte_agent:xevyte_agent@postgres:5432/xevyte_agent
+      CHROMA_PERSIST_DIR: /srv/xevyte-agent/data/chroma
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - chroma_data:/srv/xevyte-agent/data/chroma
+      # Uncomment + point at your Java repo checkout to enable live catalog
+      # auto-refresh (JAVA_SOURCE_DIR below must match the path on the RIGHT
+      # of the colon; set AUTO_WATCH_JAVA_SOURCE=true in .env too):
+      # - /path/on/host/to/employee-login-backend2/src/main/java/com/register/example:/java-source:ro
+    ports:
+      - "8443:8443"   # direct HTTPS if SSL_KEYFILE/SSL_CERTFILE are set; otherwise plain HTTP on this port
+
+  # Optional: real reverse-proxy TLS termination instead of uvicorn's own
+  # --ssl-keyfile/--ssl-certfile. Point a real cert at ./certs and uncomment
+  # to serve HTTPS on 443 while the `agent` container stays plain HTTP
+  # internally. This is the recommended setup for anything beyond local dev.
+  #
+  # nginx:
+  #   image: nginx:alpine
+  #   restart: unless-stopped
+  #   depends_on: [agent]
+  #   ports:
+  #     - "443:443"
+  #   volumes:
+  #     - ./certs:/etc/nginx/certs:ro
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  pgdata:
+  chroma_data:

@@ -1,0 +1,55 @@
+# --- Web framework ---
+# fastapi/starlette pinned loosely too: `mcp`'s own transport pulls a newer
+# starlette than fastapi's exact-pinned default expects. Minimum versions
+# let pip resolve one mutually-compatible set across fastapi+mcp+starlette
+# instead of deadlocking on exact pins from unrelated release trains.
+fastapi>=0.115.6
+starlette>=0.40.0
+uvicorn[standard]>=0.34.0
+python-multipart>=0.0.20
+python-dotenv>=1.0.1
+
+# --- Agent orchestration ---
+# Pinned with >= (not ==): langgraph/langchain/litellm/instructor/mcp all
+# ship very frequently and cross-pin langchain-core / langgraph-checkpoint
+# tightly to each other. Exact pins here go stale within weeks and
+# deadlock pip's resolver; minimum versions let pip solve a mutually-
+# compatible set. Re-run `pip freeze` after install if you want to lock
+# resolved versions for reproducible deploys.
+langgraph>=0.2.62
+langgraph-checkpoint>=2.1.0
+langgraph-checkpoint-postgres>=2.0.21
+langchain>=0.3.14
+langchain-core>=0.3.29
+langchain-openai>=0.3.1
+instructor>=1.7.2
+litellm>=1.59.6
+langsmith>=0.2.11
+tenacity>=9.0.0
+mcp>=1.9.4
+
+# --- RAG / retrieval ---
+chromadb==0.6.3
+pypdf==5.1.0
+tiktoken==0.8.0
+rank-bm25==0.2.2
+
+# --- Data layer ---
+psycopg2-binary==2.9.10
+SQLAlchemy==2.0.37
+alembic==1.14.0
+pydantic>=2.10.5
+pydantic-settings>=2.7.1
+
+# --- Auth / HTTP ---
+httpx==0.28.1
+pyjwt==2.10.1
+cryptography==44.0.0
+
+# --- Live catalog auto-refresh (watches Java source for changes) ---
+watchdog==6.0.0
+
+# --- Eval / observability ---
+deepeval==2.2.6
+
+# --- OpenAPI / swagger is served natively by FastAPI (no extra package needed) ---
