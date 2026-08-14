@@ -131,7 +131,49 @@ export async function fetchSecurityEvents(limit = 100) {
 // ── Autonomous session-start briefing ──
 
 export async function fetchAgentBriefing({ token, employeeId }) {
-  return []
+  if (!employeeId || !token) return []
+  
+  try {
+    const headers = { Authorization: `Bearer ${token}` }
+    const res = await axios.get(`http://localhost:8082/api/notifications/${employeeId}`, { headers })
+    const notifications = Array.isArray(res.data) ? res.data : []
+    
+    // Filter unread notifications
+    const unread = notifications.filter(n => !n.read)
+    
+    if (unread.length === 0) return []
+    
+    const briefing = []
+    
+    // Group or summarize them. If there's just a few, show them, otherwise summarize.
+    if (unread.length === 1) {
+      briefing.push({
+        tag: 'Notification',
+        tier: 'safe',
+        text: unread[0].message
+      })
+    } else {
+      briefing.push({
+        tag: 'Notifications',
+        tier: 'safe',
+        text: `You have ${unread.length} unread notifications.`
+      })
+      
+      // Optionally show the first one or two
+      for (let i = 0; i < Math.min(2, unread.length); i++) {
+        briefing.push({
+          tag: 'Alert',
+          tier: 'safe',
+          text: unread[i].message
+        })
+      }
+    }
+    
+    return briefing
+  } catch (e) {
+    console.warn('Failed to fetch agent briefing:', e)
+    return []
+  }
 }
 
 // ── File attachments (PDF / images) ──
