@@ -37,23 +37,49 @@ def get_current_session(
     request: Request,
     db: DBSession = Depends(get_db),
 ) -> AgentSession:
+    import logging
+    logger = logging.getLogger("xevyte_agent.auth")
+
     settings = get_settings()
+
+    # Always extract BOTH cookie and Bearer token so one can fall back to the other.
     session_id = request.cookies.get(settings.SESSION_COOKIE_NAME)
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Not logged in. Call /api/agent/auth/login first.")
-    session = sessions.get_session(db, session_id)
-    if not session:
-        raise HTTPException(status_code=401, detail="Session expired or invalid. Please log in again.")
-    return session
+    token_str = None
+    auth_hdr = request.headers.get("authorization", "")
+    if auth_hdr.startswith("Bearer "):
+        token_str = auth_hdr[7:].strip()
+    if not session_id and not token_str and request.headers.get("x-session-id"):
+        session_id = request.headers.get("x-session-id")
+
+    # 1. Try cookie-based session lookup
+    if session_id:
+        session = sessions.get_session(db, session_id)
+        if session:
+            return session
+        logger.debug("Session cookie present but session not found or expired: %s", session_id[:8])
+
+    # 2. Try Bearer token — either as a session id or as a raw Scaloz IAM JWT
+    if token_str:
+        session = sessions.get_session(db, token_str)
+        if session:
+            return session
+        # Not a session id — treat as a Scaloz IAM token and create a session
+        try:
+            return sessions.create_session(db, token_str)
+        except Exception as e:
+            logger.warning("Failed to create session from Bearer token: %s", e)
+
+    raise HTTPException(status_code=401, detail="Not logged in. Call /api/agent/auth/login first.")
 
 
 def _set_session_cookie(response: Response, session_id: str) -> None:
     settings = get_settings()
+    is_https = bool(settings.SSL_KEYFILE and settings.SSL_CERTFILE)
     response.set_cookie(
         key=settings.SESSION_COOKIE_NAME,
         value=session_id,
         httponly=True,
-        secure=True,
+        secure=is_https,
         samesite="lax",
         max_age=settings.SESSION_TTL_HOURS * 3600,
     )

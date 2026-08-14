@@ -40,10 +40,11 @@ def setup_langsmith() -> None:
 
 def get_chat_model(temperature: float = 0.2) -> ChatOpenAI:
     settings = get_settings()
+    base_url = settings.OPENAI_BASE_URL.strip() if settings.OPENAI_BASE_URL else None
     return ChatOpenAI(
         model=settings.CHAT_MODEL,
         api_key=settings.OPENAI_API_KEY,
-        base_url=settings.OPENAI_BASE_URL,
+        base_url=base_url or None,
         temperature=temperature,
         timeout=60,
     )
@@ -51,7 +52,8 @@ def get_chat_model(temperature: float = 0.2) -> ChatOpenAI:
 
 def get_instructor_client() -> instructor.Instructor:
     settings = get_settings()
-    raw_client = OpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_BASE_URL)
+    base_url = settings.OPENAI_BASE_URL.strip() if settings.OPENAI_BASE_URL else None
+    raw_client = OpenAI(api_key=settings.OPENAI_API_KEY, base_url=base_url or None)
     return instructor.from_openai(raw_client, mode=instructor.Mode.TOOLS)
 
 

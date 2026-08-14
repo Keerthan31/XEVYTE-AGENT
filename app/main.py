@@ -25,7 +25,7 @@ from app.agent.llm import setup_langsmith
 from app.catalog.loader import load_catalog
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth_routes, catalog_routes, chat, chat_v2
+from app.routers import auth_routes, catalog_routes, chat, chat_v2, sessions
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("xevyte_agent")
@@ -54,6 +54,7 @@ app.include_router(auth_routes.router)
 app.include_router(chat.router)
 app.include_router(chat_v2.router)
 app.include_router(catalog_routes.router)
+app.include_router(sessions.router)
 
 
 @app.on_event("startup")

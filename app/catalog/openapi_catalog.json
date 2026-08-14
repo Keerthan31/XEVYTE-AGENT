@@ -10907,40 +10907,6 @@
         ]
       }
     },
-    "/api/employees/search": {
-      "get": {
-        "operationId": "employee_api_employees_search_get_searchemployees",
-        "tags": [
-          "Employee"
-        ],
-        "summary": "GET /api/employees/search Employee module. Action: search employees. Required query params: query.",
-        "description": "GET /api/employees/search Employee module. Action: search employees. Required query params: query.",
-        "parameters": [
-          {
-            "name": "query",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": null
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/employees/validate": {
       "post": {
         "operationId": "employee_api_employees_validate_post_validateemployeeids",
@@ -15426,39 +15392,6 @@
         ]
       }
     },
-    "/api/leaves/balance/{employeeId}": {
-      "get": {
-        "operationId": "leave_api_leaves_balance_employeeId_get_getleavebalance",
-        "tags": [
-          "Leave"
-        ],
-        "summary": "GET /api/leaves/balance/{employeeId} Leave module. Action: get leave balance. Path params: employeeId.",
-        "description": "GET /api/leaves/balance/{employeeId} Leave module. Action: get leave balance. Path params: employeeId.",
-        "parameters": [
-          {
-            "name": "employeeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/leaves/calculate-preview": {
       "get": {
         "operationId": "leave_api_leaves_calculate_preview_get_previewleavecalculation",
@@ -16542,83 +16475,6 @@
         ]
       }
     },
-    "/api/leaves/{id}/status": {
-      "put": {
-        "operationId": "leave_api_leaves_id_status_put_updateleavestatus",
-        "tags": [
-          "Leave"
-        ],
-        "summary": "PUT /api/leaves/{id}/status Leave module. Action: update leave status. Path params: id. Request body: Map<String, String",
-        "description": "PUT /api/leaves/{id}/status Leave module. Action: update leave status. Path params: id. Request body: Map<String, String>.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "title": "Map<String, String>"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/leaves/assignment-balance/{employeeId}": {
-      "get": {
-        "operationId": "leaveassignment_api_leaves_assignment_balance_employeeId_get_getleavebalance",
-        "tags": [
-          "LeaveAssignment"
-        ],
-        "summary": "GET /api/leaves/assignment-balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employee",
-        "description": "GET /api/leaves/assignment-balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
-        "parameters": [
-          {
-            "name": "employeeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/leaves/balance-detailed/{employeeId}": {
       "get": {
         "operationId": "leaveassignment_api_leaves_balance_detailed_employeeId_get_getdetailedleavebalancealias",
@@ -16660,6 +16516,39 @@
         ],
         "summary": "GET /api/leaves/balance/details/{employeeId} LeaveAssignment module. Action: get detailed leave balance. Path params: em",
         "description": "GET /api/leaves/balance/details/{employeeId} LeaveAssignment module. Action: get detailed leave balance. Path params: employeeId.",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/balance/{employeeId}": {
+      "get": {
+        "operationId": "leaveassignment_api_leaves_balance_employeeId_get_getleavebalance",
+        "tags": [
+          "LeaveAssignment"
+        ],
+        "summary": "GET /api/leaves/balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
+        "description": "GET /api/leaves/balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
         "parameters": [
           {
             "name": "employeeId",
@@ -17104,6 +16993,39 @@
             }
           }
         }
+      }
+    },
+    "/api/notifications/read-all/{employeeId}": {
+      "post": {
+        "operationId": "notification_api_notifications_read_all_employeeId_post_markallasread",
+        "tags": [
+          "Notification"
+        ],
+        "summary": "POST /api/notifications/read-all/{employeeId} Notification module. Action: mark all as read. Path params: employeeId.",
+        "description": "POST /api/notifications/read-all/{employeeId} Notification module. Action: mark all as read. Path params: employeeId.",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/notifications/read/{id}": {
@@ -18462,10 +18384,10 @@
           "Payslip"
         ],
         "summary": "GET /api/v1/payslips/by-employee/{employeeId}/month/{month} Payslip module. Action: get payslip by employee and month. P",
-        "description": "GET /api/v1/payslips/by-employee/{employeeId}/month/{month} Payslip module. Action: get payslip by employee and month. Path params: month, employeeId.",
+        "description": "GET /api/v1/payslips/by-employee/{employeeId}/month/{month} Payslip module. Action: get payslip by employee and month. Path params: employeeId, month.",
         "parameters": [
           {
-            "name": "month",
+            "name": "employeeId",
             "in": "path",
             "required": true,
             "schema": {
@@ -18473,7 +18395,7 @@
             }
           },
           {
-            "name": "employeeId",
+            "name": "month",
             "in": "path",
             "required": true,
             "schema": {

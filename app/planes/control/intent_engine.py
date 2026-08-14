@@ -12,7 +12,7 @@ strictly-typed result, not free text to parse hopefully.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict
 
 from pydantic import BaseModel, Field
 
@@ -37,7 +37,7 @@ Do not invent entity values that aren't stated or clearly implied — omit uncer
 class IntentResult(BaseModel):
     intent: str
     domain: str = Field(description="One of the known domain names, or UNKNOWN")
-    entities: dict[str, str] = Field(default_factory=dict)
+    entities: dict = Field(default_factory=dict, description="Dictionary of extracted entities")
     confidence: float = Field(ge=0.0, le=1.0)
     ambiguities: list[str] = Field(default_factory=list)
 

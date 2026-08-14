@@ -1,0 +1,271 @@
+@import "tailwindcss";
+/* ══════════════════════════════════════════════════════════════════
+   XEVA — ENTERPRISE AGENT COMMAND CENTER
+   Design system: near-black operations surface, single teal accent,
+   monospace reserved for anything machine-generated (tool names,
+   endpoint ids, trace ids) so the eye separates "the agent said this"
+   from "the agent executed this."
+══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-void: #f3f4f6;
+  --bg-base: #ffffff;
+  --bg-panel: #f9fafb;
+  --bg-panel-raised: #ffffff;
+  --bg-inset: #e5e7eb;
+  --border-hair: rgba(0, 0, 0, 0.08);
+  --border-hair-strong: rgba(0, 0, 0, 0.16);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --accent: #009084;
+  --accent-dim: #007c72;
+  --accent-soft: rgba(0, 144, 132, 0.10);
+  --accent-glow: rgba(0, 144, 132, 0.35);
+  --amber: #d97706;
+  --amber-soft: rgba(217, 119, 6, 0.12);
+  --red: #dc2626;
+  --red-soft: rgba(220, 38, 38, 0.12);
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Wix Madefor Display', 'Inter', sans-serif;
+    @apply antialiased;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 212, 189, 0.25) transparent;
+  }
+  *::-webkit-scrollbar { width: 5px; height: 5px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 189, 0.25);
+    border-radius: 99px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 189, 0.45); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   AMBIENT BACKGROUND — quiet, not decorative
+══════════════════════════════════════════ */
+.agent-canvas-bg {
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(0, 144, 132, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 100% 100%, rgba(0, 124, 114, 0.035) 0%, transparent 60%),
+    var(--bg-base);
+}
+
+/* ══════════════════════════════════════════
+   PANEL SURFACES
+══════════════════════════════════════════ */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hair);
+}
+.panel-raised {
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-hair-strong);
+}
+.panel-inset {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-hair);
+}
+
+/* ══════════════════════════════════════════
+   OPERATIONS RAIL — the signature element.
+   A live vertical trace line connecting an
+   agent turn's reasoning → tool calls → result,
+   like a pipeline log rather than a chat bubble.
+══════════════════════════════════════════ */
+.trace-line {
+  position: relative;
+}
+.trace-line::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: -4px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--border-hair-strong), transparent);
+}
+.trace-line:last-child::before { display: none; }
+
+.trace-node {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-hair-strong);
+}
+.trace-node.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.trace-node.is-done {
+  border-color: rgba(0, 212, 189, 0.4);
+}
+.trace-node.is-blocked {
+  border-color: rgba(229, 72, 77, 0.5);
+}
+
+/* ══════════════════════════════════════════
+   CHAT TURNS
+══════════════════════════════════════════ */
+.turn-user {
+  background: linear-gradient(135deg, #e6f7f6 0%, #ccefed 100%);
+  border: 1px solid rgba(0, 144, 132, 0.18);
+  border-radius: 14px 14px 3px 14px;
+  color: var(--text-primary);
+}
+.turn-agent {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hair);
+  border-radius: 3px 14px 14px 14px;
+  color: var(--text-primary);
+}
+
+@keyframes turnRise {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.turn-animate { animation: turnRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* ══════════════════════════════════════════
+   INPUT
+══════════════════════════════════════════ */
+.command-input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hair-strong);
+  border-radius: 16px;
+  transition: all 0.16s ease;
+  color: var(--text-primary);
+}
+.command-input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.command-input::placeholder { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+.btn-accent {
+  background: linear-gradient(135deg, #00d4bd 0%, #009084 100%);
+  color: #04120f;
+  font-weight: 600;
+  box-shadow: 0 2px 16px rgba(0, 212, 189, 0.25);
+  transition: all 0.16s ease;
+}
+.btn-accent:hover:not(:disabled) {
+  box-shadow: 0 4px 22px rgba(0, 212, 189, 0.4);
+  transform: translateY(-1px);
+}
+.btn-accent:active:not(:disabled) { transform: translateY(0); }
+.btn-accent:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  color: var(--text-secondary);
+  transition: all 0.14s ease;
+}
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-panel-raised); }
+
+/* ══════════════════════════════════════════
+   STATUS / RISK CHIPS
+══════════════════════════════════════════ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+  border: 1px solid transparent;
+}
+.chip-safe { background: var(--accent-soft); color: var(--accent); border-color: rgba(0, 212, 189, 0.25); }
+.chip-confirm { background: var(--amber-soft); color: var(--amber); border-color: rgba(232, 163, 61, 0.3); }
+.chip-blocked { background: var(--red-soft); color: var(--red); border-color: rgba(229, 72, 77, 0.3); }
+.chip-neutral { background: rgba(154, 168, 163, 0.08); color: var(--text-secondary); border-color: var(--border-hair-strong); }
+
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 0 var(--accent-glow);
+  animation: pulseDot 2.2s ease infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%      { box-shadow: 0 0 0 4px transparent; }
+}
+
+/* ══════════════════════════════════════════
+   TYPING / EXECUTION INDICATOR
+══════════════════════════════════════════ */
+@keyframes typingWave {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+  40%           { transform: translateY(-5px); opacity: 1; }
+}
+.typing-dot { animation: typingWave 1.2s ease-in-out infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spinSlow 1.6s linear infinite; }
+
+/* ══════════════════════════════════════════
+   MONO UTILITY
+══════════════════════════════════════════ */
+.font-agent-mono { font-family: var(--mono); }
+
+/* ══════════════════════════════════════════
+   ACTION TILES (welcome screen)
+══════════════════════════════════════════ */
+.command-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hair);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  text-align: left;
+}
+.command-tile:hover {
+  border-color: rgba(0, 212, 189, 0.35);
+  background: var(--bg-panel-raised);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════════════════
+   SCROLL FADE
+══════════════════════════════════════════ */
+.scroll-fade-top {
+  background: linear-gradient(to bottom, var(--bg-base) 0%, transparent 100%);
+}

@@ -3,7 +3,7 @@ fields it changed (LangGraph merges partial updates)."""
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 from pydantic import BaseModel, Field
 
@@ -26,9 +26,9 @@ from app.rag.retriever import retrieve
 
 class EndpointCallPlan(BaseModel):
     endpoint_id: str = Field(description="One of the given candidate endpoint ids, or '' if none fit.")
-    path_args: dict[str, str] = Field(default_factory=dict)
-    query_args: dict[str, str] = Field(default_factory=dict)
-    body: Optional[Any] = Field(default=None, description="JSON object (or array, for bulk endpoints) request body.")
+    path_args: dict = Field(default_factory=dict, description="Dictionary of path arguments")
+    query_args: dict = Field(default_factory=dict, description="Dictionary of query arguments")
+    body: Optional[dict] = Field(default=None, description="JSON object (or array, for bulk endpoints) request body.")
     missing_info: list[str] = Field(default_factory=list)
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
 

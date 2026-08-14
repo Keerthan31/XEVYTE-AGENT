@@ -12,15 +12,37 @@ load_dotenv() first makes .env values visible both ways.
 from functools import lru_cache
 from typing import Optional
 
+import os
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
+# Prevent empty environment variables (like OPENAI_BASE_URL="") from polluting
+# SDKs that inspect os.environ directly (such as the OpenAI/httpx client).
+for _k, _v in list(os.environ.items()):
+    if isinstance(_v, str) and not _v.strip():
+        os.environ.pop(_k, None)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator(
+        "OPENAI_BASE_URL",
+        "EMBEDDING_PROVIDER_API_KEY",
+        "LANGCHAIN_API_KEY",
+        "JAVA_SOURCE_DIR",
+        "SSL_KEYFILE",
+        "SSL_CERTFILE",
+        mode="before",
+    )
+    @classmethod
+    def _empty_str_to_none(cls, v):
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
     # ---- Xevyte Connect HRMS backend (the real Java API this agent calls) ----
     HRMS_API_BASE_URL: str = Field(

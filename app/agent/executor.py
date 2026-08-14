@@ -15,6 +15,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from app.catalog.loader import EndpointSpec
 from app.config import get_settings
+from app.planes.execution.request_compiler import CompiledRequest
 
 RESPONSE_BODY_CHAR_LIMIT = 12000  # keep huge list/report responses from blowing the LLM context
 
