@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session as DBSession
 from app.agent import nodes
 from app.agent.graph import get_agent_graph
 from app.agent.state import AgentState
+from app.agent.memory import summarize_history
 from app.auth import sessions
 from app.catalog.loader import get_catalog
 from app.database import get_db
@@ -88,8 +89,22 @@ async def chat(
 
     conversation = _get_or_create_conversation(db, session, body.conversation_id)
     history = _load_history(db, conversation.id)
+    
+    # --- Summary Memory Middleware ---
+    # If the conversation is getting long, summarize the older messages to save context window,
+    # without deleting them from the DB (so the frontend UI remains unaffected).
+    if len(history) > 10:
+        old_history = history[:-5]
+        recent_history = history[-5:]
+        summary_text = await summarize_history(old_history)
+        history = [{"role": "system", "content": f"Summary of earlier conversation:\n{summary_text}"}] + recent_history
+    # ---------------------------------
+
     db.add(Message(conversation_id=conversation.id, role="user", content=body.message))
     db.commit()
+
+    # Append the current user message to the history passed to the agent
+    history.append({"role": "user", "content": body.message})
 
     initial_state: AgentState = {
         "user_message": body.message,
@@ -176,8 +191,18 @@ async def confirm(
     if not bearer_token:
         raise HTTPException(status_code=401, detail="Could not decrypt session token — please log in again.")
 
+    history = _load_history(db, conversation.id)
+    if len(history) > 10:
+        old_history = history[:-5]
+        recent_history = history[-5:]
+        summary_text = await summarize_history(old_history)
+        history = [{"role": "system", "content": f"Summary of earlier conversation:\n{summary_text}"}] + recent_history
+    
+    history.append({"role": "user", "content": "(confirmed pending action)"})
+
     state: AgentState = {
         "user_message": "(confirmed pending action)",
+        "conversation_history": history,
         "planned_call": pending_msg.trace.get("planned_call"),
         "risk_tier": pending_msg.trace.get("risk_tier"),
         "bearer_token": bearer_token,
