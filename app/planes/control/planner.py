@@ -43,7 +43,8 @@ choosing among these, not the full API). Decide:
 3. Fields you have no basis for at all: simply omit them — do not include a low-confidence guess as USER/SESSION.
 
 Never invent ids, dates, or amounts that aren't grounded in something shown to you. When genuinely unsure, prefer
-omitting the parameter (it will correctly show up as needing clarification) over guessing."""
+omitting the parameter (it will correctly show up as needing clarification) over guessing.
+IMPORTANT: Always format date strings strictly as 'DD-MM-YYYY' (e.g., '14-10-2023') and datetime strings as 'YYYY-MM-DDTHH:mm:ss' to match the backend's strict requirements!"""
 
 
 class PlannedParam(BaseModel):
