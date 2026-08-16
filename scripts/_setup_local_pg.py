@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2 import sql
 
 ROLE = "xevyte_agent"
-PASSWORD = "xevyte_agent"
+PASSWORD = "123@Ab"
 DB = "xevyte_agent"
 
 # Common local Windows Postgres superuser candidates

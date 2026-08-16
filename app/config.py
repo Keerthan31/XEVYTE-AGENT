@@ -86,7 +86,7 @@ class Settings(BaseSettings):
 
     # ---- Postgres ----
     DATABASE_URL: str = Field(
-        default="postgresql+psycopg2://xevyte_agent:xevyte_agent@localhost:5432/xevyte_agent",
+        default="postgresql+psycopg2://xevyte_agent:123%40Ab@localhost:5432/xevyte_agent",
     )
 
     # ---- Chroma (RAG store) ----

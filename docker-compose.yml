@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: xevyte_agent
-      POSTGRES_PASSWORD: xevyte_agent
+      POSTGRES_PASSWORD: 123@Ab
       POSTGRES_DB: xevyte_agent
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg2://xevyte_agent:xevyte_agent@postgres:5432/xevyte_agent
+      DATABASE_URL: postgresql+psycopg2://xevyte_agent:123%40Ab@postgres:5432/xevyte_agent
       CHROMA_PERSIST_DIR: /srv/xevyte-agent/data/chroma
     depends_on:
       postgres:
