@@ -59,12 +59,14 @@ def _validate_one(name: str, value: Any, java_type_hint: str | None) -> Validati
             return ValidationIssue(name, f"expected true/false, got {value!r}")
 
     elif "date" in hint and "time" not in hint:
-        if not _DATE_RE.match(str(value)):
-            return ValidationIssue(name, f"expected an ISO date (YYYY-MM-DD), got {value!r}")
+        from app.agent.param_utils import is_valid_date_string
+        if not is_valid_date_string(value):
+            return ValidationIssue(name, f"expected a date (YYYY-MM-DD or DD-MM-YYYY), got {value!r}")
 
     elif "localdatetime" in hint or "instant" in hint or ("date" in hint and "time" in hint):
-        if not (_DATE_RE.match(str(value)) or _DATETIME_RE.match(str(value))):
-            return ValidationIssue(name, f"expected an ISO date/datetime, got {value!r}")
+        from app.agent.param_utils import is_valid_date_string
+        if not is_valid_date_string(value):
+            return ValidationIssue(name, f"expected an ISO date/datetime or DD-MM-YYYY, got {value!r}")
 
     # heuristic cross-field-adjacent check: *Id fields should not be empty/whitespace-only
     if name.lower().endswith("id") and isinstance(value, str) and not value.strip():
@@ -92,9 +94,10 @@ def validate_date_range(start: str | None, end: str | None) -> ValidationIssue |
     write-path tools (leave, travel, claims) — end must not precede start."""
     if not start or not end:
         return None
+    from app.agent.param_utils import normalize_date_string
     try:
-        s = datetime.fromisoformat(start[:10])
-        e = datetime.fromisoformat(end[:10])
+        s = datetime.fromisoformat(str(normalize_date_string(start))[:10])
+        e = datetime.fromisoformat(str(normalize_date_string(end))[:10])
     except ValueError:
         return None  # format issue already caught by the per-field check above
     if e < s:

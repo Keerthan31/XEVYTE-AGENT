@@ -17,18 +17,53 @@ from app.guardrails.pii import redact
 from app.guardrails.risk import classify
 from app.routers.auth_routes import get_current_session
 from app.schemas import ChatRequest, ChatResponse, ConfirmRequest, EndpointCallSummary
+from app.config import get_settings
 
 router = APIRouter(prefix="/api/agent", tags=["chat"])
 
 MAX_HISTORY_MESSAGES = 40
 
+_AFFIRM = {"yes", "y", "yeah", "yep", "ok", "okay", "sure", "go ahead", "proceed", "confirm", "do it", "approve"}
+_DECLINE = {"no", "n", "nope", "cancel", "don't", "do not", "stop", "reject", "decline"}
+
+
+def _normalize_confirm_reply(text: str) -> str | None:
+    """Return 'approve' | 'decline' | None for short free-text confirmation replies."""
+    t = (text or "").strip().lower().rstrip(".!")
+    if t in _AFFIRM:
+        return "approve"
+    if t in _DECLINE:
+        return "decline"
+    # mild phrases
+    if t.startswith("yes ") or t.startswith("ok ") or "go ahead" in t:
+        return "approve"
+    if t.startswith("no ") or "don't" in t or "do not" in t:
+        return "decline"
+    return None
+
+
+def _latest_pending_assistant(db: DBSession, conversation_id: str) -> Message | None:
+    return (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation_id, Message.role == "assistant")
+        .order_by(Message.created_at.desc())
+        .first()
+    )
+
 
 def _get_or_create_conversation(db: DBSession, session: AgentSession, conversation_id: str | None) -> Conversation:
     if conversation_id:
         conv = db.get(Conversation, conversation_id)
-        if conv and conv.session_id == session.id:
-            return conv
-        elif not conv:
+        if conv:
+            if conv.session and conv.session.employee_id == session.employee_id:
+                if conv.session_id != session.id:
+                    conv.session_id = session.id
+                    db.commit()
+                    db.refresh(conv)
+                return conv
+            else:
+                raise HTTPException(status_code=403, detail="Access denied to this conversation")
+        else:
             # Respect the frontend's requested UUID so /confirm doesn't 404 later
             conv = Conversation(id=conversation_id, session_id=session.id)
             db.add(conv)
@@ -94,8 +129,38 @@ async def chat(
     if not bearer_token:
         raise HTTPException(status_code=401, detail="Could not decrypt session token — please log in again.")
 
+    settings = get_settings()
+    if not (settings.OPENAI_API_KEY or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Agent LLM is not configured: OPENAI_API_KEY is missing. "
+                "Copy .env.example to .env, set your API key, restart the agent, then try again."
+            ),
+        )
+
     conversation = _get_or_create_conversation(db, session, body.conversation_id)
     history = _load_history(db, conversation.id)
+
+    # Free-text yes/no after a needs_confirmation turn — avoid re-planning loops
+    pending_msg = _latest_pending_assistant(db, conversation.id)
+    decision = _normalize_confirm_reply(body.message)
+    if (
+        decision
+        and pending_msg
+        and pending_msg.trace
+        and pending_msg.trace.get("pending_confirmation_token")
+        and pending_msg.trace.get("planned_call")
+    ):
+        return await confirm(
+            ConfirmRequest(
+                conversation_id=conversation.id,
+                pending_confirmation_token=pending_msg.trace["pending_confirmation_token"],
+                approve=(decision == "approve"),
+            ),
+            session=session,
+            db=db,
+        )
     
     # --- Summary Memory Middleware ---
     # If the conversation is getting long, summarize the older messages to save context window,
@@ -103,8 +168,14 @@ async def chat(
     if len(history) > 10:
         old_history = history[:-5]
         recent_history = history[-5:]
-        summary_text = await summarize_history(old_history)
-        history = [{"role": "system", "content": f"Summary of earlier conversation:\n{summary_text}"}] + recent_history
+        try:
+            summary_text = await summarize_history(old_history)
+            # Cap summary size to protect planner context
+            if len(summary_text) > 2500:
+                summary_text = summary_text[:2500] + "...[truncated]"
+            history = [{"role": "system", "content": f"Summary of earlier conversation:\n{summary_text}"}] + recent_history
+        except Exception:
+            history = recent_history
     # ---------------------------------
 
     db.add(Message(conversation_id=conversation.id, role="user", content=body.message))
@@ -121,7 +192,13 @@ async def chat(
         "role": session.role,
     }
 
-    final_state = await get_agent_graph().ainvoke(initial_state)
+    try:
+        final_state = await get_agent_graph().ainvoke(initial_state)
+    except Exception as e:
+        err_reply = f"I hit an internal error while handling that ({e}). Please try again."
+        db.add(Message(conversation_id=conversation.id, role="assistant", content=err_reply, trace={"error": str(e)}))
+        db.commit()
+        return ChatResponse(conversation_id=conversation.id, reply=err_reply, status="error")
 
     pending_token = None
     trace = {
@@ -134,7 +211,8 @@ async def chat(
         pending_token = secrets.token_urlsafe(16)
         trace["pending_confirmation_token"] = pending_token
 
-    db.add(Message(conversation_id=conversation.id, role="assistant", content=final_state.get("reply", ""), trace=trace))
+    reply = final_state.get("reply") or "I wasn't able to produce a reply for that."
+    db.add(Message(conversation_id=conversation.id, role="assistant", content=reply, trace=trace))
     db.commit()
 
     if final_state.get("execution") is not None:

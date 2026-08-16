@@ -29,6 +29,7 @@ class SessionInfo(BaseModel):
 
 # ---------------------------------------------------------------- chat ----
 class ChatRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     message: str = Field(..., min_length=1, max_length=8000)
     conversation_id: Optional[str] = None
 
@@ -44,7 +45,14 @@ class EndpointCallSummary(BaseModel):
 class ChatResponse(BaseModel):
     conversation_id: str
     reply: str
-    status: Literal["completed", "needs_confirmation", "needs_info", "error"]
+    status: Literal[
+        "completed",
+        "needs_confirmation",
+        "needs_info",
+        "needs_clarification",
+        "capability_not_available",
+        "error",
+    ]
     candidate_call: Optional[EndpointCallSummary] = None
     pending_confirmation_token: Optional[str] = None
     missing_info: list[str] = []

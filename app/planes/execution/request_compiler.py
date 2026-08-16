@@ -45,21 +45,15 @@ def serialize_wire_value(value: Any, java_type: str | None = None, wire_format: 
     if not val_str:
         return ""
 
+    from app.agent.param_utils import normalize_date_string
+
     jtype = (java_type or "").lower()
 
-    if wire_format:
-        if wire_format.upper() == "DD-MM-YYYY" and len(val_str) >= 10:
-            # Convert YYYY-MM-DD to DD-MM-YYYY if required by custom wire format
-            parts = val_str[:10].split("-")
-            if len(parts) == 3 and len(parts[0]) == 4:
-                return f"{parts[2]}-{parts[1]}-{parts[0]}"
+    if wire_format or ("date" in jtype and "time" not in jtype):
+        return normalize_date_string(val_str, wire_format=wire_format)
 
-    if "date" in jtype and "time" not in jtype:
-        # Standard LocalDate -> YYYY-MM-DD
-        return val_str[:10]
-    elif any(t in jtype for t in ("datetime", "instant", "timestamp", "localdatetime")):
-        # Standard LocalDateTime -> ISO datetime string
-        return val_str
+    if any(t in jtype for t in ("datetime", "instant", "timestamp", "localdatetime")):
+        return normalize_date_string(val_str, wire_format=wire_format) if wire_format else val_str
 
     if jtype in ("boolean", "bool"):
         return str(value).lower() in ("true", "1", "yes")

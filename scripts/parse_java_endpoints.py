@@ -48,40 +48,21 @@ MAPPING_ANNOTATIONS = {
     "RequestMapping": None,
 }
 
-# Known SecurityConfig / JwtAuthenticationFilter public path rules, taken
-# from Xevyte_Connect-main/employee-login-backend2 SecurityConfig.java and
-# JwtAuthenticationFilter.java. Kept as data here (not re-parsed) since the
-# security config format is free-form Java and hand-verifying this list once
-# is safer than pattern-guessing it from source on every run. Update this
-# list if SecurityConfig.java's authorizeHttpRequests(...) block changes.
-PUBLIC_EXACT_PATHS = {
-    "/api/auth/login",
-    "/api/auth/forgot-password",
-    "/api/auth/reset-password",
-    "/api/auth/change-password",
-    "/api/v1/auth/send-otp",
-    "/api/v1/auth/verify-otp",
-    "/api/daily-entry/trigger-reminders",
-    "/api/resignations/trigger-exits",
-    "/api/v1/analytics/deep-test",
-    "/health",
-}
-PUBLIC_PREFIXES = (
-    "/api/auth/tenant-branding/",
-    "/api/auth/global-settings/",
-    "/api/candidate-general-settings",
-    "/api/shift-transportation/",
-    "/api/travel-vendors/",
-    "/travel-vendors/",
-    "/escort-members/",
-    "/api/escort-members/",
-    "/api/shifts/",
-    "/api/manager-shifts/",
-    "/api/v1/applicants/",
-    "/api/v1/preonboarding/",
-    "/api/v1/calculations/",
-    "/api/external/",
-)
+# Load public paths from parser_config.json
+_CONFIG_FILE = Path(__file__).resolve().parent / "parser_config.json"
+if _CONFIG_FILE.exists():
+    try:
+        _config_data = json.loads(_CONFIG_FILE.read_text(encoding="utf-8"))
+        PUBLIC_EXACT_PATHS = set(_config_data.get("public_exact_paths", []))
+        PUBLIC_PREFIXES = tuple(_config_data.get("public_prefixes", []))
+    except Exception as e:
+        import sys
+        print(f"WARN: Failed to load parser_config.json: {e}", file=sys.stderr)
+        PUBLIC_EXACT_PATHS = set()
+        PUBLIC_PREFIXES = ()
+else:
+    PUBLIC_EXACT_PATHS = set()
+    PUBLIC_PREFIXES = ()
 
 MULTIPART_HINT = "MultipartFile"
 
@@ -374,8 +355,9 @@ def parse_params(params_raw: str, path_template: str) -> tuple[list[Param], list
             jtype, varname = split_type_and_name(tail)
             name = explicit_name or varname
             is_file = "MultipartFile" in jtype
-            part_type = "file" if is_file else ("json_dto" if ("DTO" in jtype or "Request" in jtype or "Form" in jtype) else "scalar")
+            part_type = "file" if is_file else ("json_dto" if ("DTO" in jtype or "Request" in jtype or "Form" in jtype or jtype.endswith("Dto")) else "scalar")
             content_type = "application/octet-stream" if is_file else ("application/json" if part_type == "json_dto" else "text/plain")
+            bare_type = jtype.split("<")[0].strip().split(".")[-1]
             multipart_parts.append({
                 "name": name,
                 "part_type": part_type,
@@ -386,6 +368,10 @@ def parse_params(params_raw: str, path_template: str) -> tuple[list[Param], list
             })
             if is_file:
                 has_file = True
+            # Multipart JSON DTOs are the request body — capture type so schema
+            # resolution works (previously only @RequestBody set body_type).
+            elif part_type == "json_dto" and body_type is None:
+                body_type = bare_type
 
         elif "RequestBody" in ann_map:
             jtype, _varname = split_type_and_name(tail)
@@ -503,9 +489,14 @@ def extract_class_fields(java_file: Path, class_filter: Optional[re.Pattern] = N
             continue
         body = _strip_nested_bodies(text[brace_start:end])
         fields = []
+        last_end = 0
         for fm in FIELD_RE.finditer(body):
             ftype, fname = fm.group(1).strip(), fm.group(2)
-            preceding = body[max(0, fm.start() - 200) : fm.start()]
+            # Only scan annotations between the previous field and this one —
+            # a fixed backward window incorrectly reuses @JsonFormat from
+            # earlier date fields onto following non-date fields.
+            preceding = body[last_end:fm.start()]
+            last_end = fm.end()
             wire_format = None
             jf_match = re.search(r'@JsonFormat\([^)]*pattern\s*=\s*"([^"]+)"', preceding)
             if jf_match:
@@ -513,6 +504,11 @@ def extract_class_fields(java_file: Path, class_filter: Optional[re.Pattern] = N
             field_dict = {"name": fname, "java_type": ftype}
             if wire_format:
                 field_dict["wire_format"] = wire_format
+            # Capture Bean Validation / Lombok nullability hints when present
+            if re.search(r"@(?:NotNull|NotBlank|NotEmpty)\b", preceding):
+                field_dict["required"] = True
+            elif re.search(r"@Nullable\b", preceding) or "Optional<" in ftype:
+                field_dict["required"] = False
             fields.append(field_dict)
         if fields:
             result[class_name] = fields
@@ -549,7 +545,7 @@ def build_schema_index(example_root: Path) -> dict[str, list[dict]]:
 def resolve_schema(body_type: Optional[str], schema_index: dict[str, list[dict]]) -> Optional[list]:
     if not body_type:
         return None
-    bare = body_type.split("<")[0].strip()
+    bare = body_type.split("<")[0].strip().split(".")[-1]
     return schema_index.get(bare)
 
 
@@ -622,6 +618,28 @@ def parse_controller_file(path: Path, schema_index: Optional[dict[str, list[dict
             slug_path = re.sub(r"[{}]", "", full_path).strip("/").replace("/", "_").replace("-", "_") or "root"
             endpoint_id = f"{module.lower()}_{slug_path}_{http_method.lower()}_{method_name.lower()}"[:120]
 
+            body_schema = resolve_schema(body_type, schema_index)
+            # Attach resolved DTO schemas onto multipart json_dto parts + wire formats
+            wire_formats: dict = {}
+            enriched_parts = []
+            for pt in mp_parts:
+                pt = dict(pt)
+                if pt.get("part_type") == "json_dto":
+                    part_schema = resolve_schema(pt.get("java_type"), schema_index) or body_schema
+                    if part_schema:
+                        pt["schema"] = part_schema
+                        if body_schema is None:
+                            body_schema = part_schema
+                        if body_type is None:
+                            body_type = (pt.get("java_type") or "").split("<")[0].strip().split(".")[-1] or body_type
+                    for f in part_schema or []:
+                        if f.get("wire_format") and f.get("name"):
+                            wire_formats[f["name"]] = f["wire_format"]
+                enriched_parts.append(pt)
+            for f in body_schema or []:
+                if f.get("wire_format") and f.get("name"):
+                    wire_formats[f["name"]] = f["wire_format"]
+
             ep = Endpoint(
                 id=endpoint_id,
                 module=module,
@@ -632,10 +650,10 @@ def parse_controller_file(path: Path, schema_index: Optional[dict[str, list[dict
                 path_params=[asdict(p) for p in path_params],
                 query_params=[asdict(p) for p in query_params],
                 header_params=[asdict(p) for p in header_params],
-                multipart_parts=mp_parts,
+                multipart_parts=enriched_parts,
                 request_body_type=body_type,
                 request_body_is_list=body_is_list,
-                request_body_schema=resolve_schema(body_type, schema_index),
+                request_body_schema=body_schema,
                 consumes=consumes,
                 has_file_upload=has_file,
                 auth_required=not is_public_path(full_path),
@@ -645,6 +663,7 @@ def parse_controller_file(path: Path, schema_index: Optional[dict[str, list[dict
                 destructive_hint=(http_method == "DELETE") or any(h in full_path.lower() for h in DESTRUCTIVE_PATH_HINTS),
                 bulk_hint=any(h in full_path.lower() for h in BULK_PATH_HINTS),
                 sensitive_module_hint=any(h in module.lower() for h in SENSITIVE_MODULE_HINTS),
+                wire_formats=wire_formats,
             )
             ep.description = build_description(
                 module, http_method, full_path, method_name, path_params, query_params,

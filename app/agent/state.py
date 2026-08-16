@@ -38,6 +38,8 @@ class AgentState(TypedDict, total=False):
     input_warnings: list[str]
     retrieved: list[RetrievedCandidate]
     planned_call: Optional[PlannedCall]
+    follow_up_endpoint_ids: list[str]
+    follow_up_executions: list[dict]
     risk_tier: Optional[str]
     needs_confirmation: bool
     cross_identity_note: Optional[str]

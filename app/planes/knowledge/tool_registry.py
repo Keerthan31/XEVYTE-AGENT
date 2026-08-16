@@ -128,7 +128,7 @@ def build_entry(endpoint: EndpointSpec) -> ToolRegistryEntry:
     return ToolRegistryEntry(
         tool_id=endpoint.id,
         name=endpoint.method_name,
-        description=endpoint.description,
+        description=endpoint.embedding_text() or endpoint.description,
         domain=domain_for_module(endpoint.module),
         module=endpoint.module,
         capability=_capability_name(endpoint),

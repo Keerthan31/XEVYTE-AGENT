@@ -2,7 +2,12 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 
-const BASE = 'http://localhost:8443/api/agent'
+// Same-origin when UI is served from the agent (:8443); absolute URL for Vite dev (:3000).
+const BASE = import.meta.env.VITE_API_BASE || (
+  typeof window !== 'undefined' && window.location.port === '3000'
+    ? 'http://localhost:8443/api/agent'
+    : '/api/agent'
+)
 
 export async function exchangeToken(token) {
   try {
@@ -16,15 +21,13 @@ export async function exchangeToken(token) {
 
 export async function sendMessage({ message, history, token, employeeId, sessionId }) {
   const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  // Backend ChatRequest only accepts message + conversation_id (auth via cookie/Bearer).
+  // Extra fields were previously sent and silently ignored / could confuse proxies.
   const res = await axios.post(
     `${BASE}/chat`,
     {
       message,
-      history,
-      token,
-      employee_id: employeeId,
-      session_id: sessionId,
-      conversation_id: sessionId,
+      conversation_id: sessionId || undefined,
     },
     { headers }
   )

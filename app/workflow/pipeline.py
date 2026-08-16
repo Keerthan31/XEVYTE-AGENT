@@ -14,6 +14,7 @@ the named states from the spec (RECEIVED..COMPLETED/FAILED/ESCALATED).
 """
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -89,7 +90,7 @@ async def handle_message(
         domain = Domain(intent.domain.upper())
     except ValueError:
         domain = Domain.UNKNOWN
-    candidates = discover(user_message, domain=domain, top_k=12)
+    candidates = await asyncio.to_thread(discover, user_message, domain=domain, top_k=12)
     if not candidates:
         _set_state(db, run, "FAILED", error_category="NO_CAPABILITY")
         return PipelineResult("capability_not_available",
@@ -116,6 +117,14 @@ async def handle_message(
     )
     extracted = planner.to_extracted_params(plan_result)
     resolved = resolve_parameters(extracted, ctx)
+
+    # Auto-fill session employee identity for common HRMS field names so the
+    # missing-param gate does not ask the user for their own id.
+    if employee_id:
+        from app.planes.control.context_engine import ParamSource, ResolvedParam
+        for name in ("employeeId", "employee_id", "empId"):
+            if name not in resolved or not resolved[name].trusted:
+                resolved[name] = ResolvedParam(employee_id, ParamSource.SESSION, trusted=True)
 
     # ---- 8. Missing Parameter Gate ----
     gate = missing_param_check(tool, resolved)
@@ -199,7 +208,7 @@ async def _execute_and_respond(
         return PipelineResult("error", reply, tool_id=tool.tool_id, run_id=run.id)
 
     # ---- 14. API Fabric (circuit breaker, idempotency, retry) ----
-    raw = await api_fabric.execute_with_fabric(tool, decision.executable_arguments, bearer_token=bearer_token)
+    raw = await api_fabric.execute_with_fabric(tool, decision.executable_arguments, bearer_token=bearer_token, employee_id=employee_id)
 
     # ---- 16. Result Validator ----
     normalized = result_validator.normalize(tool.tool_id, raw)

@@ -43,11 +43,11 @@ class Domain(str, Enum):
 
 
 DOMAIN_MODULES: dict[Domain, list[str]] = {
-    Domain.LEAVE: ["Leave", "LeaveAnalytics", "LeaveAssignment", "LeaveBalanceAdmin", "LeaveDraft", "Holiday", "AdminLeavePolicy"],
-    Domain.ATTENDANCE: ["AttendanceRegularizationSettings", "DailyEntry", "TaskCount"],
+    Domain.LEAVE: ["Leave", "LeaveAssignment", "LeaveBalanceAdmin", "LeaveDraft", "Holiday", "AdminLeavePolicy"],
+    Domain.ATTENDANCE: ["DailyEntry", "TaskCount", "AttendanceAnalytics"],
     Domain.PAYROLL: ["Payroll", "PayrollManagement", "Payslip", "SalaryComponent", "CompensationDetails", "CalcStructure", "TestRounding", "TestTransaction"],
     Domain.TAX_DECLARATIONS: ["ITDeclaration", "ITDeclarationCard", "ITDeclarationConfig", "ITDeclarationField"],
-    Domain.EMPLOYEE_PROFILE: ["Employee", "EmployeeSummary", "Profiler", "InsuranceNominee", "EmployeeHandbook"],
+    Domain.EMPLOYEE_PROFILE: ["Employee", "EmployeeSummary", "Profiler", "InsuranceNominee", "EmployeeHandbook", "Department"],
     Domain.ONBOARDING: ["PreOnboarding", "Applicant", "ApplicantDocuments", "OfferLetter", "AppointmentLetter", "CandidateGeneralSettings", "OnboardingAuth"],
     Domain.EXIT_OFFBOARDING: ["Resignation", "ExitForm", "ExitAnswers", "PublicExitForm", "Clearance", "ClearanceChecklist"],
     Domain.PERFORMANCE: ["PerformanceAttribute", "PerformanceDepartment", "PerformanceGoal", "PerformanceGoalTemplate", "SelfAssessment"],
@@ -56,11 +56,11 @@ DOMAIN_MODULES: dict[Domain, list[str]] = {
     Domain.TRAVEL: ["TravelRequest", "TravelRequestDraft"],
     Domain.CLAIMS: ["Claim"],
     Domain.ORG_STRUCTURE: ["OrgChart", "OrgChartConfig", "DesignationCategory", "CompanyLocation", "Location"],
-    Domain.DOCUMENTS_KNOWLEDGE: ["Workflow", "PolicyAcknowledgment", "KnowledgeHub", "LMS"],
+    Domain.DOCUMENTS_KNOWLEDGE: ["Workflow", "PolicyAcknowledgment", "KnowledgeHub", "LMS", "WorkflowEngine"],
     Domain.NOTIFICATIONS: ["Notification"],
     Domain.PROJECTS: ["Project", "Customer", "Sow"],
     Domain.ACCESS_ADMIN: ["Role", "RoleAccess", "AdminAccess", "ModuleAccess", "Delegation"],
-    Domain.SYSTEM: ["Health", "Audit", "Email", "ExternalApi", "RevisionType", "Auth"],
+    Domain.SYSTEM: ["Health", "Audit", "Email", "ExternalApi", "RevisionType", "Auth", "Analytics", "UnifiedAnalytics"],
 }
 
 _MODULE_TO_DOMAIN: dict[str, Domain] = {m: d for d, mods in DOMAIN_MODULES.items() for m in mods}

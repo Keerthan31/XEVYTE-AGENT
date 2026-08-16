@@ -44,7 +44,8 @@ choosing among these, not the full API). Decide:
 
 Never invent ids, dates, or amounts that aren't grounded in something shown to you. When genuinely unsure, prefer
 omitting the parameter (it will correctly show up as needing clarification) over guessing.
-IMPORTANT: Always format date strings strictly as 'DD-MM-YYYY' (e.g., '14-10-2023') and datetime strings as 'YYYY-MM-DDTHH:mm:ss' to match the backend's strict requirements!"""
+IMPORTANT: Format dates using each field's wire_format when listed (e.g. Leave startDate/endDate use dd-MM-yyyy).
+If no wire_format is listed, use YYYY-MM-DD. Accept either style from the user and convert before emitting."""
 
 
 class PlannedParam(BaseModel):

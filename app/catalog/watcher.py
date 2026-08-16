@@ -64,9 +64,18 @@ def refresh_catalog_and_rag(src_dir: str, out_dir: str | None = None) -> dict:
     # its OPENAI_API_KEY requirement) for callers that only want the parser
     from app.catalog.loader import load_catalog
     from app.rag.ingest import ingest
+    from app.rag.retriever import reload_bm25_index
 
     catalog = load_catalog()
     n_chunks = ingest(catalog)
+    reload_bm25_index()
+    try:
+        from app.planes.knowledge.tool_registry import reload_tool_registry
+        from app.planes.control.tool_discovery import reload_hybrid_index
+        reload_tool_registry()
+        reload_hybrid_index()
+    except Exception:
+        logger.exception("Failed to reload v2 tool registry / hybrid index after catalog refresh")
     logger.info(f"Auto-refreshed catalog: {len(catalog)} endpoints, {len(catalog.modules())} modules, "
                 f"{n_chunks} chunks re-embedded.")
     return {

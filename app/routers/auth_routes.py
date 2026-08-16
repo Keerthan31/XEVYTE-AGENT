@@ -106,7 +106,10 @@ async def callback(scaloz_token: str | None = None, db: DBSession = Depends(get_
 
 @router.post("/token", response_model=SessionInfo)
 async def manual_token(body: ManualTokenRequest, response: Response, db: DBSession = Depends(get_db)):
-    session = sessions.create_session(db, body.token)
+    try:
+        session = sessions.create_session(db, body.token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
     _set_session_cookie(response, session.id)
     return SessionInfo(
         employee_id=session.employee_id,

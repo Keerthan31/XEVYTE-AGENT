@@ -84,9 +84,11 @@ async def pin_session(
     db: DBSession = Depends(get_db)
 ) -> Any:
     conv = db.get(Conversation, session_id)
-    if not conv or conv.session_id != session.id:
+    if not conv or not conv.session or conv.session.employee_id != session.employee_id:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
+    if conv.session_id != session.id:
+        conv.session_id = session.id
     conv.is_pinned = req.is_pinned
     db.commit()
     return {"status": "ok"}
@@ -99,9 +101,11 @@ async def rename_session(
     db: DBSession = Depends(get_db)
 ) -> Any:
     conv = db.get(Conversation, session_id)
-    if not conv or conv.session_id != session.id:
+    if not conv or not conv.session or conv.session.employee_id != session.employee_id:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
+    if conv.session_id != session.id:
+        conv.session_id = session.id
     conv.title = req.title
     db.commit()
     return {"status": "ok"}
@@ -113,7 +117,7 @@ async def delete_session(
     db: DBSession = Depends(get_db)
 ) -> Any:
     conv = db.get(Conversation, session_id)
-    if not conv or conv.session_id != session.id:
+    if not conv or not conv.session or conv.session.employee_id != session.employee_id:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
     db.delete(conv)

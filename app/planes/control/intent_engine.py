@@ -20,7 +20,7 @@ from app.agent.llm import get_instructor_client
 from app.config import get_settings
 from app.planes.control.domain_router import Domain
 
-CONFIDENCE_THRESHOLD = 0.55
+CONFIDENCE_THRESHOLD = 0.40
 
 INTENT_SYSTEM_PROMPT = """Classify the user's HR/HRMS-related message into a structured intent. Return:
 - intent: a short UPPER_SNAKE_CASE label for what they want (e.g. APPLY_LEAVE, VIEW_PAYSLIP, DELETE_ASSET_CATEGORY,
@@ -29,9 +29,12 @@ INTENT_SYSTEM_PROMPT = """Classify the user's HR/HRMS-related message into a str
   unclear rather than guessing one that doesn't fit.
 - entities: any concrete values mentioned (dates, names, amounts, ids, categories) as a flat dict.
 - confidence: 0-1, how confident you are this classification is correct given ONLY the message (not the tool catalog
-  — you have not seen it). Lower confidence for vague, multi-intent, or ambiguous messages.
+  — you have not seen it). Lower confidence only for truly vague or contradictory messages. Ordinary HR requests
+  like "apply leave tomorrow" or "show my payslip" should score >= 0.7.
 - ambiguities: short list of what's unclear, if anything (empty list if nothing is ambiguous).
-Do not invent entity values that aren't stated or clearly implied — omit uncertain ones rather than guessing."""
+Do not invent entity values that aren't stated or clearly implied — omit uncertain ones rather than guessing.
+If the user is answering a prior clarification (short replies with dates/types/ids), keep confidence high and
+classify entities from that answer — do not ask again unnecessarily."""
 
 
 class IntentResult(BaseModel):

@@ -14,14 +14,23 @@ from typing import Optional
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.orm import Session as DBSession
 
-from app.auth.sso import decode_jwt_claims_unverified
+from app.auth.sso import decode_jwt_claims_unverified, verify_jwt_and_decode
 from app.config import get_settings
 from app.db_models import AgentSession
 
 
 def _fernet() -> Fernet:
     settings = get_settings()
-    secret_key = settings.SESSION_SECRET_KEY or "xevyte_agent_default_secret_key_for_testing_and_local_dev"
+    secret_key = settings.SESSION_SECRET_KEY
+    if not secret_key:
+        iam_url = settings.SCALOZ_IAM_URL.lower()
+        if "localhost" in iam_url or "127.0.0.1" in iam_url or "workspacetest" in iam_url:
+            secret_key = "xevyte_agent_default_secret_key_for_testing_and_local_dev"
+        else:
+            raise ValueError(
+                "SESSION_SECRET_KEY must be set in production to encrypt session tokens at rest. "
+                "Set a secure key in your .env file."
+            )
     digest = hashlib.sha256(secret_key.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(digest))
 
@@ -29,7 +38,7 @@ def _fernet() -> Fernet:
 
 def create_session(db: DBSession, token: str) -> AgentSession:
     settings = get_settings()
-    claims = decode_jwt_claims_unverified(token)
+    claims = verify_jwt_and_decode(token)
     exp = claims.get("exp")
     expires_at = (
         datetime.fromtimestamp(exp, tz=timezone.utc)

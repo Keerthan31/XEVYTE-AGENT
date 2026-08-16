@@ -57,7 +57,7 @@ def classify_risk(endpoint: EndpointSpec) -> RiskTier:
     return RiskTier.LOW_RISK_WRITE
 
 
-def requires_approval(tier: RiskTier, threshold: RiskTier = RiskTier.LOW_RISK_WRITE) -> bool:
+def requires_approval(tier: RiskTier, threshold: RiskTier = RiskTier.HIGH_RISK_WRITE) -> bool:
     return _TIER_ORDER[tier] >= _TIER_ORDER[threshold]
 
 

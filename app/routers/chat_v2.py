@@ -28,9 +28,16 @@ class ConfirmRequestV2(BaseModel):
 def _get_or_create_conversation(db: DBSession, session: AgentSession, conversation_id: str | None) -> Conversation:
     if conversation_id:
         conv = db.get(Conversation, conversation_id)
-        if conv and conv.session_id == session.id:
-            return conv
-        elif not conv:
+        if conv:
+            if conv.session and conv.session.employee_id == session.employee_id:
+                if conv.session_id != session.id:
+                    conv.session_id = session.id
+                    db.commit()
+                    db.refresh(conv)
+                return conv
+            else:
+                raise HTTPException(status_code=403, detail="Access denied to this conversation")
+        else:
             conv = Conversation(id=conversation_id, session_id=session.id)
             db.add(conv)
             db.commit()
@@ -43,17 +50,29 @@ def _get_or_create_conversation(db: DBSession, session: AgentSession, conversati
     return conv
 
 
-def _load_history(db: DBSession, conversation_id: str) -> list[dict]:
+async def _load_history(db: DBSession, conversation_id: str) -> list[dict]:
     rows = (db.query(Message).filter(Message.conversation_id == conversation_id)
             .order_by(Message.created_at.asc()).limit(40).all())
-    return [{"role": r.role, "content": r.content} for r in rows]
+    history = [{"role": r.role, "content": r.content} for r in rows]
+    if len(history) > 10:
+        old_history = history[:-5]
+        recent_history = history[-5:]
+        try:
+            from app.agent.memory import summarize_history
+            summary_text = await summarize_history(old_history)
+            if len(summary_text) > 2500:
+                summary_text = summary_text[:2500] + "...[truncated]"
+            history = [{"role": "system", "content": f"Summary of earlier conversation:\n{summary_text}"}] + recent_history
+        except Exception:
+            history = recent_history
+    return history
 
 
 @router.post("/chat")
 async def chat_v2(body: ChatRequestV2, session: AgentSession = Depends(get_current_session), db: DBSession = Depends(get_db)):
     bearer_token = sessions.get_bearer_token(session)
     conversation = _get_or_create_conversation(db, session, body.conversation_id)
-    history = _load_history(db, conversation.id)
+    history = await _load_history(db, conversation.id)
     db.add(Message(conversation_id=conversation.id, role="user", content=body.message))
     db.commit()
 

@@ -7,6 +7,7 @@ the catalog's on-disk shape — everything else asks this module for data.
 from __future__ import annotations
 
 import json
+import re
 import threading
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -107,20 +108,56 @@ class EndpointSpec:
         return [p for p in self.query_params if p.get("java_type") == "MultipartFile"]
 
     def embedding_text(self) -> str:
-        return self.description
+        """Rich text for vector + BM25 search — description alone is too thin
+        for reliable retrieval across 600+ endpoints."""
+        bits = [
+            self.description or "",
+            f"{self.http_method} {self.path}",
+            f"module {self.module}",
+            f"action {self.method_name}",
+            self.controller_class,
+        ]
+        if self.path_params:
+            bits.append("path " + " ".join(p.get("name", "") for p in self.path_params))
+        non_file_q = self.non_file_query_params()
+        if non_file_q:
+            bits.append("query " + " ".join(p.get("name", "") for p in non_file_q))
+        schema = self.request_body_schema or []
+        if not schema:
+            for pt in self.get_multipart_parts() or []:
+                if pt.get("schema"):
+                    schema = pt["schema"]
+                    break
+        if schema:
+            bits.append("fields " + " ".join(f.get("name", "") for f in schema[:20]))
+        if self.request_body_type:
+            bits.append(self.request_body_type)
+        # Synonym-ish tokens from path segments help lexical/BM25 match
+        segments = [s for s in re.split(r"[/_\-{}]", self.path) if s and not s.isdigit()]
+        bits.append(" ".join(segments))
+        return " ".join(b for b in bits if b).strip()
 
     def as_prompt_block(self) -> str:
         """Rich, LLM-facing rendering of this endpoint used in the planning
         prompt — includes everything needed to construct a correct call."""
+        from app.agent.param_utils import body_schema_for, is_body_field_required
+
         lines = [f"### {self.id}", f"{self.http_method} {self.path}", f"Module: {self.module}"]
+        if self.description:
+            lines.append(f"Summary: {self.description}")
         if self.path_params:
-            lines.append("Path params: " + ", ".join(f"{p['name']} ({p['java_type']})" for p in self.path_params))
+            lines.append(
+                "Path params (REQUIRED): "
+                + ", ".join(f"{p['name']} ({p['java_type']})" for p in self.path_params)
+            )
         non_file_q = self.non_file_query_params()
         if non_file_q:
             parts = []
             for p in non_file_q:
                 bit = f"{p['name']} ({p['java_type']}"
-                if not p.get("required"):
+                if p.get("required"):
+                    bit += ", REQUIRED"
+                else:
                     bit += ", optional"
                 if p.get("default") is not None:
                     bit += f", default={p['default']}"
@@ -128,21 +165,47 @@ class EndpointSpec:
                 parts.append(bit)
             lines.append("Query params: " + ", ".join(parts))
         if self.header_params:
-            lines.append("Header params: " + ", ".join(f"{p['name']} ({p.get('java_type', 'String')})" for p in self.header_params))
-        if self.request_body_type:
-            lines.append(f"Request body ({'array of ' if self.request_body_is_list else ''}{self.request_body_type}):")
-            if self.request_body_schema:
-                for f in self.request_body_schema:
-                    lines.append(f"  - {f['name']}: {f['java_type']}")
+            lines.append(
+                "Header params: "
+                + ", ".join(f"{p['name']} ({p.get('java_type', 'String')})" for p in self.header_params)
+            )
+        schema = body_schema_for(self)
+        if self.request_body_type or schema:
+            label = self.request_body_type or "DTO"
+            lines.append(
+                f"Request body JSON ({'array of ' if self.request_body_is_list else ''}{label}) — "
+                "use ONLY these field names; omit unknowns; do not invent keys:"
+            )
+            if schema:
+                for f in schema:
+                    req = is_body_field_required(f, http_method=self.http_method)
+                    wf = f.get("wire_format") or self.wire_formats.get(f["name"])
+                    extra = f", wire_format={wf}" if wf else ""
+                    flag = "REQUIRED" if req else "optional"
+                    lines.append(f"  - {f['name']}: {f['java_type']} [{flag}]{extra}")
             else:
-                lines.append("  (free-form JSON object — infer reasonable keys from the user's request)")
+                lines.append(
+                    "  (schema unknown — ask the user for every business field you need; "
+                    "do not invent plausible JSON)"
+                )
         mp_parts = self.get_multipart_parts()
         if mp_parts:
             lines.append("Multipart form-data parts:")
             for pt in mp_parts:
-                lines.append(f"  - part '{pt['name']}' ({pt['part_type']}, {pt['content_type']}, {'required' if pt.get('required') else 'optional'})")
+                req = "required" if pt.get("required") else "optional"
+                lines.append(
+                    f"  - part '{pt['name']}' ({pt['part_type']}, {pt['content_type']}, {req})"
+                )
+                if pt.get("part_type") == "json_dto" and pt.get("schema"):
+                    for f in pt["schema"][:15]:
+                        lines.append(f"      · {f['name']}: {f.get('java_type', '?')}")
         elif self.has_file_upload:
             lines.append("Accepts a file upload (multipart/form-data).")
+        if self.wire_formats:
+            lines.append(
+                "Date wire formats: "
+                + ", ".join(f"{k}={v}" for k, v in self.wire_formats.items())
+            )
         if not self.auth_required:
             lines.append("No authentication required.")
         if self.preauthorize:

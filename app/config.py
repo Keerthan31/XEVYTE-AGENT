@@ -124,7 +124,8 @@ class Settings(BaseSettings):
 
     # ---- Guardrails ----
     REQUIRE_CONFIRMATION_ABOVE_RISK: str = Field(
-        default="MEDIUM", description="LOW | MEDIUM | HIGH | CRITICAL — tiers at or above this require explicit user confirmation before execution."
+        default="HIGH",
+        description="LOW | MEDIUM | HIGH | CRITICAL — tiers at or above this require explicit user confirmation before execution. Default HIGH so ordinary leave/ticket writes are not blocked by 'should I go ahead?'.",
     )
 
     # ---- HTTPS (uvicorn) ----
@@ -134,7 +135,7 @@ class Settings(BaseSettings):
     SERVER_PORT: int = 8443
 
     # ---- CORS ----
-    CORS_ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
+    CORS_ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:5173"
 
 
 @lru_cache

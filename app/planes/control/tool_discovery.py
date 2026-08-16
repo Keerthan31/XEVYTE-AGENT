@@ -53,7 +53,14 @@ class HybridIndex:
     def __init__(self, registry: ToolRegistry | None = None):
         self.registry = registry or get_tool_registry()
         self._tools = self.registry.all_active()
-        self._corpus_tokens = [_tokenize(t.description) for t in self._tools]
+        # Prefer rich embedding text from the underlying EndpointSpec when available
+        from app.catalog.loader import get_catalog
+        catalog = get_catalog()
+        corpus_texts = []
+        for t in self._tools:
+            ep = catalog.get(t.tool_id)
+            corpus_texts.append(ep.embedding_text() if ep else t.description)
+        self._corpus_tokens = [_tokenize(txt) for txt in corpus_texts]
         self._bm25 = BM25Okapi(self._corpus_tokens) if self._corpus_tokens else None
         self._id_to_idx = {t.tool_id: i for i, t in enumerate(self._tools)}
 

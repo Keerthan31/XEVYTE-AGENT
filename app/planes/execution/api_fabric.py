@@ -70,8 +70,8 @@ def _record_result(db, module: str, success: bool) -> None:
     db.commit()
 
 
-def _idempotency_key(tool_id: str, arguments: dict) -> str:
-    canonical = json.dumps({"tool_id": tool_id, "arguments": arguments}, sort_keys=True, default=str)
+def _idempotency_key(tool_id: str, arguments: dict, employee_id: str | None = None) -> str:
+    canonical = json.dumps({"employee_id": employee_id, "tool_id": tool_id, "arguments": arguments}, sort_keys=True, default=str)
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
@@ -94,6 +94,7 @@ async def execute_with_fabric(
     executable_arguments: dict,
     *,
     bearer_token: str | None,
+    employee_id: str | None = None,
     files: dict | None = None,
 ) -> dict:
     module = _module_group(tool)
@@ -107,7 +108,7 @@ async def execute_with_fabric(
 
         idem_key = None
         if tool.http_method in ("POST", "PUT", "DELETE", "PATCH"):
-            idem_key = _idempotency_key(tool.tool_id, executable_arguments)
+            idem_key = _idempotency_key(tool.tool_id, executable_arguments, employee_id)
             existing = db.get(IdempotencyKey, idem_key)
             if existing:
                 return {**existing.response_snapshot, "idempotent_replay": True}

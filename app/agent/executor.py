@@ -132,76 +132,26 @@ async def execute(
     Raises ExecutionError only for a malformed call (missing required
     params) that never should have reached this layer if the planner did
     its job — those are genuine bugs, not user-facing HTTP outcomes."""
-    settings = get_settings()
-    path_args, query_args = path_args or {}, query_args or {}
+    from app.planes.knowledge.tool_registry import build_entry
+    from app.planes.execution.request_compiler import RequestCompiler
 
-    resolved_path = _build_path(endpoint, path_args)
-    params = _build_query(endpoint, query_args)
-    url = settings.HRMS_API_BASE_URL.rstrip("/") + resolved_path
+    tool = build_entry(endpoint)
+    executable_arguments = {}
+    if path_args:
+        executable_arguments.update(path_args)
+    if query_args:
+        executable_arguments.update(query_args)
+    if isinstance(body, dict):
+        executable_arguments.update(body)
 
-    headers = {}
-    if endpoint.auth_required:
-        if not bearer_token:
-            raise ExecutionError(f"{endpoint.id} requires authentication but no session token is available")
-        headers["Authorization"] = f"Bearer {bearer_token}"
+    compiled = RequestCompiler.compile(
+        tool,
+        executable_arguments,
+        bearer_token=bearer_token,
+        file_inputs=files,
+    )
+    if body is not None and not isinstance(body, dict):
+        compiled.json_body = body
 
-    request_kwargs: dict = {"method": endpoint.http_method, "url": url, "params": params, "headers": headers}
-    
-    consumes = getattr(endpoint, "consumes", "application/json")
-    if "multipart/form-data" in consumes or endpoint.has_file_upload:
-        import json
-        request_kwargs["files"] = files or {}
-        mp_parts = endpoint.get_multipart_parts() if hasattr(endpoint, "get_multipart_parts") else getattr(endpoint, "multipart_parts", [])
-        
-        if mp_parts:
-            for pt in mp_parts:
-                if pt["part_type"] == "json_dto" and body is not None:
-                    # Inject the JSON DTO as a multipart part with proper content type
-                    request_kwargs["files"][pt["name"]] = (None, json.dumps(body).encode("utf-8"), "application/json")
-                elif pt["part_type"] == "scalar" and isinstance(body, dict) and pt["name"] in body:
-                    if "data" not in request_kwargs:
-                        request_kwargs["data"] = {}
-                    request_kwargs["data"][pt["name"]] = str(body[pt["name"]])
-        else:
-            # Fallback
-            if isinstance(body, dict):
-                request_kwargs["data"] = {k: str(v) if v is not None else "" for k, v in body.items()}
-                
-        # If files dictionary ends up empty but we need multipart, httpx might fall back to urlencoded if we just pass files={}.
-        # Wait, httpx handles files={} by NOT sending multipart, but we MUST send multipart. 
-        # A trick in httpx is to provide a dummy empty byte string if it's completely empty, but here 
-        # we have at least the 'dto' part from above in most cases.
-    elif body is not None and endpoint.http_method in ("POST", "PUT", "PATCH"):
-        request_kwargs["json"] = body
-
-    start = time.perf_counter()
-    async with httpx.AsyncClient(timeout=settings.HRMS_API_TIMEOUT_SECONDS) as client:
-        try:
-            resp = await _send_with_retry(client, request_kwargs, idempotent=(endpoint.http_method == "GET"))
-        except httpx.HTTPError as e:
-            return {
-                "status_code": None,
-                "ok": False,
-                "body": None,
-                "error": f"Network error calling {endpoint.http_method} {resolved_path}: {e}",
-                "latency_ms": int((time.perf_counter() - start) * 1000),
-            }
-    latency_ms = int((time.perf_counter() - start) * 1000)
-
-    content_type = resp.headers.get("content-type", "")
-    try:
-        parsed_body = resp.json() if "application/json" in content_type else resp.text
-    except ValueError:
-        parsed_body = resp.text
-
-    if isinstance(parsed_body, str) and len(parsed_body) > RESPONSE_BODY_CHAR_LIMIT:
-        parsed_body = parsed_body[:RESPONSE_BODY_CHAR_LIMIT] + "...[truncated]"
-
-    return {
-        "status_code": resp.status_code,
-        "ok": resp.is_success,
-        "body": parsed_body,
-        "error": None if resp.is_success else f"HTTP {resp.status_code}",
-        "latency_ms": latency_ms,
-    }
+    return await execute_compiled(compiled, idempotent=(endpoint.http_method == "GET"))
 

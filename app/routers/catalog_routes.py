@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 from app.catalog.loader import get_catalog, load_catalog
 from app.config import get_settings
@@ -47,6 +50,15 @@ async def refresh_catalog():
     full re-parse-from-source in one call, see POST /refresh-from-source."""
     catalog = load_catalog()
     n_chunks = ingest(catalog)
+    from app.rag.retriever import reload_bm25_index
+    reload_bm25_index()
+    try:
+        from app.planes.knowledge.tool_registry import reload_tool_registry
+        from app.planes.control.tool_discovery import reload_hybrid_index
+        reload_tool_registry()
+        reload_hybrid_index()
+    except Exception:
+        logger.exception("Failed to reload v2 tool registry / hybrid index after catalog refresh")
     return CatalogRefreshResponse(
         endpoints_discovered=len(catalog), modules=len(catalog.modules()), chunks_ingested=n_chunks
     )

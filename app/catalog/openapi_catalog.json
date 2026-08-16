@@ -7636,8 +7636,8 @@
         "tags": [
           "Clearance"
         ],
-        "summary": "POST /api/clearance/{resignationId} Clearance module. Action: create or update clearance. Path params: resignationId. Ac",
-        "description": "POST /api/clearance/{resignationId} Clearance module. Action: create or update clearance. Path params: resignationId. Accepts file upload.",
+        "summary": "POST /api/clearance/{resignationId} Clearance module. Action: create or update clearance. Path params: resignationId. Re",
+        "description": "POST /api/clearance/{resignationId} Clearance module. Action: create or update clearance. Path params: resignationId. Request body: ClearanceDto. Fields: laptopSerial, accessCard, emailClosed, vpnRevoked, softwareDeallocated, idCardReturned, isFinal, actingRole, accessCardComment, emailClosedComment, vpnRevokedComment, softwareDeallocatedComment. Accepts file upload.",
         "parameters": [
           {
             "name": "resignationId",
@@ -7660,7 +7660,128 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "ClearanceDto",
+                "properties": {
+                  "laptopSerial": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "accessCard": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "emailClosed": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "vpnRevoked": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "softwareDeallocated": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "idCardReturned": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "isFinal": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "actingRole": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "accessCardComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "emailClosedComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "vpnRevokedComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "softwareDeallocatedComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "idCardReturnedComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "exitInterviewCompleted": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "documentHandover": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "knowledgeTransfer": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "timesheetFilled": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "insuranceDeactivation": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "hrFinalApproval": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "exitInterviewComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "documentHandoverComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "knowledgeTransferComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "timesheetFilledComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "insuranceDeactivationComment": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "lastWorkingDay": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "hrComments": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "adminComments": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/clearance/checklist": {
@@ -10886,6 +11007,40 @@
             "name": "endDate",
             "in": "query",
             "required": false,
+            "schema": {
+              "type": "string",
+              "default": null
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/employees/search": {
+      "get": {
+        "operationId": "employee_api_employees_search_get_searchemployees",
+        "tags": [
+          "Employee"
+        ],
+        "summary": "GET /api/employees/search Employee module. Action: search employees. Required query params: query.",
+        "description": "GET /api/employees/search Employee module. Action: search employees. Required query params: query.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
             "schema": {
               "type": "string",
               "default": null
@@ -15203,8 +15358,8 @@
         "tags": [
           "Leave"
         ],
-        "summary": "POST /api/leaves/apply Leave module. Action: apply leave. Accepts file upload.",
-        "description": "POST /api/leaves/apply Leave module. Action: apply leave. Accepts file upload.",
+        "summary": "POST /api/leaves/apply Leave module. Action: apply leave. Request body: LeaveRequestDTO. Fields: employeeId, type, start",
+        "description": "POST /api/leaves/apply Leave module. Action: apply leave. Request body: LeaveRequestDTO. Fields: employeeId, type, startDate, endDate, totalDays, halfDay, reason, status, leaveRequestId, existingFileName, employeeName, optionalHolidayName. Accepts file upload.",
         "parameters": [],
         "responses": {
           "200": {
@@ -15218,7 +15373,88 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "LeaveRequestDTO",
+                "properties": {
+                  "employeeId": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "type": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "x-java-type": "LocalDate"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "x-java-type": "LocalDate"
+                  },
+                  "totalDays": {
+                    "type": "string",
+                    "x-java-type": "Double"
+                  },
+                  "halfDay": {
+                    "type": "string",
+                    "x-java-type": "Boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "status": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "leaveRequestId": {
+                    "type": "string",
+                    "x-java-type": "Long"
+                  },
+                  "existingFileName": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "employeeName": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "optionalHolidayName": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "createdDate": {
+                    "type": "string",
+                    "x-java-type": "java.time.LocalDateTime"
+                  },
+                  "referenceId": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "lastReminderSentAt": {
+                    "type": "string",
+                    "x-java-type": "java.time.LocalDateTime"
+                  },
+                  "workflowTimeline": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "workflowVersion": {
+                    "type": "string",
+                    "x-java-type": "Integer"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/leaves/apply-with-existing-file": {
@@ -15367,6 +15603,39 @@
         ],
         "summary": "POST /api/leaves/assign/{employeeId} Leave module. Action: assign leaves. Path params: employeeId.",
         "description": "POST /api/leaves/assign/{employeeId} Leave module. Action: assign leaves. Path params: employeeId.",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/balance/{employeeId}": {
+      "get": {
+        "operationId": "leave_api_leaves_balance_employeeId_get_getleavebalance",
+        "tags": [
+          "Leave"
+        ],
+        "summary": "GET /api/leaves/balance/{employeeId} Leave module. Action: get leave balance. Path params: employeeId.",
+        "description": "GET /api/leaves/balance/{employeeId} Leave module. Action: get leave balance. Path params: employeeId.",
         "parameters": [
           {
             "name": "employeeId",
@@ -16475,6 +16744,83 @@
         ]
       }
     },
+    "/api/leaves/{id}/status": {
+      "put": {
+        "operationId": "leave_api_leaves_id_status_put_updateleavestatus",
+        "tags": [
+          "Leave"
+        ],
+        "summary": "PUT /api/leaves/{id}/status Leave module. Action: update leave status. Path params: id. Request body: Map<String, String",
+        "description": "PUT /api/leaves/{id}/status Leave module. Action: update leave status. Path params: id. Request body: Map<String, String>.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "title": "Map<String, String>"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leaves/assignment-balance/{employeeId}": {
+      "get": {
+        "operationId": "leaveassignment_api_leaves_assignment_balance_employeeId_get_getleavebalance",
+        "tags": [
+          "LeaveAssignment"
+        ],
+        "summary": "GET /api/leaves/assignment-balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employee",
+        "description": "GET /api/leaves/assignment-balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/leaves/balance-detailed/{employeeId}": {
       "get": {
         "operationId": "leaveassignment_api_leaves_balance_detailed_employeeId_get_getdetailedleavebalancealias",
@@ -16541,39 +16887,6 @@
         ]
       }
     },
-    "/api/leaves/balance/{employeeId}": {
-      "get": {
-        "operationId": "leaveassignment_api_leaves_balance_employeeId_get_getleavebalance",
-        "tags": [
-          "LeaveAssignment"
-        ],
-        "summary": "GET /api/leaves/balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
-        "description": "GET /api/leaves/balance/{employeeId} LeaveAssignment module. Action: get leave balance. Path params: employeeId.",
-        "parameters": [
-          {
-            "name": "employeeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/admin/leave-balances/round-all": {
       "post": {
         "operationId": "leavebalanceadmin_api_admin_leave_balances_round_all_post_roundallbalances",
@@ -16604,8 +16917,8 @@
         "tags": [
           "LeaveDraft"
         ],
-        "summary": "POST /api/leaves/drafts LeaveDraft module. Action: create draft. Accepts file upload.",
-        "description": "POST /api/leaves/drafts LeaveDraft module. Action: create draft. Accepts file upload.",
+        "summary": "POST /api/leaves/drafts LeaveDraft module. Action: create draft. Request body: LeaveDraftDTO. Fields: id, employeeId, re",
+        "description": "POST /api/leaves/drafts LeaveDraft module. Action: create draft. Request body: LeaveDraftDTO. Fields: id, employeeId, reason, fileName, hasFile, type, startDate, endDate, totalDays. Accepts file upload.",
         "parameters": [],
         "responses": {
           "200": {
@@ -16619,7 +16932,56 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "LeaveDraftDTO",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "x-java-type": "Long"
+                  },
+                  "employeeId": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "hasFile": {
+                    "type": "string",
+                    "x-java-type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "totalDays": {
+                    "type": "string",
+                    "x-java-type": "Double"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/leaves/drafts/download/{id}": {
@@ -16758,8 +17120,8 @@
         "tags": [
           "LeaveDraft"
         ],
-        "summary": "PUT /api/leaves/drafts/{id} LeaveDraft module. Action: update draft. Path params: id. Accepts file upload.",
-        "description": "PUT /api/leaves/drafts/{id} LeaveDraft module. Action: update draft. Path params: id. Accepts file upload.",
+        "summary": "PUT /api/leaves/drafts/{id} LeaveDraft module. Action: update draft. Path params: id. Request body: LeaveDraftDTO. Field",
+        "description": "PUT /api/leaves/drafts/{id} LeaveDraft module. Action: update draft. Path params: id. Request body: LeaveDraftDTO. Fields: id, employeeId, reason, fileName, hasFile, type, startDate, endDate, totalDays. Accepts file upload.",
         "parameters": [
           {
             "name": "id",
@@ -16782,7 +17144,56 @@
           {
             "bearerAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "LeaveDraftDTO",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "x-java-type": "Long"
+                  },
+                  "employeeId": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "hasFile": {
+                    "type": "string",
+                    "x-java-type": "boolean"
+                  },
+                  "type": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "x-java-type": "String"
+                  },
+                  "totalDays": {
+                    "type": "string",
+                    "x-java-type": "Double"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/locations/add": {
@@ -16993,39 +17404,6 @@
             }
           }
         }
-      }
-    },
-    "/api/notifications/read-all/{employeeId}": {
-      "post": {
-        "operationId": "notification_api_notifications_read_all_employeeId_post_markallasread",
-        "tags": [
-          "Notification"
-        ],
-        "summary": "POST /api/notifications/read-all/{employeeId} Notification module. Action: mark all as read. Path params: employeeId.",
-        "description": "POST /api/notifications/read-all/{employeeId} Notification module. Action: mark all as read. Path params: employeeId.",
-        "parameters": [
-          {
-            "name": "employeeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
       }
     },
     "/api/notifications/read/{id}": {
