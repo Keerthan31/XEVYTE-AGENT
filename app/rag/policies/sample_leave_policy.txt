@@ -1,0 +1,28 @@
+Xevyte Connect Sample Leave Policy
+
+1. Casual Leave (CL)
+- Employees are entitled to 12 days of Casual Leave per year, accrued at 1 day per month.
+- CL cannot be carried forward to the next year.
+- Maximum 3 days of CL can be taken consecutively.
+
+2. Sick Leave (SL)
+- Employees are entitled to 12 days of Sick Leave per year.
+- SL can be carried forward up to a maximum of 30 days.
+- A medical certificate is required for SL exceeding 3 consecutive days.
+
+3. Earned Leave (EL) / Privilege Leave (PL)
+- Employees accrue 1.5 days of EL per month (18 days per year).
+- EL requires prior approval of at least 7 days from the reporting manager.
+- EL can be carried forward up to a maximum of 45 days.
+- EL encashment is allowed at the time of resignation or annually above a balance of 30 days.
+
+4. Maternity Leave
+- Female employees are entitled to 26 weeks of paid maternity leave.
+
+5. Paternity Leave
+- Male employees are entitled to 5 days of paid paternity leave, to be availed within 2 months of the child's birth.
+
+Working Hours:
+- Standard working hours are 9:30 AM to 6:30 PM.
+- Grace period of 15 minutes is allowed. Any check-in after 9:45 AM will be marked as late.
+- 3 late marks in a month will result in a half-day deduction from Casual Leave.

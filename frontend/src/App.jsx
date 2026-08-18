@@ -13,6 +13,7 @@ import {
   streamMessage,
   confirmAction,
   fetchSessionsDB,
+  fetchSessionMessagesDB,
   createSessionDB,
   pinSessionDB,
   renameSessionDB,
@@ -33,10 +34,9 @@ const WELCOME = {
 function getEmployeeDisplayName(empId) {
   const storedName = localStorage.getItem('xeva_standalone_emp_name');
   if (storedName) return storedName;
-
   if (!empId) return 'Employee'
-  if (empId.toLowerCase().includes('koushik')) return 'Koushik Viswanadha'
-  if (empId.toLowerCase() === 'scaloz_admin' || empId.toLowerCase() === 'admin') return 'Koushik Viswanadha'
+  
+  // Format the ID dynamically if no name is available
   const clean = empId.replace(/\d+$/g, '').replace(/[._-]/g, ' ').trim()
   return clean.charAt(0).toUpperCase() + clean.slice(1)
 }
@@ -141,10 +141,23 @@ export default function App() {
       await exchangeToken(token)
       const dbSessions = await fetchSessionsDB(employeeId, token)
       if (Array.isArray(dbSessions) && dbSessions.length > 0) {
-        // Ensure welcome message is prepended if empty
-        const formatted = dbSessions.map(s => ({
-          ...s,
-          messages: s.messages && s.messages.length > 0 ? s.messages : [WELCOME]
+        const formatted = await Promise.all(dbSessions.map(async s => {
+          const rawMsgs = await fetchSessionMessagesDB(s.id, token)
+          let parsedMsgs = []
+          if (Array.isArray(rawMsgs)) {
+            parsedMsgs = rawMsgs.map(m => ({
+              role: m.role,
+              content: m.content,
+              ts: new Date(m.created_at).getTime()
+            }))
+          }
+          
+          return {
+            ...s,
+            isPinned: !!s.is_pinned,
+            messages: parsedMsgs.length > 0 ? parsedMsgs : [WELCOME],
+            history: parsedMsgs.map(m => ({ role: m.role, content: m.content }))
+          }
         }))
         setSessions(formatted)
         setActiveSessionId(formatted[0].id)
@@ -461,6 +474,7 @@ export default function App() {
           pendingToken,
           approve: isApproval,
           token,
+          employeeId,
         })
         if (onResponse) onResponse(res)
         onChunk(res.reply)
@@ -504,7 +518,7 @@ export default function App() {
         return s
       }))
 
-      const res = await confirmAction({ conversationId: currentId, pendingToken, approve, token })
+      const res = await confirmAction({ conversationId: currentId, pendingToken, approve, token, employeeId })
       const cleanReply = res.reply
       setThoughtsMap(prevStatus => {
         const newMap = { ...prevStatus }

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 
-const BASE = 'https://localhost:8443/api/agent'
+const BASE = 'http://localhost:8443/api/agent'
 
 export async function exchangeToken(token) {
   try {
@@ -11,6 +11,17 @@ export async function exchangeToken(token) {
   } catch (e) {
     console.warn('Failed to exchange token with backend:', e)
     return null
+  }
+}
+
+export async function fetchSessionMessagesDB(sessionId, token) {
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await axios.get(`${BASE}/sessions/${sessionId}/messages`, { headers })
+    return res.data
+  } catch (e) {
+    console.warn('Failed to fetch session messages from DB:', e)
+    return []
   }
 }
 
@@ -57,22 +68,25 @@ export async function streamMessage({ message, history, token, employeeId, sessi
   }
 }
 
-export async function confirmAction({ conversationId, pendingToken, approve, token }) {
+export async function confirmAction({ conversationId, pendingToken, approve, token, employeeId }) {
   try {
     const headers = token ? { Authorization: `Bearer ${token}` } : {}
     const res = await axios.post(
       `${BASE}/confirm`,
       {
-        conversation_id: conversationId,
-        pending_confirmation_token: pendingToken,
+        session_id: conversationId,
+        token: pendingToken,
         approve,
+        employee_id: employeeId
       },
       { headers }
     )
     return res.data
   } catch (e) {
     if (e.response && e.response.data && e.response.data.detail) {
-      throw new Error(e.response.data.detail)
+      const detail = e.response.data.detail
+      const msg = typeof detail === 'string' ? detail : JSON.stringify(detail)
+      throw new Error(msg)
     }
     throw e;
   }
