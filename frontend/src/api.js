@@ -2,12 +2,7 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 
-// Same-origin when UI is served from the agent (:8443); absolute URL for Vite dev (:3000).
-const BASE = import.meta.env.VITE_API_BASE || (
-  typeof window !== 'undefined' && window.location.port === '3000'
-    ? 'http://localhost:8443/api/agent'
-    : '/api/agent'
-)
+const BASE = 'https://localhost:8443/api/agent'
 
 export async function exchangeToken(token) {
   try {
@@ -19,24 +14,35 @@ export async function exchangeToken(token) {
   }
 }
 
-export async function sendMessage({ message, history, token, employeeId, sessionId }) {
+export async function sendMessage({ message, history, token, employeeId, sessionId, file }) {
   const headers = token ? { Authorization: `Bearer ${token}` } : {}
-  // Backend ChatRequest only accepts message + conversation_id (auth via cookie/Bearer).
-  // Extra fields were previously sent and silently ignored / could confuse proxies.
-  const res = await axios.post(
-    `${BASE}/chat`,
-    {
-      message,
-      conversation_id: sessionId || undefined,
-    },
-    { headers }
-  )
-  return res.data
+  if (file) {
+    const form = new FormData()
+    form.append('message', message)
+    if (sessionId) form.append('conversation_id', sessionId)
+    form.append('files', file)
+    const res = await axios.post(`${BASE}/chat/upload`, form, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } })
+    return res.data
+  } else {
+    const res = await axios.post(
+      `${BASE}/chat`,
+      {
+        message,
+        history,
+        token,
+        employee_id: employeeId,
+        session_id: sessionId,
+        conversation_id: sessionId,
+      },
+      { headers }
+    )
+    return res.data
+  }
 }
 
-export async function streamMessage({ message, history, token, employeeId, sessionId, onResponse, onChunk }) {
+export async function streamMessage({ message, history, token, employeeId, sessionId, file, onResponse, onChunk }) {
   try {
-    const res = await sendMessage({ message, history, token, employeeId, sessionId })
+    const res = await sendMessage({ message, history, token, employeeId, sessionId, file })
     if (onResponse) onResponse(res)
     if (res && res.reply) {
       onChunk(res.reply)

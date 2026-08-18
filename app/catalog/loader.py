@@ -7,7 +7,6 @@ the catalog's on-disk shape — everything else asks this module for data.
 from __future__ import annotations
 
 import json
-import re
 import threading
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -108,104 +107,77 @@ class EndpointSpec:
         return [p for p in self.query_params if p.get("java_type") == "MultipartFile"]
 
     def embedding_text(self) -> str:
-        """Rich text for vector + BM25 search — description alone is too thin
-        for reliable retrieval across 600+ endpoints."""
-        bits = [
-            self.description or "",
-            f"{self.http_method} {self.path}",
-            f"module {self.module}",
-            f"action {self.method_name}",
-            self.controller_class,
-        ]
-        if self.path_params:
-            bits.append("path " + " ".join(p.get("name", "") for p in self.path_params))
-        non_file_q = self.non_file_query_params()
-        if non_file_q:
-            bits.append("query " + " ".join(p.get("name", "") for p in non_file_q))
-        schema = self.request_body_schema or []
-        if not schema:
-            for pt in self.get_multipart_parts() or []:
-                if pt.get("schema"):
-                    schema = pt["schema"]
-                    break
-        if schema:
-            bits.append("fields " + " ".join(f.get("name", "") for f in schema[:20]))
-        if self.request_body_type:
-            bits.append(self.request_body_type)
-        # Synonym-ish tokens from path segments help lexical/BM25 match
-        segments = [s for s in re.split(r"[/_\-{}]", self.path) if s and not s.isdigit()]
-        bits.append(" ".join(segments))
-        return " ".join(b for b in bits if b).strip()
+        # Richer embedding: description + module + path + action verb
+        # This ensures RAG can find endpoints via UI terms (description),
+        # technical terms (path), and domain context (module).
+        parts = [self.description]
+        if self.module and self.module.lower() not in self.description.lower():
+            parts.append(f"Module: {self.module}")
+        if self.path and self.path not in self.description:
+            parts.append(f"Path: {self.path}")
+        return " | ".join(parts)
 
     def as_prompt_block(self) -> str:
         """Rich, LLM-facing rendering of this endpoint used in the planning
         prompt — includes everything needed to construct a correct call."""
-        from app.agent.param_utils import body_schema_for, is_body_field_required
-
         lines = [f"### {self.id}", f"{self.http_method} {self.path}", f"Module: {self.module}"]
-        if self.description:
-            lines.append(f"Summary: {self.description}")
         if self.path_params:
-            lines.append(
-                "Path params (REQUIRED): "
-                + ", ".join(f"{p['name']} ({p['java_type']})" for p in self.path_params)
-            )
+            lines.append("Path params: " + ", ".join(f"*{p['name']} ({p['java_type']}, REQUIRED)" for p in self.path_params))
         non_file_q = self.non_file_query_params()
         if non_file_q:
             parts = []
             for p in non_file_q:
-                bit = f"{p['name']} ({p['java_type']}"
-                if p.get("required"):
-                    bit += ", REQUIRED"
-                else:
-                    bit += ", optional"
+                req_prefix = "*" if p.get("required") else ""
+                req_suffix = "" if not p.get("required") else ", REQUIRED"
+                opt_suffix = ", optional" if not p.get("required") else ""
+                bit = f"{req_prefix}{p['name']} ({p['java_type']}{req_suffix}{opt_suffix}"
                 if p.get("default") is not None:
                     bit += f", default={p['default']}"
                 bit += ")"
+                if p.get("enum_values") or p.get("enum"):
+                    enums = p.get("enum_values") or p.get("enum")
+                    bit += f" — Allowed values: {', '.join(enums)}"
+                if p.get("wire_format"):
+                    bit += f" (send as {p['wire_format']})"
+                if p.get("hidden") or p.get("system_generated"):
+                    bit += " (system-generated, do not ask/include)"
                 parts.append(bit)
             lines.append("Query params: " + ", ".join(parts))
         if self.header_params:
-            lines.append(
-                "Header params: "
-                + ", ".join(f"{p['name']} ({p.get('java_type', 'String')})" for p in self.header_params)
-            )
-        schema = body_schema_for(self)
-        if self.request_body_type or schema:
-            label = self.request_body_type or "DTO"
-            lines.append(
-                f"Request body JSON ({'array of ' if self.request_body_is_list else ''}{label}) — "
-                "use ONLY these field names; omit unknowns; do not invent keys:"
-            )
-            if schema:
-                for f in schema:
-                    req = is_body_field_required(f, http_method=self.http_method)
-                    wf = f.get("wire_format") or self.wire_formats.get(f["name"])
-                    extra = f", wire_format={wf}" if wf else ""
-                    flag = "REQUIRED" if req else "optional"
-                    lines.append(f"  - {f['name']}: {f['java_type']} [{flag}]{extra}")
+            lines.append("Header params: " + ", ".join(f"*{p['name']} ({p.get('java_type', 'String')}, REQUIRED)" if p.get("required") else f"{p['name']} ({p.get('java_type', 'String')}, optional)" for p in self.header_params))
+        if self.request_body_type:
+            lines.append(f"Request body ({'array of ' if self.request_body_is_list else ''}{self.request_body_type}):")
+            if self.request_body_schema:
+                for f in self.request_body_schema:
+                    req_prefix = "*" if f.get("required") else ""
+                    line = f"  - {req_prefix}{f['name']}: {f['java_type']}"
+                    if f.get("required"):
+                        line += " (REQUIRED)"
+                    else:
+                        line += " (optional)"
+                    if f.get("description"):
+                        line += f" — {f['description']}"
+                    if f.get("enum_values") or f.get("enum"):
+                        enums = f.get("enum_values") or f.get("enum")
+                        line += f" — Allowed values: {', '.join(enums)}"
+                    if f.get("wire_format"):
+                        line += f" (send as {f['wire_format']})"
+                    if f.get("min_length") or f.get("max_length"):
+                        line += f" (length {f.get('min_length', 0)}-{f.get('max_length', '?')} chars)"
+                    if f.get("hidden") or f.get("system_generated"):
+                        line += " (system-generated, do not ask/include)"
+                    lines.append(line)
             else:
-                lines.append(
-                    "  (schema unknown — ask the user for every business field you need; "
-                    "do not invent plausible JSON)"
-                )
+                lines.append("  (free-form JSON object — infer reasonable keys from the user's request)")
         mp_parts = self.get_multipart_parts()
         if mp_parts:
             lines.append("Multipart form-data parts:")
             for pt in mp_parts:
-                req = "required" if pt.get("required") else "optional"
-                lines.append(
-                    f"  - part '{pt['name']}' ({pt['part_type']}, {pt['content_type']}, {req})"
-                )
-                if pt.get("part_type") == "json_dto" and pt.get("schema"):
-                    for f in pt["schema"][:15]:
-                        lines.append(f"      · {f['name']}: {f.get('java_type', '?')}")
+                req_prefix = "*" if pt.get("required") else ""
+                req_str = "REQUIRED" if pt.get("required") else "optional"
+                lines.append(f"  - part '{req_prefix}{pt['name']}' ({pt['part_type']}, {pt['content_type']}, {req_str})")
         elif self.has_file_upload:
             lines.append("Accepts a file upload (multipart/form-data).")
-        if self.wire_formats:
-            lines.append(
-                "Date wire formats: "
-                + ", ".join(f"{k}={v}" for k, v in self.wire_formats.items())
-            )
         if not self.auth_required:
             lines.append("No authentication required.")
         if self.preauthorize:
@@ -286,6 +258,47 @@ def load_catalog(path: Optional[str] = None) -> Catalog:
     raw = json.loads(catalog_path.read_text(encoding="utf-8"))
     from dataclasses import fields
     endpoints = [EndpointSpec.from_dict(e) for e in raw]
+    
+    # [Virtual Feature] Org Chart search support
+    for e in endpoints:
+        if e.id == "employee_api_employees_get_getallemployees":
+            e.query_params.append({
+                "name": "search",
+                "location": "query",
+                "java_type": "String",
+                "required": False,
+                "default": None,
+                "description": "Optional search term to find a specific employee (e.g. by name). Use this for Org Chart queries."
+            })
+            e.description += " Note: For Org Chart queries, you can optionally pass a 'search' query parameter to find a specific person."
+
+        # [Virtual Feature] Daily Entry Schema Patch
+        if e.id == "dailyentry_api_daily_entry_submit_employeeId_post_submitentry":
+            if e.request_body_schema:
+                for field in e.request_body_schema:
+                    if field["name"] == "workLocation":
+                        field["enum"] = ["WFH", "IN OFFICE", "CLIENT SITE"]
+                        field["required"] = True
+                    elif field["name"] in ["clientId", "clientName", "projectId", "projectName", "loginTime"]:
+                        field["required"] = True
+
+        # [Virtual Feature] Reimbursement & Claims Module Patch
+        if e.controller_class == "ClaimController" or e.module.lower() == "claims" or e.module.lower() == "claim":
+            e.description += " NOTE: This is part of the Reimbursement (Claims) module. "
+            if "/submit" in e.path:
+                e.description += " STRICT RULE: Do not hallucinate claim amount, category, or receipt files. Ask the user for total amount, category (e.g. Travel, Food), and receipt/attachment before calling. If the user says 'travel' while discussing claims, they mean the Travel category, NOT a Travel Request."
+            if "/approve" in e.path or "/reject" in e.path:
+                e.description += " STRICT RULE: Do not call this without a specific claimId. If a manager asks to approve/reject reimbursements, fetch pending claims first to get the claimId."
+            if "/finance/update-status" in e.path:
+                e.description += " STRICT RULE: This is for Finance Payouts only (marking a claim as Paid/Settled). Do not use manager approval endpoints for final payout statuses."
+            if "/settings" in e.path:
+                e.description += " STRICT RULE: This is for Admin Configuration ONLY (Rate per KM, Meal Types). DO NOT call this when a user asks to view or submit their reimbursements."
+
+        # [Virtual Feature] Travel Request vs Travel Reimbursement Disambiguation
+        if e.controller_class == "TravelRequestController" or e.module.lower() == "travelrequest":
+            e.description += " STRICT RULE: This is for TRAVEL PERMISSION REQUESTS only (e.g., asking for permission to go on a trip). DO NOT use this if the user is asking to submit a CLAIM or REIMBURSEMENT for travel expenses."
+
+
     catalog = Catalog(endpoints)
     val_result = catalog.validate()
     if not val_result.valid:

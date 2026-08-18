@@ -295,37 +295,27 @@ export default function App() {
     if (!file) return
 
     setAttachError('')
-    setUploadingFile(true)
-    const result = await uploadChatFile(file, employeeId)
-    setUploadingFile(false)
-
-    if (!result.ok) {
-      setAttachError(result.error || 'Upload failed.')
-      return
-    }
     setPendingAttachment({
-      file_id: result.file_id,
-      filename: result.filename,
-      content_type: result.content_type,
+      filename: file.name,
+      content_type: file.type,
+      file: file
     })
   }
 
   const handleSend = async (text) => {
     const msg = (text || input).trim()
-    if (!msg) return
+    if (!msg && !pendingAttachment) return
     if (!configured) {
       setError('Please log in first.')
       return
     }
 
-    // If a file was attached, tell the agent about it via a machine-readable
-    // note appended to the message — the agent's system prompt tells it to
-    // look for this and use describe_uploaded_file / call_xevyte_api's
-    // file_ids param with the id below.
-    let outgoingMsg = msg
+    let outgoingMsg = msg || 'Attached file.'
     let attachmentForDisplay = pendingAttachment
+    let fileToUpload = null
     if (pendingAttachment) {
-      outgoingMsg = `${msg}\n\n[Attached file: ${pendingAttachment.filename}, file_id: ${pendingAttachment.file_id}, type: ${pendingAttachment.content_type}]`
+      outgoingMsg = `${outgoingMsg}\n\n[Attached file: ${pendingAttachment.filename}]`
+      fileToUpload = pendingAttachment.file
     }
     setPendingAttachment(null)
     setAttachError('')
@@ -483,6 +473,7 @@ export default function App() {
           token,
           employeeId,
           sessionId: currentId,
+          file: fileToUpload,
           onResponse,
           onChunk
         })
