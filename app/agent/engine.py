@@ -104,12 +104,17 @@ async def run_agent(
     user_message: str, 
     history: List[Dict[str, str]], 
     user_context: Dict[str, Any],
-    token: Optional[str] = None
+    token: Optional[str] = None,
+    file_context: Optional[Dict[str, Any]] = None,
+    temp_file_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Main LangGraph loop using ChatOpenAI.
     """
     settings = get_settings()
+    
+    if temp_file_path:
+        user_context["temp_file_path"] = temp_file_path
     
     # 1. Define Tools dynamically so we can close over user_context and token
     @tool
@@ -218,19 +223,30 @@ async def run_agent(
     app = workflow.compile()
     
     # 6. Execute Graph
-    from langchain_core.messages import HumanMessage
+    from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
     
-    # We ignore the raw history passed from chat.py because chat.py now uses LangChain memory
-    # Actually, chat.py converts it to dicts. We need to convert it back to BaseMessages for LangGraph.
+    # Reconstruct history
     lc_messages = []
+    
     for h in history:
         if h["role"] == "user":
             lc_messages.append(HumanMessage(content=h["content"]))
         elif h["role"] == "assistant":
             lc_messages.append(AIMessage(content=h["content"]))
-            
-    # Note: user_message is NOT appended here because chat.py already adds it to the database memory, 
-    # meaning it is already the last element in 'history' (and therefore lc_messages).
+
+    # Inject file context if provided by replacing the last user message
+    if file_context and len(lc_messages) > 1 and isinstance(lc_messages[-1], HumanMessage):
+        last_msg = lc_messages.pop()
+        
+        if file_context["type"] == "image":
+            msg_content = [
+                {"type": "text", "text": last_msg.content},
+                {"type": "image_url", "image_url": {"url": file_context["data"]}}
+            ]
+            lc_messages.append(HumanMessage(content=msg_content))
+        elif file_context["type"] == "document":
+            combined_message = f"{last_msg.content}\n\n[Content of attached file '{file_context['filename']}']\n\n{file_context['data']}"
+            lc_messages.append(HumanMessage(content=combined_message))
     
     from langgraph.errors import GraphRecursionError
     

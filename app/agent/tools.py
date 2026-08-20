@@ -80,13 +80,15 @@ class APIECatalog:
     @classmethod
     def to_tool_description(cls, endpoint: Dict) -> str:
         """Format endpoint as tool description for LLM"""
+        import re
+        path = endpoint.get('path', '')
+        path_vars = [v for v in re.findall(r'\{(.*?)\}', path) if v not in ['employeeId', 'managerId']]
+        path_params_str = f"- Required Path Params (put in `path_params`): {', '.join(path_vars)}\n" if path_vars else ""
+        
         return f"""
 **{endpoint['description']}** (ID: {endpoint['endpoint_id']})
-- Method: {endpoint['method']}
-- Path: {endpoint['path']} (If the path contains {{variables}} OTHER THAN {{employeeId}} or {{managerId}}, you MUST provide them in the `path_params` dictionary. {{employeeId}} and {{managerId}} are auto-injected.)
-- Required: {', '.join(endpoint.get('required_fields', []))}
-- Optional: {', '.join(endpoint.get('optional_fields', []))}
-- Confirmation: {'Yes' if endpoint.get('requires_confirmation') else 'No'}
+{path_params_str}- Required Body/Query Params: {', '.join(endpoint.get('required_fields', [])) or 'None'}
+- Optional Body/Query Params: {', '.join(endpoint.get('optional_fields', [])) or 'None'}
 """
 
 
@@ -110,7 +112,7 @@ def search_api_catalog(query: str) -> str:
     for endpoint in results:
         output += catalog.to_tool_description(endpoint)
     
-    output += "\nIf multiple endpoints seem equally relevant and you are not absolutely certain which one the user intended, DO NOT guess. Instead, ASK the user a clarifying question before calling call_xevyte_api."
+    output += "\nCRITICAL RULE: If multiple endpoints seem relevant, ASK the user a clarifying functional question (e.g., 'Do you want to see the company-wide calendar or your specific balance?'). DO NOT EVER expose the API endpoints, endpoint IDs, or JSON keys in your response to the user!"
     return output
 
 
@@ -277,13 +279,6 @@ async def call_xevyte_api(
             import re
             actual_path = re.sub(r"\{[^}]+\}", str(path_params["id"]), actual_path, count=1)
     
-    # Second Fallback: if LLM put the ID in the body instead of path_params
-    if "{" in actual_path and body:
-        for k, v in body.items():
-            if "id" in k.lower():
-                import re
-                actual_path = re.sub(r"\{[^}]+\}", str(v), actual_path, count=1)
-                break
     
     # Auto-inject employeeId and managerId if missing
     if "{employeeId}" in actual_path and user_context.get("employeeId"):
@@ -348,6 +343,49 @@ async def call_xevyte_api(
         except Exception as e:
             return {"status": "error", "error": f"Failed to get activities: {e}"}
 
+    # Auto-map conversational field names from LLM to strict Java entity fields
+    if endpoint_id == "updateProfile" and body:
+        mapping = {
+            "contactNumber": "contactNo",
+            "phone": "contactNo",
+            "emergencyNumber": "emergencyContactNumber",
+            "emergencyContact": "emergencyContactNumber",
+            "emergencyNo": "emergencyContactNumber",
+            "emergency": "emergencyContactNumber",
+            "emg": "emergencyContactNumber",
+            "personalEmail": "personalMail",
+            "personalMailId": "personalMail",
+            "permanentAddress": "address",
+            "presentAddress": "presentAddress",
+            "bio": "about",
+            "myInterestsAndHobbies": "interestsAndHobbies",
+            "hobbies": "interestsAndHobbies"
+        }
+        for bad_key, good_key in mapping.items():
+            if bad_key in body and good_key not in body:
+                body[good_key] = body.pop(bad_key)
+                
+    if endpoint_id in ("submitClaim", "saveClaim", "addNominee") and body:
+        mapping = {
+            "date": "expenseDate",
+            "description": "expenseDescription",
+            "type": "category",
+            "claimType": "category",
+            "dateOfBirth": "dateOfBirth", # Ensures correct casing if it hallucinated dateofbirth
+            "dob": "dateOfBirth"
+        }
+        # Add nominee mappings specifically
+        if endpoint_id == "addNominee":
+            mapping.update({
+                "name": "nomineeName"
+            })
+            
+        for bad_key, good_key in mapping.items():
+            # Support case insensitive bad_key matches if needed, but exact is fine for LLM hallucinations
+            if bad_key in body and good_key not in body:
+                body[good_key] = body.pop(bad_key)
+
+
     # STEP 4: Handle mutations (POST/PUT/DELETE/PATCH)
     # ========================================================================
     
@@ -385,7 +423,7 @@ async def call_xevyte_api(
                     user_context, token,
                     body.get("startDate", ""),
                     body.get("endDate", ""),
-                    body.get("leaveTypeId", ""),
+                    body.get("type", body.get("leaveTypeId", "")),
                     body.get("reason", "Personal reasons")
                 )
                 if leave_result.get("error"):
@@ -411,6 +449,8 @@ async def call_xevyte_api(
                 "query_params": query_params,
                 "body": body
             }
+            if user_context.get("temp_file_path"):
+                action_data["temp_file_path"] = user_context.get("temp_file_path")
             emp_id = user_context.get("employeeId", "unknown")
             confirm_token = generate_confirmation_token(action_data, emp_id)
             
@@ -446,8 +486,34 @@ async def call_xevyte_api(
             if query_params:
                 request_kwargs["params"] = query_params
             
+            if query_params:
+                request_kwargs["params"] = query_params
+            
             if body and method != "GET":
-                request_kwargs["json"] = body
+                if endpoint_id == "updateProfilePicture":
+                    # Multipart file upload handling
+                    if "Content-Type" in headers:
+                        del headers["Content-Type"]
+                    data = {}
+                    files = {}
+                    import os
+                    for k, v in body.items():
+                        if k == "profilePic" and isinstance(v, str) and os.path.isfile(v):
+                            files["profilePic"] = open(v, "rb")
+                        else:
+                            data[k] = str(v)
+                    
+                    # Ensure firstName and lastName are present (required by backend)
+                    if "firstName" not in data:
+                        data["firstName"] = "User"
+                    if "lastName" not in data:
+                        data["lastName"] = ""
+                        
+                    request_kwargs["data"] = data
+                    if files:
+                        request_kwargs["files"] = files
+                else:
+                    request_kwargs["json"] = body
             
             response = await client.request(method, **request_kwargs)
             
@@ -462,6 +528,21 @@ async def call_xevyte_api(
             
             # Success response
             if response.status_code in (200, 201, 204):
+                
+                # Map Java backend keys to expected Python keys without hardcoded null sanitization
+                if endpoint_id == "getAllocationsForEmployee" and isinstance(resp_data, list):
+                    for alloc in resp_data:
+                        if "customerName" in alloc:
+                            alloc["clientName"] = alloc.get("customerName")
+                            
+                if endpoint_id in ("getProfile", "getEmployeeOverview") and isinstance(resp_data, dict):
+                    if "designation" in resp_data:
+                        resp_data["role"] = resp_data.get("designation")
+                    if "assignedManagerId" in resp_data:
+                        resp_data["reportingManager"] = resp_data.get("assignedManagerId")
+                    elif "managerName" in resp_data:
+                        resp_data["reportingManager"] = resp_data.get("managerName")
+                
                 return {
                     "status": "success",
                     "status_code": response.status_code,
@@ -529,19 +610,33 @@ class WorkflowHelpers:
         
         try:
             # 1. Leaves
-            
             r_leaves = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/manager/{emp_id}", headers=headers, timeout=5.0)
             if r_leaves.status_code == 200:
                 data = r_leaves.json()
                 logger.info(f"LEAVES DATA: {data}")
                 for l in data:
+                    if "pending" in str(l.get("status", "")).lower():
+                        emp_name = l.get("employeeName")
+                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                            emp_name = l.get("employeeId") or "Unknown Employee"
 
-                    if "pending" in str(l.get("status")).lower():
+                        leave_type = l.get("type") or l.get("leaveType")
+                        if not leave_type or str(leave_type).strip().lower() in ("none", "null", ""):
+                            leave_type = "Leave"
+
+                        ref_id = l.get("referenceId") or l.get("leaveReference") or "N/A"
+                        start_d = l.get("startDate") or "N/A"
+                        end_d = l.get("endDate") or "N/A"
+                        days = l.get("totalDays")
+                        days_str = f" ({days} day{'s' if days and days > 1 else ''})" if days else ""
+
                         tasks.append({
                             "ID": l.get("id"),
+                            "Reference ID": ref_id,
                             "Type": "Leave Approval",
-                            "Employee": l.get("employeeName"),
-                            "Details": f"{l.get('leaveType')} from {l.get('startDate')} to {l.get('endDate')}",
+                            "Leave Type": leave_type,
+                            "Employee": emp_name,
+                            "Details": f"{leave_type}{days_str} from {start_d} to {end_d}",
                             "Date": l.get("createdAt", "N/A")
                         })
             
@@ -549,12 +644,22 @@ class WorkflowHelpers:
             r_claims = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/claims/manager/{emp_id}", headers=headers, timeout=5.0)
             if r_claims.status_code == 200:
                 for c in r_claims.json():
-                    if "pending" in str(c.get("status")).lower():
+                    if "pending" in str(c.get("status", "")).lower():
+                        emp_name = c.get("employeeName")
+                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                            emp_name = c.get("employeeId") or "Unknown Employee"
+
+                        exp_type = c.get("expenseType") or "Claim"
+                        amt = c.get("amount") or "0"
+                        ref_id = c.get("claimGroupId") or c.get("referenceId") or "N/A"
+
                         tasks.append({
                             "ID": c.get("id"),
+                            "Reference ID": ref_id,
                             "Type": "Claim Approval",
-                            "Employee": c.get("employeeName"),
-                            "Details": f"{c.get('expenseType')} - {c.get('amount')}",
+                            "Leave Type": exp_type,
+                            "Employee": emp_name,
+                            "Details": f"{exp_type} - {amt}",
                             "Date": c.get("appliedOn", "N/A")
                         })
             
@@ -562,11 +667,21 @@ class WorkflowHelpers:
             r_travel = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/travel/manager/pending/{emp_id}", headers=headers, timeout=5.0)
             if r_travel.status_code == 200:
                 for t in r_travel.json():
+                    emp_name = t.get("employeeName")
+                    if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                        emp_name = t.get("employeeId") or "Unknown Employee"
+
+                    purpose = t.get("purpose") or "Travel"
+                    dest = t.get("destination") or "N/A"
+                    ref_id = t.get("referenceId") or "N/A"
+
                     tasks.append({
                         "ID": t.get("id"),
+                        "Reference ID": ref_id,
                         "Type": "Travel Approval",
-                        "Employee": t.get("employeeName"),
-                        "Details": f"{t.get('purpose')} to {t.get('destination')}",
+                        "Leave Type": purpose,
+                        "Employee": emp_name,
+                        "Details": f"{purpose} to {dest}",
                         "Date": t.get("requestDate", "N/A")
                     })
             
@@ -577,10 +692,18 @@ class WorkflowHelpers:
                 if r_exits.status_code == 200:
                     for ex in r_exits.json():
                         if ex.get("status") != "Final Approved - Exit Complete":
+                            emp_name = ex.get("employeeName")
+                            if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                emp_name = ex.get("employeeId") or "Unknown Employee"
+
+                            ref_id = ex.get("referenceId") or "N/A"
+
                             tasks.append({
                                 "ID": ex.get("id"),
+                                "Reference ID": ref_id,
                                 "Type": "Exit/Resignation Approval",
-                                "Employee": ex.get("employeeName", "Unknown"),
+                                "Leave Type": "Resignation",
+                                "Employee": emp_name,
                                 "Details": f"Resignation Date: {ex.get('resignationDate', 'N/A')}",
                                 "Date": ex.get("createdDate", "N/A")
                             })
@@ -591,12 +714,21 @@ class WorkflowHelpers:
             r_tickets = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/tickets/manager/{emp_id}", headers=headers, timeout=5.0)
             if r_tickets.status_code == 200:
                 for tk in r_tickets.json():
-                    if "pending" in str(tk.get("status")).lower() or "open" in str(tk.get("status")).lower():
+                    if "pending" in str(tk.get("status", "")).lower() or "open" in str(tk.get("status", "")).lower():
+                        emp_name = tk.get("employeeName")
+                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                            emp_name = tk.get("employeeId") or "Unknown Employee"
+
+                        details = tk.get("title") or tk.get("subject") or "Helpdesk Ticket"
+                        ref_id = tk.get("ticketNumber") or tk.get("referenceId") or "N/A"
+
                         tasks.append({
                             "ID": tk.get("id"),
+                            "Reference ID": ref_id,
                             "Type": "Ticket Approval",
-                            "Employee": tk.get("employeeName", tk.get("employeeId", "Unknown")),
-                            "Details": tk.get("title", tk.get("subject", "N/A")),
+                            "Leave Type": tk.get("category", "Helpdesk"),
+                            "Employee": emp_name,
+                            "Details": details,
                             "Date": tk.get("createdAt", "N/A")
                         })
         except Exception as e:
@@ -680,28 +812,41 @@ class WorkflowHelpers:
             return {"error": "Could not fetch leave balance"}
         
         # Check available balance for leave type
-        balances = balance_result["data"].get("leaveBalances", [])
+        balances = balance_result.get("data", [])
+        if isinstance(balances, dict):
+            balances = balances.get("leaveBalances", balances.get("balances", []))
+            
         leave_type_balance = next(
-            (b for b in balances if b["leaveType"] == leave_type_id),
+            (b for b in balances if str(b.get("type", b.get("leaveType", ""))).strip().lower() == str(leave_type_id).strip().lower()),
             None
         )
         
         if not leave_type_balance:
-            return {"error": f"Leave type {leave_type_id} not found"}
+            # Fallback to partial match just in case
+            leave_type_balance = next(
+                (b for b in balances if str(leave_type_id).strip().lower() in str(b.get("type", b.get("leaveType", ""))).strip().lower()),
+                None
+            )
+            
+        if not leave_type_balance:
+            logger.warning(f"Leave type {leave_type_id} not explicitly found in balance sheet. Proceeding with 0 balance to let backend validate.")
+            available_balance = 0.0
+        else:
+            available_balance = leave_type_balance.get("balance", leave_type_balance.get("available", 0.0))
         
-        if leave_type_balance["available"] <= 0:
-            return {"error": "No leave balance available"}
+        if available_balance <= 0:
+            logger.warning(f"Employee has {available_balance} balance for {leave_type_id}, but proceeding anyway to let backend validate.")
         
         return {
             "status": "ready",
             "payload": {
                 "employeeId": user_context.get("employeeId"),
-                "leaveTypeId": leave_type_id,
+                "type": leave_type_id,
                 "startDate": start_date,
                 "endDate": end_date,
                 "reason": reason or "Personal work"
             },
-            "balance_available": leave_type_balance["available"]
+            "balance_available": available_balance
         }
 
     @staticmethod

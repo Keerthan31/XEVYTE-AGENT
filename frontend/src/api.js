@@ -40,7 +40,8 @@ export async function sendMessage({ message, history, token, employeeId, session
   if (file) {
     const form = new FormData()
     form.append('message', message)
-    if (sessionId) form.append('conversation_id', sessionId)
+    if (sessionId) form.append('session_id', sessionId)
+    if (employeeId) form.append('employee_id', employeeId)
     form.append('files', file)
     const res = await axios.post(`${BASE}/chat/upload`, form, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } })
     return res.data

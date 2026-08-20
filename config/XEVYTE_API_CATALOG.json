@@ -29,7 +29,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": false
+                    "requires_confirmation": false,
+                    "java_controller_name": "DailyEntryController",
+                    "api_name": "submitEntry",
+                    "capability": "DailyEntry",
+                    "ui_name": "DailyEntry Module",
+                    "user_intent": "Submit Entry"
                 },
                 {
                     "endpoint_id": "updateEntry",
@@ -51,7 +56,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "DailyEntryController",
+                    "api_name": "updateEntry",
+                    "capability": "DailyEntry",
+                    "ui_name": "DailyEntry Module",
+                    "user_intent": "Update Entry"
                 },
                 {
                     "endpoint_id": "getEmployeeEntries",
@@ -77,85 +87,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getTeamAttendance",
-                    "method": "GET",
-                    "path": "/api/daily-entry/team/{managerId}",
-                    "description": "View team attendance summary",
-                    "response_example": {
-                        "presentToday": 0,
-                        "absent": 0,
-                        "onLeave": 0,
-                        "workFromHome": 0
-                    },
-                    "roles": [
-                        "MANAGER",
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "requestAttendanceRegularization",
-                    "method": "POST",
-                    "path": "/api/attendance-regularization/request",
-                    "description": "Request attendance correction (missing check-in/out)",
-                    "required_fields": [
-                        "date",
-                        "checkInTime",
-                        "checkOutTime",
-                        "reason"
-                    ],
-                    "response_example": {
-                        "id": "GENERIC_STRING",
-                        "status": "GENERIC_STRING",
-                        "submittedDate": "GENERIC_STRING"
-                    },
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getPendingRegularizations",
-                    "method": "GET",
-                    "path": "/api/attendance-regularization/pending/{managerId}",
-                    "description": "View pending attendance regularization requests",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "approveRegularization",
-                    "method": "PUT",
-                    "path": "/api/attendance-regularization/{id}/approve",
-                    "description": "Approve attendance regularization request",
-                    "required_fields": [
-                        "comment",
-                        "id"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "rejectRegularization",
-                    "method": "PUT",
-                    "path": "/api/attendance-regularization/{id}/reject",
-                    "description": "Reject attendance regularization request",
-                    "required_fields": [
-                        "reason",
-                        "id"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
+                    "required_fields": [],
+                    "java_controller_name": "DailyEntryController",
+                    "api_name": "getEmployeeEntries",
+                    "capability": "DailyEntry",
+                    "ui_name": "DailyEntry Module",
+                    "user_intent": "Get Employee Entries"
                 }
             ]
         },
@@ -184,7 +121,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "LeaveAssignmentController",
+                    "api_name": "unknownApiName",
+                    "capability": "LeaveAssignment",
+                    "ui_name": "LeaveAssignment Module",
+                    "user_intent": "Unknown Api Name"
                 },
                 {
                     "endpoint_id": "applyLeave",
@@ -192,7 +134,7 @@
                     "path": "/api/leaves/apply",
                     "description": "Apply for leave | UI Name: Leave Module | User Intent: Apply Leave | Java Controller: LeaveController",
                     "required_fields": [
-                        "leaveTypeId",
+                        "type",
                         "startDate",
                         "endDate",
                         "reason"
@@ -209,22 +151,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "saveLeaveDraft",
-                    "method": "POST",
-                    "path": "/api/leaves/draft",
-                    "description": "Save leave request as draft",
-                    "required_fields": [
-                        "leaveTypeId",
-                        "startDate",
-                        "endDate"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false
+                    "requires_confirmation": true,
+                    "java_controller_name": "LeaveController",
+                    "api_name": "applyLeave",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Apply Leave"
                 },
                 {
                     "endpoint_id": "getEmployeeLeaves",
@@ -248,7 +180,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "LeaveController",
+                    "api_name": "getEmployeeLeaves",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Get Employee Leaves"
                 },
                 {
                     "endpoint_id": "getPendingLeavesForManager",
@@ -272,7 +209,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "LeaveController",
+                    "api_name": "getManagerLeaves",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Get Manager Leaves"
                 },
                 {
                     "endpoint_id": "approveLeave",
@@ -291,7 +233,12 @@
                     "roles": [
                         "MANAGER"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "LeaveController",
+                    "api_name": "takeAction",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Take Action"
                 },
                 {
                     "endpoint_id": "rejectLeave",
@@ -309,7 +256,12 @@
                     "roles": [
                         "MANAGER"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "LeaveController",
+                    "api_name": "takeAction",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Take Action"
                 },
                 {
                     "endpoint_id": "cancelLeave",
@@ -323,21 +275,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "bulkApproveLeaves",
-                    "method": "PUT",
-                    "path": "/api/leaves/bulk-action",
-                    "description": "Bulk approve/reject leaves",
-                    "required_fields": [
-                        "leaveIds",
-                        "action"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "LeaveController",
+                    "api_name": "cancelLeave",
+                    "capability": "Leave",
+                    "ui_name": "Leave Module",
+                    "user_intent": "Cancel Leave"
                 }
             ]
         },
@@ -363,7 +306,12 @@
                         "ADMIN",
                         "HR"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "saveLeaveType",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Save Leave Type"
                 },
                 {
                     "endpoint_id": "getLeaveTypes",
@@ -375,7 +323,12 @@
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "getAllLeaveTypes",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Get All Leave Types"
                 },
                 {
                     "endpoint_id": "createUnifiedPolicy",
@@ -392,7 +345,12 @@
                         "ADMIN",
                         "HR"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "saveUnifiedPolicy",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Save Unified Policy"
                 },
                 {
                     "endpoint_id": "getUnifiedPolicy",
@@ -406,7 +364,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "leaveTypeId"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "getUnifiedPolicies",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Get Unified Policies"
                 },
                 {
                     "endpoint_id": "setApprovalWorkflow",
@@ -420,7 +383,12 @@
                     "roles": [
                         "ADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "saveApprovalWorkflow",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Save Approval Workflow"
                 },
                 {
                     "endpoint_id": "previewAccrual",
@@ -434,7 +402,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "leaveTypeId"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "processEncashment",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Process Encashment"
                 },
                 {
                     "endpoint_id": "previewEncashment",
@@ -449,7 +422,12 @@
                     "required_fields": [
                         "leaveTypeId",
                         "days"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "processEncashment",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Process Encashment"
                 },
                 {
                     "endpoint_id": "processEncashment",
@@ -464,7 +442,12 @@
                         "ADMIN",
                         "HR"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "processEncashment",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Process Encashment"
                 },
                 {
                     "endpoint_id": "previewEligibility",
@@ -478,7 +461,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "leaveTypeId"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "previewEligibility",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Preview Eligibility"
                 },
                 {
                     "endpoint_id": "triggerCarryForward",
@@ -489,7 +477,12 @@
                         "ADMIN"
                     ],
                     "requires_confirmation": true,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "triggerCarryForward",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Trigger Carry Forward"
                 },
                 {
                     "endpoint_id": "deleteLeaveType",
@@ -502,7 +495,12 @@
                     "requires_confirmation": true,
                     "required_fields": [
                         "id"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "deleteLeaveType",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Delete Leave Type"
                 },
                 {
                     "endpoint_id": "deleteUnifiedPolicy",
@@ -515,38 +513,18 @@
                     "requires_confirmation": true,
                     "required_fields": [
                         "id"
-                    ]
+                    ],
+                    "java_controller_name": "AdminLeavePolicyController",
+                    "api_name": "deleteUnifiedPolicy",
+                    "capability": "AdminLeavePolicy",
+                    "ui_name": "AdminLeavePolicy Module",
+                    "user_intent": "Delete Unified Policy"
                 }
             ]
         },
         "claims": {
             "module_name": "Claims & Reimbursements",
             "endpoints": [
-                {
-                    "endpoint_id": "submitClaim",
-                    "method": "POST",
-                    "path": "/api/claims",
-                    "description": "Submit expense claim | UI Name: Claim Module | User Intent: Submit Claim | Java Controller: ClaimController",
-                    "required_fields": [
-                        "claimType",
-                        "amount",
-                        "claimDate",
-                        "description"
-                    ],
-                    "optional_fields": [
-                        "vendor",
-                        "attachments"
-                    ],
-                    "response_example": {
-                        "claimId": "GENERIC_STRING",
-                        "status": "GENERIC_STRING",
-                        "submittedDate": "GENERIC_STRING"
-                    },
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
                 {
                     "endpoint_id": "saveClaim",
                     "method": "POST",
@@ -556,131 +534,18 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getMyClaims",
-                    "method": "GET",
-                    "path": "/api/claims/employee/{employeeId}",
-                    "description": "View submitted claims",
-                    "query_params": [
-                        "status"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getClaimDetails",
-                    "method": "GET",
-                    "path": "/api/claims/{claimId}",
-                    "description": "View claim details",
-                    "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": false,
                     "required_fields": [
-                        "claimId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getPendingClaimsForManager",
-                    "method": "GET",
-                    "path": "/api/claims/manager/{managerId}/pending",
-                    "description": "View pending claims for manager approval",
-                    "roles": [
-                        "MANAGER"
+                        "employeeId",
+                        "category",
+                        "amount",
+                        "expenseDate",
+                        "expenseDescription"
                     ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "approveClaim",
-                    "method": "PUT",
-                    "path": "/api/claims/{claimId}/approve",
-                    "description": "Approve expense claim | UI Name: Claim Module | User Intent: Approve Claim | Java Controller: ClaimController",
-                    "optional_fields": [
-                        "comment"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "claimId"
-                    ]
-                },
-                {
-                    "endpoint_id": "rejectClaim",
-                    "method": "PUT",
-                    "path": "/api/claims/{claimId}/reject",
-                    "description": "Reject expense claim | UI Name: Claim Module | User Intent: Reject Claim | Java Controller: ClaimController",
-                    "required_fields": [
-                        "reason",
-                        "claimId"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "requestClaimInfo",
-                    "method": "PUT",
-                    "path": "/api/claims/{claimId}/request-info",
-                    "description": "Request additional documents",
-                    "required_fields": [
-                        "infoRequired",
-                        "claimId"
-                    ],
-                    "roles": [
-                        "MANAGER",
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "reimburseClaim",
-                    "method": "PUT",
-                    "path": "/api/claims/{claimId}/reimburse",
-                    "description": "Process reimbursement",
-                    "required_fields": [
-                        "paymentMethod",
-                        "claimId"
-                    ],
-                    "roles": [
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getPendingReimbursements",
-                    "method": "GET",
-                    "path": "/api/claims/finance/pending-reimbursement",
-                    "description": "View approved claims pending reimbursement",
-                    "roles": [
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getClaimReports",
-                    "method": "GET",
-                    "path": "/api/claims/reports/monthly/{month}",
-                    "description": "View monthly expense reports",
-                    "roles": [
-                        "FINANCE",
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "month"
-                    ]
+                    "java_controller_name": "ClaimController",
+                    "api_name": "saveDraft",
+                    "capability": "Claim",
+                    "ui_name": "Claim Module",
+                    "user_intent": "Save Draft"
                 }
             ]
         },
@@ -690,7 +555,7 @@
                 {
                     "endpoint_id": "getPayslip",
                     "method": "GET",
-                    "path": "/api/v1/payslips/{employeeId}",
+                    "path": "/api/v1/payslips/{id}",
                     "description": "View payslip",
                     "query_params": [
                         "month",
@@ -713,18 +578,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "downloadPayslip",
-                    "method": "GET",
-                    "path": "/api/v1/payslips/{employeeId}/download",
-                    "description": "Download payslip as PDF",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "PayslipController",
+                    "api_name": "get",
+                    "capability": "Payslip",
+                    "ui_name": "Payslip Module",
+                    "user_intent": "Get"
                 },
                 {
                     "endpoint_id": "getCompensation",
@@ -735,76 +594,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getTaxSummary",
-                    "method": "GET",
-                    "path": "/api/payslips/{employeeId}/tax-summary",
-                    "description": "View tax deduction summary and Form 16",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "createSalaryComponent",
-                    "method": "POST",
-                    "path": "/api/salary-components/create",
-                    "description": "Define salary component (Admin)",
-                    "required_fields": [
-                        "componentName",
-                        "type",
-                        "isTaxable"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "configurePayrollStructure",
-                    "method": "POST",
-                    "path": "/api/payroll/structure",
-                    "description": "Configure payroll calculation rules",
-                    "required_fields": [
-                        "basicFormula",
-                        "allowances",
-                        "deductions"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "processPayroll",
-                    "method": "POST",
-                    "path": "/api/payroll/process/{month}/{year}",
-                    "description": "Process monthly payroll for all employees",
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "month",
-                        "year"
-                    ]
-                },
-                {
-                    "endpoint_id": "adjustSalaryComponent",
-                    "method": "PUT",
-                    "path": "/api/payroll/{employeeId}/adjust-component",
-                    "description": "Adjust salary component for employee",
-                    "required_fields": [
-                        "componentId",
-                        "newAmount"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
+                    "required_fields": [],
+                    "java_controller_name": "CompensationDetailsController",
+                    "api_name": "getByEmployeeId",
+                    "capability": "CompensationDetails",
+                    "ui_name": "CompensationDetails Module",
+                    "user_intent": "Get By Employee Id"
                 }
             ]
         },
@@ -833,7 +628,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "submitTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Submit Ticket"
                 },
                 {
                     "endpoint_id": "saveDraftTicket",
@@ -844,7 +644,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "TicketController",
+                    "api_name": "saveDraft",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Save Draft"
                 },
                 {
                     "endpoint_id": "getMyTickets",
@@ -858,22 +663,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getTicketDetails",
-                    "method": "GET",
-                    "path": "/api/tickets/{ticketId}",
-                    "description": "View ticket details",
-                    "roles": [
-                        "EMPLOYEE",
-                        "HELPDESK",
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "ticketId"
-                    ]
+                    "required_fields": [],
+                    "java_controller_name": "TicketController",
+                    "api_name": "getMyTickets",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Get My Tickets"
                 },
                 {
                     "endpoint_id": "downloadTicketAttachment",
@@ -887,7 +682,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "ticketId"
-                    ]
+                    ],
+                    "java_controller_name": "TicketController",
+                    "api_name": "downloadAttachment",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Download Attachment"
                 },
                 {
                     "endpoint_id": "getAllTickets",
@@ -904,7 +704,12 @@
                         "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "TicketController",
+                    "api_name": "getAllTickets",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Get All Tickets"
                 },
                 {
                     "endpoint_id": "assignTicket",
@@ -918,7 +723,12 @@
                     "requires_confirmation": true,
                     "required_fields": [
                         "ticketId"
-                    ]
+                    ],
+                    "java_controller_name": "TicketController",
+                    "api_name": "assignTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Assign Ticket"
                 },
                 {
                     "endpoint_id": "reassignTicket",
@@ -933,7 +743,12 @@
                         "HELPDESK",
                         "ADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "reassignTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Reassign Ticket"
                 },
                 {
                     "endpoint_id": "updateTicketStatus",
@@ -948,7 +763,12 @@
                         "HELPDESK",
                         "ADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "updateTicketStatus",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Update Ticket Status"
                 },
                 {
                     "endpoint_id": "resolveTicket",
@@ -963,7 +783,12 @@
                         "HELPDESK",
                         "ADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "resolveTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Resolve Ticket"
                 },
                 {
                     "endpoint_id": "reopenTicket",
@@ -978,7 +803,12 @@
                         "EMPLOYEE",
                         "HELPDESK"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "reopenTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Reopen Ticket"
                 },
                 {
                     "endpoint_id": "cancelTicket",
@@ -993,7 +823,12 @@
                         "EMPLOYEE",
                         "HELPDESK"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "cancelTicket",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Cancel Ticket"
                 },
                 {
                     "endpoint_id": "getTeamTickets",
@@ -1005,7 +840,12 @@
                         "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "TicketController",
+                    "api_name": "getTeamTickets",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Get Team Tickets"
                 },
                 {
                     "endpoint_id": "getTicketReports",
@@ -1016,7 +856,12 @@
                         "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "TicketController",
+                    "api_name": "getHelpdeskReport",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Get Helpdesk Report"
                 },
                 {
                     "endpoint_id": "submitChangeRequest",
@@ -1030,7 +875,12 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "submitChangeRequest",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Submit Change Request"
                 },
                 {
                     "endpoint_id": "managerApproveTicket",
@@ -1046,7 +896,12 @@
                     "requires_confirmation": true,
                     "required_fields": [
                         "ticketId"
-                    ]
+                    ],
+                    "java_controller_name": "TicketController",
+                    "api_name": "approveByManager",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Approve By Manager"
                 },
                 {
                     "endpoint_id": "managerRejectTicket",
@@ -1060,42 +915,18 @@
                     "roles": [
                         "MANAGER"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "rejectByManager",
+                    "capability": "Ticket",
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Reject By Manager"
                 }
             ]
         },
         "performance": {
             "module_name": "Performance Management & Appraisals",
             "endpoints": [
-                {
-                    "endpoint_id": "getEmployeeGoals",
-                    "method": "GET",
-                    "path": "/api/performance-goals/employee/{employeeId}",
-                    "description": "View assigned performance goals",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "updateGoalStatus",
-                    "method": "PUT",
-                    "path": "/api/performance-goals/{goalId}/status",
-                    "description": "Update goal progress status | UI Name: PerformanceGoal Module | User Intent: Update Goal Status | Java Controller: PerformanceGoalController",
-                    "required_fields": [
-                        "status",
-                        "completionPercentage",
-                        "goalId"
-                    ],
-                    "optional_fields": [
-                        "notes"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
                 {
                     "endpoint_id": "submitSelfAssessment",
                     "method": "POST",
@@ -1113,354 +944,22 @@
                     "roles": [
                         "EMPLOYEE"
                     ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getManagerFeedback",
-                    "method": "GET",
-                    "path": "/api/performance-goals/{goalId}/manager-feedback",
-                    "description": "View manager feedback on goal | UI Name: PerformanceAttribute Module | User Intent: Get Manager Feedback | Java Controller: PerformanceAttributeController",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "goalId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getTeamGoals",
-                    "method": "GET",
-                    "path": "/api/performance-goals/manager/{managerId}/employee-goals",
-                    "description": "View all subordinates' goals",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "assignGoal",
-                    "method": "POST",
-                    "path": "/api/performance-goals/assign",
-                    "description": "Assign goal to employee | UI Name: PerformanceGoal Module | User Intent: Assign Goal | Java Controller: PerformanceGoalController",
-                    "required_fields": [
-                        "goalDescription",
-                        "deadline",
-                        "weight"
-                    ],
-                    "optional_fields": [
-                        "keyResults"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "provideManagerFeedback",
-                    "method": "PUT",
-                    "path": "/api/performance-goals/{goalId}/manager-feedback",
-                    "description": "Provide manager feedback and rating",
-                    "required_fields": [
-                        "rating",
-                        "comments",
-                        "goalId"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getTeamSelfAssessments",
-                    "method": "GET",
-                    "path": "/api/performance-goals/manager/{managerId}/self-assessments",
-                    "description": "View team's self-assessments",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getReviewerEmployees",
-                    "method": "GET",
-                    "path": "/api/performance-goals/reviewer/{reviewerId}/employees",
-                    "description": "View employees pending reviewer appraisal",
-                    "roles": [
-                        "REVIEWER",
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "reviewerId"
-                    ]
-                },
-                {
-                    "endpoint_id": "addReviewerComments",
-                    "method": "PUT",
-                    "path": "/api/performance-goals/{goalId}/reviewer-comments",
-                    "description": "Add reviewer comments and final rating",
-                    "required_fields": [
-                        "finalRating",
-                        "comments",
-                        "goalId"
-                    ],
-                    "optional_fields": [
-                        "promotionRecommendation"
-                    ],
-                    "roles": [
-                        "REVIEWER",
-                        "HR"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "finalizeAppraisal",
-                    "method": "PUT",
-                    "path": "/api/performance-goals/{goalId}/finalize",
-                    "description": "Finalize appraisal",
-                    "roles": [
-                        "REVIEWER",
-                        "HR"
-                    ],
                     "requires_confirmation": true,
-                    "required_fields": [
-                        "goalId"
-                    ]
+                    "java_controller_name": "SelfAssessmentController",
+                    "api_name": "saveAssessment",
+                    "capability": "SelfAssessment",
+                    "ui_name": "SelfAssessment Module",
+                    "user_intent": "Save Assessment"
                 }
             ]
         },
         "assets": {
             "module_name": "Asset Management",
-            "endpoints": [
-                {
-                    "endpoint_id": "getAllocatedAssets",
-                    "method": "GET",
-                    "path": "/api/assets/allocated/{employeeId}",
-                    "description": "View allocated assets",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "requestAsset",
-                    "method": "POST",
-                    "path": "/api/assets/request",
-                    "description": "Request new device/asset",
-                    "required_fields": [
-                        "assetType",
-                        "quantity",
-                        "justification"
-                    ],
-                    "response_example": {
-                        "requestId": "GENERIC_STRING",
-                        "status": "GENERIC_STRING"
-                    },
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "reportAssetIssue",
-                    "method": "POST",
-                    "path": "/api/assets/report-issue/{assetId}",
-                    "description": "Report asset malfunction",
-                    "required_fields": [
-                        "issueDescription",
-                        "severity",
-                        "assetId"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getAssetRequestStatus",
-                    "method": "GET",
-                    "path": "/api/assets/request/{requestId}",
-                    "description": "Track asset request status",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "requestId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getPendingAssetRequests",
-                    "method": "GET",
-                    "path": "/api/assets/requests/pending/{managerId}",
-                    "description": "View pending asset requests",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "approveAssetRequest",
-                    "method": "PUT",
-                    "path": "/api/assets/requests/{requestId}/approve",
-                    "description": "Approve asset request",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "requestId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getAssetInventory",
-                    "method": "GET",
-                    "path": "/api/assets/inventory",
-                    "description": "View all company assets",
-                    "query_params": [
-                        "category",
-                        "status",
-                        "location"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "allocateAsset",
-                    "method": "POST",
-                    "path": "/api/assets/allocate/{assetId}/{employeeId}",
-                    "description": "Allocate asset to employee",
-                    "required_fields": [
-                        "allocationDate",
-                        "assetId"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "deallocateAsset",
-                    "method": "PUT",
-                    "path": "/api/assets/deallocate/{assetId}",
-                    "description": "Deallocate asset",
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "assetId"
-                    ]
-                },
-                {
-                    "endpoint_id": "createAssetMaster",
-                    "method": "POST",
-                    "path": "/api/assets/master/create",
-                    "description": "Create asset master record",
-                    "required_fields": [
-                        "assetName",
-                        "model",
-                        "serialNumber",
-                        "category",
-                        "cost"
-                    ],
-                    "optional_fields": [
-                        "warrantyDate"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "startAssetAudit",
-                    "method": "POST",
-                    "path": "/api/assets/audit/start",
-                    "description": "Start asset audit process",
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "updateAssetAudit",
-                    "method": "PUT",
-                    "path": "/api/assets/audit/{assetId}",
-                    "description": "Update asset audit record",
-                    "required_fields": [
-                        "condition",
-                        "location",
-                        "assetId"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getAssetUtilizationReport",
-                    "method": "GET",
-                    "path": "/api/assets/reports/utilization",
-                    "description": "View asset utilization analytics",
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getAssetDepreciationReport",
-                    "method": "GET",
-                    "path": "/api/assets/reports/depreciation",
-                    "description": "View asset depreciation report",
-                    "roles": [
-                        "ADMIN",
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                }
-            ]
+            "endpoints": []
         },
         "directory": {
             "module_name": "Employee Directory & Org Chart",
             "endpoints": [
-                {
-                    "endpoint_id": "searchEmployees",
-                    "method": "GET",
-                    "path": "/api/employees/search",
-                    "description": "Search coworkers by name/designation",
-                    "query_params": [
-                        "query",
-                        "department"
-                    ],
-                    "response_example": [
-                        {
-                            "employeeId": "GENERIC_STRING",
-                            "name": "GENERIC_STRING",
-                            "designation": "GENERIC_STRING",
-                            "department": "GENERIC_STRING",
-                            "email": "GENERIC_STRING",
-                            "phone": "GENERIC_STRING",
-                            "managerId": "GENERIC_STRING"
-                        }
-                    ],
-                    "roles": [
-                        "EMPLOYEE",
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
                 {
                     "endpoint_id": "getOrgChart",
                     "method": "GET",
@@ -1474,7 +973,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "OrgChartController",
+                    "api_name": "getOrgChartTree",
+                    "capability": "OrgChart",
+                    "ui_name": "OrgChart Module",
+                    "user_intent": "Get Org Chart Tree"
                 },
                 {
                     "endpoint_id": "getEmployeeOverview",
@@ -1486,52 +990,39 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "OrgChartController",
+                    "api_name": "getOrganizationOverview",
+                    "capability": "OrgChart",
+                    "ui_name": "OrgChart Module",
+                    "user_intent": "Get Organization Overview"
                 },
                 {
                     "endpoint_id": "updateProfile",
                     "method": "PUT",
                     "path": "/api/employees/{employeeId}",
-                    "description": "Update employee profile (self) | UI Name: Profiler Module | User Intent: Update Profile | Java Controller: ProfilerController",
+                    "description": "Update employee profile (self). This handles BOTH core contact info and personal details/bio. Maps natural language to JSON keys: 'phone'/'contact number' -> contactNo, 'personal email' -> personalMail, 'emergency number' -> emergencyContactNumber, 'permanent address' -> address, 'present address' -> presentAddress, 'about'/'bio' -> about, 'what I love about my job' -> whatILoveAboutMyJob, 'hobbies'/'interests' -> interestsAndHobbies | UI Name: Profiler Module | User Intent: Update Profile | Java Controller: ProfilerController",
                     "optional_fields": [
-                        "phone",
-                        "personalEmail",
+                        "contactNo",
+                        "personalMail",
                         "address",
-                        "emergencyContact"
+                        "presentAddress",
+                        "emergencyContactNumber",
+                        "profilePic",
+                        "about",
+                        "whatILoveAboutMyJob",
+                        "interestsAndHobbies"
                     ],
                     "roles": [
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": true,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "updateProfessionalInfo",
-                    "method": "PUT",
-                    "path": "/api/employee-profile/{employeeId}",
-                    "description": "Update professional info (LinkedIn, skills, certifications)",
-                    "optional_fields": [
-                        "linkedinUrl",
-                        "skills",
-                        "certifications",
-                        "languages"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getTeamMembers",
-                    "method": "GET",
-                    "path": "/api/organization/{managerId}/team",
-                    "description": "View direct reports | UI Name: AttendanceAnalytics Module | User Intent: Get Team Members | Java Controller: AttendanceAnalyticsController",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "EmployeeController",
+                    "api_name": "updateEmployeeProfile",
+                    "capability": "Employee",
+                    "ui_name": "Employee Module",
+                    "user_intent": "Update Employee Profile"
                 },
                 {
                     "endpoint_id": "getOrgChartConfig",
@@ -1542,7 +1033,12 @@
                         "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "OrgChartConfigController",
+                    "api_name": "getSelectedColumns",
+                    "capability": "OrgChartConfig",
+                    "ui_name": "OrgChartConfig Module",
+                    "user_intent": "Get Selected Columns"
                 },
                 {
                     "endpoint_id": "saveOrgChartConfig",
@@ -1555,313 +1051,26 @@
                     "roles": [
                         "ADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "OrgChartConfigController",
+                    "api_name": "saveSelectedColumns",
+                    "capability": "OrgChartConfig",
+                    "ui_name": "OrgChartConfig Module",
+                    "user_intent": "Save Selected Columns"
                 }
             ]
         },
         "recruitment": {
             "module_name": "Recruitment & Onboarding",
-            "endpoints": [
-                {
-                    "endpoint_id": "getApplicantsByRole",
-                    "method": "GET",
-                    "path": "/api/applicants/by-role/{roleId}",
-                    "description": "View applicant pipeline for role",
-                    "roles": [
-                        "RECRUITER",
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "roleId"
-                    ]
-                },
-                {
-                    "endpoint_id": "updateApplicantStatus",
-                    "method": "PUT",
-                    "path": "/api/applicants/{applicantId}/status",
-                    "description": "Update applicant stage | UI Name: Applicant Module | User Intent: Update Applicant Status | Java Controller: ApplicantController",
-                    "required_fields": [
-                        "status",
-                        "applicantId"
-                    ],
-                    "roles": [
-                        "RECRUITER",
-                        "HR"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "uploadApplicantDocuments",
-                    "method": "POST",
-                    "path": "/api/applicants/{applicantId}/documents",
-                    "description": "Upload resume/certificates",
-                    "required_fields": [
-                        "documents",
-                        "applicantId"
-                    ],
-                    "roles": [
-                        "RECRUITER",
-                        "HR"
-                    ],
-                    "requires_confirmation": false
-                },
-                {
-                    "endpoint_id": "generateOfferLetter",
-                    "method": "POST",
-                    "path": "/api/offer-letters/generate",
-                    "description": "Generate and send offer letter",
-                    "required_fields": [
-                        "applicantId",
-                        "position",
-                        "salary",
-                        "joiningDate"
-                    ],
-                    "roles": [
-                        "RECRUITER",
-                        "HR"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "createPreOnboarding",
-                    "method": "POST",
-                    "path": "/api/pre-onboarding/create",
-                    "description": "Start pre-onboarding process",
-                    "required_fields": [
-                        "applicantId",
-                        "joiningDate",
-                        "department"
-                    ],
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getPreOnboardingStatus",
-                    "method": "GET",
-                    "path": "/api/pre-onboarding/{applicantId}",
-                    "description": "Track pre-onboarding progress",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "applicantId"
-                    ]
-                },
-                {
-                    "endpoint_id": "acknowledgePolicy",
-                    "method": "POST",
-                    "path": "/api/policy-acknowledgment/acknowledge",
-                    "description": "Acknowledge company policy | UI Name: PolicyAcknowledgment Module | User Intent: Acknowledge Policy | Java Controller: PolicyAcknowledgmentController",
-                    "required_fields": [
-                        "policyId"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "uploadOnboardingDocuments",
-                    "method": "POST",
-                    "path": "/api/onboarding/documents/upload",
-                    "description": "Upload pre-onboarding documents (ID, address proof, bank details)",
-                    "required_fields": [
-                        "documents"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false
-                },
-                {
-                    "endpoint_id": "submitITSetup",
-                    "method": "POST",
-                    "path": "/api/onboarding/it-setup/request",
-                    "description": "Submit IT setup requirements",
-                    "required_fields": [
-                        "laptopPreference",
-                        "mobileRequired"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                }
-            ]
+            "endpoints": []
         },
         "exit": {
             "module_name": "Exit & Resignation Management",
-            "endpoints": [
-                {
-                    "endpoint_id": "submitResignation",
-                    "method": "POST",
-                    "path": "/api/resignations/submit",
-                    "description": "File resignation | UI Name: Resignation Module | User Intent: Submit Resignation | Java Controller: ResignationController",
-                    "required_fields": [
-                        "lastWorkingDay"
-                    ],
-                    "optional_fields": [
-                        "reason",
-                        "documents"
-                    ],
-                    "date_format": "yyyy-MM-dd",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "getResignationStatus",
-                    "method": "GET",
-                    "path": "/api/resignations/{employeeId}",
-                    "description": "Track resignation and exit status",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getExitForm",
-                    "method": "GET",
-                    "path": "/api/exit-forms/{employeeId}",
-                    "description": "Fetch exit form template",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "submitExitForm",
-                    "method": "POST",
-                    "path": "/api/exit-forms/submit",
-                    "description": "Submit exit interview form",
-                    "required_fields": [
-                        "feedback"
-                    ],
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "managerApproveResignation",
-                    "method": "PUT",
-                    "path": "/api/resignations/{employeeId}/manager-approve",
-                    "description": "Manager approve resignation",
-                    "optional_fields": [
-                        "comment"
-                    ],
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "assignHandover",
-                    "method": "PUT",
-                    "path": "/api/resignations/{employeeId}/assign-handover/{newOwnerEmpId}",
-                    "description": "Assign knowledge transfer to replacement",
-                    "roles": [
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "newOwnerEmpId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getPendingResignations",
-                    "method": "GET",
-                    "path": "/api/resignations/pending",
-                    "description": "View all pending resignations",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getClearanceChecklist",
-                    "method": "GET",
-                    "path": "/api/clearances/{employeeId}/checklist",
-                    "description": "View exit clearance checklist",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "markClearanceItem",
-                    "method": "PUT",
-                    "path": "/api/clearances/{employeeId}/checklist/{itemId}",
-                    "description": "Mark clearance item complete",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": [
-                        "itemId"
-                    ]
-                },
-                {
-                    "endpoint_id": "generateSettlement",
-                    "method": "POST",
-                    "path": "/api/settlements/generate/{employeeId}",
-                    "description": "Generate full & final settlement",
-                    "roles": [
-                        "HR",
-                        "FINANCE"
-                    ],
-                    "requires_confirmation": true,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getExitReports",
-                    "method": "GET",
-                    "path": "/api/exits/reports",
-                    "description": "View attrition and exit analytics",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": []
-                }
-            ]
+            "endpoints": []
         },
         "grievances": {
             "module_name": "Grievances & Anonymous Complaints",
             "endpoints": [
-                {
-                    "endpoint_id": "fileGrievance",
-                    "method": "POST",
-                    "path": "/api/grievances/file",
-                    "description": "File anonymous grievance",
-                    "required_fields": [
-                        "category",
-                        "description"
-                    ],
-                    "optional_fields": [
-                        "incidentDate",
-                        "attachments"
-                    ],
-                    "response_example": {
-                        "grievanceId": "GENERIC_STRING",
-                        "status": "GENERIC_STRING",
-                        "isAnonymous": true
-                    },
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": true
-                },
                 {
                     "endpoint_id": "getGrievanceStatus",
                     "method": "GET",
@@ -1873,7 +1082,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "grievanceId"
-                    ]
+                    ],
+                    "java_controller_name": "GrievanceController",
+                    "api_name": "getGrievance",
+                    "capability": "Grievance",
+                    "ui_name": "Grievance Module",
+                    "user_intent": "Get Grievance"
                 },
                 {
                     "endpoint_id": "getAllGrievances",
@@ -1889,7 +1103,12 @@
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminGrievanceController",
+                    "api_name": "list",
+                    "capability": "AdminGrievance",
+                    "ui_name": "AdminGrievance Module",
+                    "user_intent": "List"
                 },
                 {
                     "endpoint_id": "investigateGrievance",
@@ -1903,7 +1122,12 @@
                     "roles": [
                         "HR"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminGrievanceController",
+                    "api_name": "update",
+                    "capability": "AdminGrievance",
+                    "ui_name": "AdminGrievance Module",
+                    "user_intent": "Update"
                 },
                 {
                     "endpoint_id": "closeGrievance",
@@ -1918,7 +1142,12 @@
                     "roles": [
                         "HR"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminGrievanceController",
+                    "api_name": "update",
+                    "capability": "AdminGrievance",
+                    "ui_name": "AdminGrievance Module",
+                    "user_intent": "Update"
                 },
                 {
                     "endpoint_id": "downloadGrievanceAttachment",
@@ -1931,7 +1160,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "grievanceId"
-                    ]
+                    ],
+                    "java_controller_name": "AdminGrievanceController",
+                    "api_name": "downloadAttachment",
+                    "capability": "AdminGrievance",
+                    "ui_name": "AdminGrievance Module",
+                    "user_intent": "Download Attachment"
                 },
                 {
                     "endpoint_id": "getGrievanceReports",
@@ -1942,7 +1176,12 @@
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminGrievanceController",
+                    "api_name": "get",
+                    "capability": "AdminGrievance",
+                    "ui_name": "AdminGrievance Module",
+                    "user_intent": "Get"
                 }
             ]
         },
@@ -1961,7 +1200,12 @@
                     "roles": [
                         "SUPERADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "saveAdminAccess",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Save Admin Access"
                 },
                 {
                     "endpoint_id": "saveTravelAdmin",
@@ -1974,7 +1218,12 @@
                     "roles": [
                         "SUPERADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "saveTravelAdmin",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Save Travel Admin"
                 },
                 {
                     "endpoint_id": "getAdminIds",
@@ -1987,7 +1236,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "roleName"
-                    ]
+                    ],
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "getAdminIds",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Get Admin Ids"
                 },
                 {
                     "endpoint_id": "checkAdminRole",
@@ -2002,7 +1256,12 @@
                         "SUPERADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "checkAdminRole",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Check Admin Role"
                 },
                 {
                     "endpoint_id": "saveDocumentCategory",
@@ -2015,7 +1274,12 @@
                     "roles": [
                         "SUPERADMIN"
                     ],
-                    "requires_confirmation": true
+                    "requires_confirmation": true,
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "saveCategory",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Save Category"
                 },
                 {
                     "endpoint_id": "getDocumentCategories",
@@ -2026,7 +1290,12 @@
                         "SUPERADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "getCategories",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Get Categories"
                 },
                 {
                     "endpoint_id": "deleteDocumentCategory",
@@ -2039,48 +1308,12 @@
                     "requires_confirmation": true,
                     "required_fields": [
                         "id"
-                    ]
-                },
-                {
-                    "endpoint_id": "configureModuleAccess",
-                    "method": "POST",
-                    "path": "/api/module-access/configure/{employeeId}",
-                    "description": "Grant/revoke module access",
-                    "required_fields": [
-                        "modules"
                     ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "defineWorkflow",
-                    "method": "POST",
-                    "path": "/api/workflows/define",
-                    "description": "Define approval workflow rules",
-                    "required_fields": [
-                        "workflowName",
-                        "approvalLevels"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
-                },
-                {
-                    "endpoint_id": "configureRolePermissions",
-                    "method": "PUT",
-                    "path": "/api/roles/{roleId}/permissions",
-                    "description": "Configure role permissions",
-                    "required_fields": [
-                        "permissions",
-                        "roleId"
-                    ],
-                    "roles": [
-                        "ADMIN"
-                    ],
-                    "requires_confirmation": true
+                    "java_controller_name": "AdminAccessController",
+                    "api_name": "deleteCategory",
+                    "capability": "AdminAccess",
+                    "ui_name": "AdminAccess Module",
+                    "user_intent": "Delete Category"
                 }
             ]
         },
@@ -2109,7 +1342,12 @@
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AnalyticsController",
+                    "api_name": "getAnalyticsSummary",
+                    "capability": "Analytics",
+                    "ui_name": "Analytics Module",
+                    "user_intent": "Get Analytics Summary"
                 },
                 {
                     "endpoint_id": "getAIInsights",
@@ -2121,7 +1359,12 @@
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "AnalyticsController",
+                    "api_name": "getAiInsights",
+                    "capability": "Analytics",
+                    "ui_name": "Analytics Module",
+                    "user_intent": "Get Ai Insights"
                 },
                 {
                     "endpoint_id": "getDeepAnalytics",
@@ -2132,33 +1375,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
-                },
-                {
-                    "endpoint_id": "getLeaveAnalytics",
-                    "method": "GET",
-                    "path": "/api/analytics/leave/{departmentId}",
-                    "description": "Get leave usage by department",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "departmentId"
-                    ]
-                },
-                {
-                    "endpoint_id": "getPerformanceAnalytics",
-                    "method": "GET",
-                    "path": "/api/performance-analytics/department/{deptId}",
-                    "description": "Get department performance metrics",
-                    "roles": [
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [
-                        "deptId"
-                    ]
+                    "required_fields": [],
+                    "java_controller_name": "AttendanceAnalyticsController",
+                    "api_name": "getDeepAnalytics",
+                    "capability": "AttendanceAnalytics",
+                    "ui_name": "AttendanceAnalytics Module",
+                    "user_intent": "Get Deep Analytics"
                 }
             ]
         },
@@ -2183,7 +1405,12 @@
                         "MANAGER"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "TaskCountController",
+                    "api_name": "getTaskCounts",
+                    "capability": "TaskCount",
+                    "ui_name": "TaskCount Module",
+                    "user_intent": "Get Task Counts"
                 },
                 {
                     "endpoint_id": "getNotifications",
@@ -2194,7 +1421,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "NotificationController",
+                    "api_name": "getNotifications",
+                    "capability": "Notification",
+                    "ui_name": "Notification Module",
+                    "user_intent": "Get Notifications"
                 },
                 {
                     "endpoint_id": "markNotificationRead",
@@ -2207,7 +1439,12 @@
                     "requires_confirmation": false,
                     "required_fields": [
                         "id"
-                    ]
+                    ],
+                    "java_controller_name": "NotificationController",
+                    "api_name": "markAsRead",
+                    "capability": "Notification",
+                    "ui_name": "Notification Module",
+                    "user_intent": "Mark As Read"
                 },
                 {
                     "endpoint_id": "markAllNotificationsRead",
@@ -2218,7 +1455,12 @@
                         "EMPLOYEE"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": []
+                    "required_fields": [],
+                    "java_controller_name": "NotificationController",
+                    "api_name": "markAllAsRead",
+                    "capability": "Notification",
+                    "ui_name": "Notification Module",
+                    "user_intent": "Mark All As Read"
                 }
             ]
         },
@@ -2235,7 +1477,12 @@
                         "endDate"
                     ],
                     "optional_fields": [],
-                    "requires_confirmation": false
+                    "requires_confirmation": false,
+                    "java_controller_name": "AttendanceAnalyticsController",
+                    "api_name": "getMyAnalytics",
+                    "capability": "AttendanceAnalytics",
+                    "ui_name": "AttendanceAnalytics Module",
+                    "user_intent": "Get My Analytics"
                 },
                 {
                     "endpoint_id": "getUpcomingHolidays",
@@ -2244,16 +1491,26 @@
                     "description": "Get upcoming public holidays for my location",
                     "required_fields": [],
                     "optional_fields": [],
-                    "requires_confirmation": false
+                    "requires_confirmation": false,
+                    "java_controller_name": "HolidayController",
+                    "api_name": "getHolidaysForEmployee",
+                    "capability": "Holiday",
+                    "ui_name": "Holiday Module",
+                    "user_intent": "Get Holidays For Employee"
                 },
                 {
                     "endpoint_id": "getRecentActivities",
                     "method": "GET",
-                    "path": "/api/audit/user/{employeeId}",
+                    "path": "/api/audit/user/{userId}",
                     "description": "Get my recent activities and system events",
                     "required_fields": [],
                     "optional_fields": [],
-                    "requires_confirmation": false
+                    "requires_confirmation": false,
+                    "java_controller_name": "AuditController",
+                    "api_name": "getAuditLogsByUserId",
+                    "capability": "Audit",
+                    "ui_name": "Audit Module",
+                    "user_intent": "Get Audit Logs By User Id"
                 }
             ]
         },
@@ -6802,7 +6059,10 @@
                     "path": "/api/employees/{employeeId}/insurance-nominees",
                     "description": "Auto-generated OpenAPI description for Add Nominee | UI Name: InsuranceNominee Module | User Intent: Add Nominee | Java Controller: InsuranceNomineeController",
                     "required_fields": [
-                        "employeeId"
+                        "employeeId",
+                        "nomineeName",
+                        "relationship",
+                        "dateOfBirth"
                     ],
                     "optional_fields": [],
                     "roles": [
@@ -13579,6 +12839,1438 @@
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "getFinanceDeclarationView"
+                }
+            ]
+        },
+        "auto_discovered": {
+            "module_name": "Auto Discovered Endpoints",
+            "endpoints": [
+                {
+                    "endpoint_id": "getConfig",
+                    "method": "GET",
+                    "path": "/api/it-declaration-configs",
+                    "description": "Auto-generated OpenAPI description for Get Config | UI Name: ITDeclarationConfig Module | User Intent: Get Config | Java Controller: ITDeclarationConfigController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "ITDeclarationConfig Module",
+                    "user_intent": "Get Config",
+                    "capability": "ITDeclarationConfig",
+                    "java_controller_name": "ITDeclarationConfigController",
+                    "api_name": "getConfig"
+                },
+                {
+                    "endpoint_id": "saveConfig",
+                    "method": "POST",
+                    "path": "/api/it-declaration-configs",
+                    "description": "Auto-generated OpenAPI description for Save Config | UI Name: ITDeclarationConfig Module | User Intent: Save Config | Java Controller: ITDeclarationConfigController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "ITDeclarationConfig Module",
+                    "user_intent": "Save Config",
+                    "capability": "ITDeclarationConfig",
+                    "java_controller_name": "ITDeclarationConfigController",
+                    "api_name": "saveConfig"
+                },
+                {
+                    "endpoint_id": "getAllSows",
+                    "method": "GET",
+                    "path": "/api/sows",
+                    "description": "Auto-generated OpenAPI description for Get All Sows | UI Name: Sow Module | User Intent: Get All Sows | Java Controller: SowController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Sow Module",
+                    "user_intent": "Get All Sows",
+                    "capability": "Sow",
+                    "java_controller_name": "SowController",
+                    "api_name": "getAllSows"
+                },
+                {
+                    "endpoint_id": "createSowWithDocument",
+                    "method": "POST",
+                    "path": "/api/sows",
+                    "description": "Auto-generated OpenAPI description for Create Sow With Document | UI Name: Sow Module | User Intent: Create Sow With Document | Java Controller: SowController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Sow Module",
+                    "user_intent": "Create Sow With Document",
+                    "capability": "Sow",
+                    "java_controller_name": "SowController",
+                    "api_name": "createSowWithDocument"
+                },
+                {
+                    "endpoint_id": "list",
+                    "method": "GET",
+                    "path": "/api/v1/payslips",
+                    "description": "Auto-generated OpenAPI description for List | UI Name: Payslip Module | User Intent: List | Java Controller: PayslipController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Payslip Module",
+                    "user_intent": "List",
+                    "capability": "Payslip",
+                    "java_controller_name": "PayslipController",
+                    "api_name": "list"
+                },
+                {
+                    "endpoint_id": "saveDraft",
+                    "method": "GET",
+                    "path": "/api/tickets/status-details/{ticketId}",
+                    "description": "Auto-generated OpenAPI description for Save Draft | UI Name: Ticket Module | User Intent: Save Draft | Java Controller: TicketController",
+                    "required_fields": [
+                        "ticketId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Ticket Module",
+                    "user_intent": "Save Draft",
+                    "capability": "Ticket",
+                    "java_controller_name": "TicketController",
+                    "api_name": "saveDraft"
+                },
+                {
+                    "endpoint_id": "allocateAsset",
+                    "method": "GET",
+                    "path": "/api/assets/allocations",
+                    "description": "Auto-generated OpenAPI description for Allocate Asset | UI Name: AssetAllocation Module | User Intent: Allocate Asset | Java Controller: AssetAllocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetAllocation Module",
+                    "user_intent": "Allocate Asset",
+                    "capability": "AssetAllocation",
+                    "java_controller_name": "AssetAllocationController",
+                    "api_name": "allocateAsset"
+                },
+                {
+                    "endpoint_id": "allocateAsset",
+                    "method": "POST",
+                    "path": "/api/assets/allocations",
+                    "description": "Auto-generated OpenAPI description for Allocate Asset | UI Name: AssetAllocation Module | User Intent: Allocate Asset | Java Controller: AssetAllocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetAllocation Module",
+                    "user_intent": "Allocate Asset",
+                    "capability": "AssetAllocation",
+                    "java_controller_name": "AssetAllocationController",
+                    "api_name": "allocateAsset"
+                },
+                {
+                    "endpoint_id": "getAllLocations",
+                    "method": "GET",
+                    "path": "/api/admin/company-locations",
+                    "description": "Auto-generated OpenAPI description for Get All Locations | UI Name: CompanyLocation Module | User Intent: Get All Locations | Java Controller: CompanyLocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CompanyLocation Module",
+                    "user_intent": "Get All Locations",
+                    "capability": "CompanyLocation",
+                    "java_controller_name": "CompanyLocationController",
+                    "api_name": "getAllLocations"
+                },
+                {
+                    "endpoint_id": "unknownApiName",
+                    "method": "GET",
+                    "path": "/api/admin/company-locations/stats",
+                    "description": "Auto-generated OpenAPI description for Unknown Api Name | UI Name: CompanyLocation Module | User Intent: Unknown Api Name | Java Controller: CompanyLocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CompanyLocation Module",
+                    "user_intent": "Unknown Api Name",
+                    "capability": "CompanyLocation",
+                    "java_controller_name": "CompanyLocationController",
+                    "api_name": "unknownApiName"
+                },
+                {
+                    "endpoint_id": "createLocation",
+                    "method": "POST",
+                    "path": "/api/admin/company-locations",
+                    "description": "Auto-generated OpenAPI description for Create Location | UI Name: CompanyLocation Module | User Intent: Create Location | Java Controller: CompanyLocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CompanyLocation Module",
+                    "user_intent": "Create Location",
+                    "capability": "CompanyLocation",
+                    "java_controller_name": "CompanyLocationController",
+                    "api_name": "createLocation"
+                },
+                {
+                    "endpoint_id": "getAll",
+                    "method": "GET",
+                    "path": "/api/salary-components",
+                    "description": "Auto-generated OpenAPI description for Get All | UI Name: SalaryComponent Module | User Intent: Get All | Java Controller: SalaryComponentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "SalaryComponent Module",
+                    "user_intent": "Get All",
+                    "capability": "SalaryComponent",
+                    "java_controller_name": "SalaryComponentController",
+                    "api_name": "getAll"
+                },
+                {
+                    "endpoint_id": "create",
+                    "method": "POST",
+                    "path": "/api/salary-components",
+                    "description": "Auto-generated OpenAPI description for Create | UI Name: SalaryComponent Module | User Intent: Create | Java Controller: SalaryComponentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "SalaryComponent Module",
+                    "user_intent": "Create",
+                    "capability": "SalaryComponent",
+                    "java_controller_name": "SalaryComponentController",
+                    "api_name": "create"
+                },
+                {
+                    "endpoint_id": "getAllDepartments",
+                    "method": "GET",
+                    "path": "/api/departments",
+                    "description": "Auto-generated OpenAPI description for Get All Departments | UI Name: Department Module | User Intent: Get All Departments | Java Controller: DepartmentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Department Module",
+                    "user_intent": "Get All Departments",
+                    "capability": "Department",
+                    "java_controller_name": "DepartmentController",
+                    "api_name": "getAllDepartments"
+                },
+                {
+                    "endpoint_id": "saveDepartment",
+                    "method": "POST",
+                    "path": "/api/departments",
+                    "description": "Auto-generated OpenAPI description for Save Department | UI Name: Department Module | User Intent: Save Department | Java Controller: DepartmentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Department Module",
+                    "user_intent": "Save Department",
+                    "capability": "Department",
+                    "java_controller_name": "DepartmentController",
+                    "api_name": "saveDepartment"
+                },
+                {
+                    "endpoint_id": "getAllCustomers",
+                    "method": "GET",
+                    "path": "/api/customers",
+                    "description": "Auto-generated OpenAPI description for Get All Customers | UI Name: Customer Module | User Intent: Get All Customers | Java Controller: CustomerController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Customer Module",
+                    "user_intent": "Get All Customers",
+                    "capability": "Customer",
+                    "java_controller_name": "CustomerController",
+                    "api_name": "getAllCustomers"
+                },
+                {
+                    "endpoint_id": "createCustomer",
+                    "method": "POST",
+                    "path": "/api/customers",
+                    "description": "Auto-generated OpenAPI description for Create Customer | UI Name: Customer Module | User Intent: Create Customer | Java Controller: CustomerController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Customer Module",
+                    "user_intent": "Create Customer",
+                    "capability": "Customer",
+                    "java_controller_name": "CustomerController",
+                    "api_name": "createCustomer"
+                },
+                {
+                    "endpoint_id": "submitResignation",
+                    "method": "POST",
+                    "path": "/api/v1/exit-management/resignations",
+                    "description": "Auto-generated OpenAPI description for Submit Resignation | UI Name: Resignation Module | User Intent: Submit Resignation | Java Controller: ResignationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Resignation Module",
+                    "user_intent": "Submit Resignation",
+                    "capability": "Resignation",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "submitResignation"
+                },
+                {
+                    "endpoint_id": "createDraft",
+                    "method": "POST",
+                    "path": "/api/leaves/drafts",
+                    "description": "Auto-generated OpenAPI description for Create Draft | UI Name: LeaveDraft Module | User Intent: Create Draft | Java Controller: LeaveDraftController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "LeaveDraft Module",
+                    "user_intent": "Create Draft",
+                    "capability": "LeaveDraft",
+                    "java_controller_name": "LeaveDraftController",
+                    "api_name": "createDraft"
+                },
+                {
+                    "endpoint_id": "saveChecklist",
+                    "method": "POST",
+                    "path": "/api/clearance/checklist",
+                    "description": "Auto-generated OpenAPI description for Save Checklist | UI Name: ClearanceChecklist Module | User Intent: Save Checklist | Java Controller: ClearanceChecklistController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "ClearanceChecklist Module",
+                    "user_intent": "Save Checklist",
+                    "capability": "ClearanceChecklist",
+                    "java_controller_name": "ClearanceChecklistController",
+                    "api_name": "saveChecklist"
+                },
+                {
+                    "endpoint_id": "getTeamMembers",
+                    "method": "GET",
+                    "path": "/api/v1/analytics/team-members",
+                    "description": "Auto-generated OpenAPI description for Get Team Members | UI Name: AttendanceAnalytics Module | User Intent: Get Team Members | Java Controller: AttendanceAnalyticsController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AttendanceAnalytics Module",
+                    "user_intent": "Get Team Members",
+                    "capability": "AttendanceAnalytics",
+                    "java_controller_name": "AttendanceAnalyticsController",
+                    "api_name": "getTeamMembers"
+                },
+                {
+                    "endpoint_id": "getSettings",
+                    "method": "GET",
+                    "path": "/api/candidate-general-settings",
+                    "description": "Auto-generated OpenAPI description for Get Settings | UI Name: CandidateGeneralSettings Module | User Intent: Get Settings | Java Controller: CandidateGeneralSettingsController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CandidateGeneralSettings Module",
+                    "user_intent": "Get Settings",
+                    "capability": "CandidateGeneralSettings",
+                    "java_controller_name": "CandidateGeneralSettingsController",
+                    "api_name": "getSettings"
+                },
+                {
+                    "endpoint_id": "saveOrUpdateSettings",
+                    "method": "POST",
+                    "path": "/api/candidate-general-settings",
+                    "description": "Auto-generated OpenAPI description for Save Or Update Settings | UI Name: CandidateGeneralSettings Module | User Intent: Save Or Update Settings | Java Controller: CandidateGeneralSettingsController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CandidateGeneralSettings Module",
+                    "user_intent": "Save Or Update Settings",
+                    "capability": "CandidateGeneralSettings",
+                    "java_controller_name": "CandidateGeneralSettingsController",
+                    "api_name": "saveOrUpdateSettings"
+                },
+                {
+                    "endpoint_id": "getRecentLogs",
+                    "method": "GET",
+                    "path": "/api/assets/audit-logs",
+                    "description": "Auto-generated OpenAPI description for Get Recent Logs | UI Name: AssetAudit Module | User Intent: Get Recent Logs | Java Controller: AssetAuditController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetAudit Module",
+                    "user_intent": "Get Recent Logs",
+                    "capability": "AssetAudit",
+                    "java_controller_name": "AssetAuditController",
+                    "api_name": "getRecentLogs"
+                },
+                {
+                    "endpoint_id": "getDraftsByEmployeeQuery",
+                    "method": "GET",
+                    "path": "/api/travel/drafts",
+                    "description": "Auto-generated OpenAPI description for Get Drafts By Employee Query | UI Name: TravelRequestDraft Module | User Intent: Get Drafts By Employee Query | Java Controller: TravelRequestDraftController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "TravelRequestDraft Module",
+                    "user_intent": "Get Drafts By Employee Query",
+                    "capability": "TravelRequestDraft",
+                    "java_controller_name": "TravelRequestDraftController",
+                    "api_name": "getDraftsByEmployeeQuery"
+                },
+                {
+                    "endpoint_id": "saveDraft",
+                    "method": "POST",
+                    "path": "/api/travel/drafts",
+                    "description": "Auto-generated OpenAPI description for Save Draft | UI Name: TravelRequestDraft Module | User Intent: Save Draft | Java Controller: TravelRequestDraftController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "TravelRequestDraft Module",
+                    "user_intent": "Save Draft",
+                    "capability": "TravelRequestDraft",
+                    "java_controller_name": "TravelRequestDraftController",
+                    "api_name": "saveDraft"
+                },
+                {
+                    "endpoint_id": "createWorkflow",
+                    "method": "POST",
+                    "path": "/api/v1/workflow-engine",
+                    "description": "Auto-generated OpenAPI description for Create Workflow | UI Name: WorkflowEngine Module | User Intent: Create Workflow | Java Controller: WorkflowEngineController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "WorkflowEngine Module",
+                    "user_intent": "Create Workflow",
+                    "capability": "WorkflowEngine",
+                    "java_controller_name": "WorkflowEngineController",
+                    "api_name": "createWorkflow"
+                },
+                {
+                    "endpoint_id": "unknownApiName",
+                    "method": "GET",
+                    "path": "/api/leaves/balance/details/{employeeId}",
+                    "description": "Auto-generated OpenAPI description for Unknown Api Name | UI Name: LeaveAssignment Module | User Intent: Unknown Api Name | Java Controller: LeaveAssignmentController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "LeaveAssignment Module",
+                    "user_intent": "Unknown Api Name",
+                    "capability": "LeaveAssignment",
+                    "java_controller_name": "LeaveAssignmentController",
+                    "api_name": "unknownApiName"
+                },
+                {
+                    "endpoint_id": "getAll",
+                    "method": "GET",
+                    "path": "/api/revision-types",
+                    "description": "Auto-generated OpenAPI description for Get All | UI Name: RevisionType Module | User Intent: Get All | Java Controller: RevisionTypeController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "RevisionType Module",
+                    "user_intent": "Get All",
+                    "capability": "RevisionType",
+                    "java_controller_name": "RevisionTypeController",
+                    "api_name": "getAll"
+                },
+                {
+                    "endpoint_id": "create",
+                    "method": "POST",
+                    "path": "/api/revision-types",
+                    "description": "Auto-generated OpenAPI description for Create | UI Name: RevisionType Module | User Intent: Create | Java Controller: RevisionTypeController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "RevisionType Module",
+                    "user_intent": "Create",
+                    "capability": "RevisionType",
+                    "java_controller_name": "RevisionTypeController",
+                    "api_name": "create"
+                },
+                {
+                    "endpoint_id": "getAllTemplates",
+                    "method": "GET",
+                    "path": "/api/performance/templates",
+                    "description": "Auto-generated OpenAPI description for Get All Templates | UI Name: PerformanceGoalTemplate Module | User Intent: Get All Templates | Java Controller: PerformanceGoalTemplateController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceGoalTemplate Module",
+                    "user_intent": "Get All Templates",
+                    "capability": "PerformanceGoalTemplate",
+                    "java_controller_name": "PerformanceGoalTemplateController",
+                    "api_name": "getAllTemplates"
+                },
+                {
+                    "endpoint_id": "saveTemplate",
+                    "method": "POST",
+                    "path": "/api/performance/templates",
+                    "description": "Auto-generated OpenAPI description for Save Template | UI Name: PerformanceGoalTemplate Module | User Intent: Save Template | Java Controller: PerformanceGoalTemplateController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceGoalTemplate Module",
+                    "user_intent": "Save Template",
+                    "capability": "PerformanceGoalTemplate",
+                    "java_controller_name": "PerformanceGoalTemplateController",
+                    "api_name": "saveTemplate"
+                },
+                {
+                    "endpoint_id": "getAllDepartments",
+                    "method": "GET",
+                    "path": "/api/performance/departments",
+                    "description": "Auto-generated OpenAPI description for Get All Departments | UI Name: PerformanceDepartment Module | User Intent: Get All Departments | Java Controller: PerformanceDepartmentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceDepartment Module",
+                    "user_intent": "Get All Departments",
+                    "capability": "PerformanceDepartment",
+                    "java_controller_name": "PerformanceDepartmentController",
+                    "api_name": "getAllDepartments"
+                },
+                {
+                    "endpoint_id": "createDepartment",
+                    "method": "POST",
+                    "path": "/api/performance/departments",
+                    "description": "Auto-generated OpenAPI description for Create Department | UI Name: PerformanceDepartment Module | User Intent: Create Department | Java Controller: PerformanceDepartmentController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceDepartment Module",
+                    "user_intent": "Create Department",
+                    "capability": "PerformanceDepartment",
+                    "java_controller_name": "PerformanceDepartmentController",
+                    "api_name": "createDepartment"
+                },
+                {
+                    "endpoint_id": "getLeaveTypes",
+                    "method": "GET",
+                    "path": "/api/leaves/types",
+                    "description": "Auto-generated OpenAPI description for Get Leave Types | UI Name: Leave Module | User Intent: Get Leave Types | Java Controller: LeaveController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Leave Module",
+                    "user_intent": "Get Leave Types",
+                    "capability": "Leave",
+                    "java_controller_name": "LeaveController",
+                    "api_name": "getLeaveTypes"
+                },
+                {
+                    "endpoint_id": "addLeaveType",
+                    "method": "GET",
+                    "path": "/api/leaves/types/config",
+                    "description": "Auto-generated OpenAPI description for Add Leave Type | UI Name: Leave Module | User Intent: Add Leave Type | Java Controller: LeaveController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Leave Module",
+                    "user_intent": "Add Leave Type",
+                    "capability": "Leave",
+                    "java_controller_name": "LeaveController",
+                    "api_name": "addLeaveType"
+                },
+                {
+                    "endpoint_id": "getAll",
+                    "method": "GET",
+                    "path": "/api/designation-categories",
+                    "description": "Auto-generated OpenAPI description for Get All | UI Name: DesignationCategory Module | User Intent: Get All | Java Controller: DesignationCategoryController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "DesignationCategory Module",
+                    "user_intent": "Get All",
+                    "capability": "DesignationCategory",
+                    "java_controller_name": "DesignationCategoryController",
+                    "api_name": "getAll"
+                },
+                {
+                    "endpoint_id": "create",
+                    "method": "POST",
+                    "path": "/api/designation-categories",
+                    "description": "Auto-generated OpenAPI description for Create | UI Name: DesignationCategory Module | User Intent: Create | Java Controller: DesignationCategoryController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "DesignationCategory Module",
+                    "user_intent": "Create",
+                    "capability": "DesignationCategory",
+                    "java_controller_name": "DesignationCategoryController",
+                    "api_name": "create"
+                },
+                {
+                    "endpoint_id": "getAllProjects",
+                    "method": "GET",
+                    "path": "/api/projects",
+                    "description": "Auto-generated OpenAPI description for Get All Projects | UI Name: Project Module | User Intent: Get All Projects | Java Controller: ProjectController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Project Module",
+                    "user_intent": "Get All Projects",
+                    "capability": "Project",
+                    "java_controller_name": "ProjectController",
+                    "api_name": "getAllProjects"
+                },
+                {
+                    "endpoint_id": "createProject",
+                    "method": "POST",
+                    "path": "/api/projects",
+                    "description": "Auto-generated OpenAPI description for Create Project | UI Name: Project Module | User Intent: Create Project | Java Controller: ProjectController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Project Module",
+                    "user_intent": "Create Project",
+                    "capability": "Project",
+                    "java_controller_name": "ProjectController",
+                    "api_name": "createProject"
+                },
+                {
+                    "endpoint_id": "getAll",
+                    "method": "GET",
+                    "path": "/api/v1/exit-forms",
+                    "description": "Auto-generated OpenAPI description for Get All | UI Name: ExitForm Module | User Intent: Get All | Java Controller: ExitFormController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "ExitForm Module",
+                    "user_intent": "Get All",
+                    "capability": "ExitForm",
+                    "java_controller_name": "ExitFormController",
+                    "api_name": "getAll"
+                },
+                {
+                    "endpoint_id": "createExitForm",
+                    "method": "POST",
+                    "path": "/api/v1/exit-forms",
+                    "description": "Auto-generated OpenAPI description for Create Exit Form | UI Name: ExitForm Module | User Intent: Create Exit Form | Java Controller: ExitFormController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "ExitForm Module",
+                    "user_intent": "Create Exit Form",
+                    "capability": "ExitForm",
+                    "java_controller_name": "ExitFormController",
+                    "api_name": "createExitForm"
+                },
+                {
+                    "endpoint_id": "getAllApplicants",
+                    "method": "GET",
+                    "path": "/api/v1/applicants",
+                    "description": "Auto-generated OpenAPI description for Get All Applicants | UI Name: Applicant Module | User Intent: Get All Applicants | Java Controller: ApplicantController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Applicant Module",
+                    "user_intent": "Get All Applicants",
+                    "capability": "Applicant",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getAllApplicants"
+                },
+                {
+                    "endpoint_id": "createApplicant",
+                    "method": "POST",
+                    "path": "/api/v1/applicants",
+                    "description": "Auto-generated OpenAPI description for Create Applicant | UI Name: Applicant Module | User Intent: Create Applicant | Java Controller: ApplicantController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Applicant Module",
+                    "user_intent": "Create Applicant",
+                    "capability": "Applicant",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "createApplicant"
+                },
+                {
+                    "endpoint_id": "updateApplicantStatus",
+                    "method": "PUT",
+                    "path": "/api/v1/applicants/status/{applicantId}",
+                    "description": "Auto-generated OpenAPI description for Update Applicant Status | UI Name: Applicant Module | User Intent: Update Applicant Status | Java Controller: ApplicantController",
+                    "required_fields": [
+                        "applicantId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Applicant Module",
+                    "user_intent": "Update Applicant Status",
+                    "capability": "Applicant",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "updateApplicantStatus"
+                },
+                {
+                    "endpoint_id": "updateProfile",
+                    "method": "PUT",
+                    "path": "/api/profile/update/{employeeId}",
+                    "description": "Auto-generated OpenAPI description for Update Profile | UI Name: Profiler Module | User Intent: Update Profile | Java Controller: ProfilerController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Profiler Module",
+                    "user_intent": "Update Profile",
+                    "capability": "Profiler",
+                    "java_controller_name": "ProfilerController",
+                    "api_name": "updateProfile"
+                },
+                {
+                    "endpoint_id": "getSummary",
+                    "method": "GET",
+                    "path": "/api/claims/history/{employeeId}",
+                    "description": "Auto-generated OpenAPI description for Get Summary | UI Name: Claim Module | User Intent: Get Summary | Java Controller: ClaimController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claim Module",
+                    "user_intent": "Get Summary",
+                    "capability": "Claim",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "getSummary"
+                },
+                {
+                    "endpoint_id": "downloadClaimReceipt",
+                    "method": "GET",
+                    "path": "/api/claims/{claimId}/receipts",
+                    "description": "Auto-generated OpenAPI description for Download Claim Receipt | UI Name: Claim Module | User Intent: Download Claim Receipt | Java Controller: ClaimController",
+                    "required_fields": [
+                        "claimId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claim Module",
+                    "user_intent": "Download Claim Receipt",
+                    "capability": "Claim",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "downloadClaimReceipt"
+                },
+                {
+                    "endpoint_id": "submitClaim",
+                    "method": "POST",
+                    "path": "/api/claims/submit",
+                    "description": "Auto-generated OpenAPI description for Submit Claim | UI Name: Claim Module | User Intent: Submit Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "employeeId",
+                        "category",
+                        "amount",
+                        "expenseDate",
+                        "expenseDescription"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claim Module",
+                    "user_intent": "Submit Claim",
+                    "capability": "Claim",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "submitClaim"
+                },
+                {
+                    "endpoint_id": "approveClaim",
+                    "method": "POST",
+                    "path": "/api/claims/approve/{id}",
+                    "description": "Auto-generated OpenAPI description for Approve Claim | UI Name: Claim Module | User Intent: Approve Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claim Module",
+                    "user_intent": "Approve Claim",
+                    "capability": "Claim",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "approveClaim"
+                },
+                {
+                    "endpoint_id": "rejectClaim",
+                    "method": "POST",
+                    "path": "/api/claims/reject/{id}",
+                    "description": "Auto-generated OpenAPI description for Reject Claim | UI Name: Claim Module | User Intent: Reject Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claim Module",
+                    "user_intent": "Reject Claim",
+                    "capability": "Claim",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "rejectClaim"
+                },
+                {
+                    "endpoint_id": "getManagerFeedback",
+                    "method": "GET",
+                    "path": "/api/attributes/{attributeId}/manager-feedback",
+                    "description": "Auto-generated OpenAPI description for Get Manager Feedback | UI Name: PerformanceAttribute Module | User Intent: Get Manager Feedback | Java Controller: PerformanceAttributeController",
+                    "required_fields": [
+                        "attributeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceAttribute Module",
+                    "user_intent": "Get Manager Feedback",
+                    "capability": "PerformanceAttribute",
+                    "java_controller_name": "PerformanceAttributeController",
+                    "api_name": "getManagerFeedback"
+                },
+                {
+                    "endpoint_id": "getPayrollRecords",
+                    "method": "GET",
+                    "path": "/api/payroll-management",
+                    "description": "Auto-generated OpenAPI description for Get Payroll Records | UI Name: PayrollManagement Module | User Intent: Get Payroll Records | Java Controller: PayrollManagementController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PayrollManagement Module",
+                    "user_intent": "Get Payroll Records",
+                    "capability": "PayrollManagement",
+                    "java_controller_name": "PayrollManagementController",
+                    "api_name": "getPayrollRecords"
+                },
+                {
+                    "endpoint_id": "sendOfferLetterPdf",
+                    "method": "GET",
+                    "path": "/api/v1/letters/sendBoth/esign/{applicantId}/{offerFile}/{appointFile}",
+                    "description": "Auto-generated OpenAPI description for Send Offer Letter Pdf | UI Name: OfferLetter Module | User Intent: Send Offer Letter Pdf | Java Controller: OfferLetterController",
+                    "required_fields": [
+                        "applicantId",
+                        "offerFile",
+                        "appointFile"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "OfferLetter Module",
+                    "user_intent": "Send Offer Letter Pdf",
+                    "capability": "OfferLetter",
+                    "java_controller_name": "OfferLetterController",
+                    "api_name": "sendOfferLetterPdf"
+                },
+                {
+                    "endpoint_id": "sendAppointmentLetterPdf",
+                    "method": "GET",
+                    "path": "/api/v1/letters/sendOffer/esign/{applicantId}/{offerFile}",
+                    "description": "Auto-generated OpenAPI description for Send Appointment Letter Pdf | UI Name: OfferLetter Module | User Intent: Send Appointment Letter Pdf | Java Controller: OfferLetterController",
+                    "required_fields": [
+                        "applicantId",
+                        "offerFile"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "OfferLetter Module",
+                    "user_intent": "Send Appointment Letter Pdf",
+                    "capability": "OfferLetter",
+                    "java_controller_name": "OfferLetterController",
+                    "api_name": "sendAppointmentLetterPdf"
+                },
+                {
+                    "endpoint_id": "unknownApiName",
+                    "method": "GET",
+                    "path": "/api/v1/letters/sendAppointment/esign/{applicantId}/{appointFile}",
+                    "description": "Auto-generated OpenAPI description for Unknown Api Name | UI Name: OfferLetter Module | User Intent: Unknown Api Name | Java Controller: OfferLetterController",
+                    "required_fields": [
+                        "applicantId",
+                        "appointFile"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "OfferLetter Module",
+                    "user_intent": "Unknown Api Name",
+                    "capability": "OfferLetter",
+                    "java_controller_name": "OfferLetterController",
+                    "api_name": "unknownApiName"
+                },
+                {
+                    "endpoint_id": "getAllRequestsByEmployee",
+                    "method": "GET",
+                    "path": "/api/travel/admin/travel-admins",
+                    "description": "Auto-generated OpenAPI description for Get All Requests By Employee | UI Name: TravelRequest Module | User Intent: Get All Requests By Employee | Java Controller: TravelRequestController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "TravelRequest Module",
+                    "user_intent": "Get All Requests By Employee",
+                    "capability": "TravelRequest",
+                    "java_controller_name": "TravelRequestController",
+                    "api_name": "getAllRequestsByEmployee"
+                },
+                {
+                    "endpoint_id": "getAllAuditLogs",
+                    "method": "GET",
+                    "path": "/api/audit",
+                    "description": "Auto-generated OpenAPI description for Get All Audit Logs | UI Name: Audit Module | User Intent: Get All Audit Logs | Java Controller: AuditController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Audit Module",
+                    "user_intent": "Get All Audit Logs",
+                    "capability": "Audit",
+                    "java_controller_name": "AuditController",
+                    "api_name": "getAllAuditLogs"
+                },
+                {
+                    "endpoint_id": "createAllocation",
+                    "method": "POST",
+                    "path": "/api/allocations",
+                    "description": "Auto-generated OpenAPI description for Create Allocation | UI Name: Allocation Module | User Intent: Create Allocation | Java Controller: AllocationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Allocation Module",
+                    "user_intent": "Create Allocation",
+                    "capability": "Allocation",
+                    "java_controller_name": "AllocationController",
+                    "api_name": "createAllocation"
+                },
+                {
+                    "endpoint_id": "unknownApiName",
+                    "method": "POST",
+                    "path": "/api/v1/auth/verify-otp",
+                    "description": "Auto-generated OpenAPI description for Unknown Api Name | UI Name: OnboardingAuth Module | User Intent: Unknown Api Name | Java Controller: OnboardingAuthController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "OnboardingAuth Module",
+                    "user_intent": "Unknown Api Name",
+                    "capability": "OnboardingAuth",
+                    "java_controller_name": "OnboardingAuthController",
+                    "api_name": "unknownApiName"
+                },
+                {
+                    "endpoint_id": "getManagerFeedback",
+                    "method": "GET",
+                    "path": "/api/goals/{goalId}/manager-feedback",
+                    "description": "Auto-generated OpenAPI description for Get Manager Feedback | UI Name: PerformanceGoal Module | User Intent: Get Manager Feedback | Java Controller: PerformanceGoalController",
+                    "required_fields": [
+                        "goalId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceGoal Module",
+                    "user_intent": "Get Manager Feedback",
+                    "capability": "PerformanceGoal",
+                    "java_controller_name": "PerformanceGoalController",
+                    "api_name": "getManagerFeedback"
+                },
+                {
+                    "endpoint_id": "assignGoal",
+                    "method": "POST",
+                    "path": "/api/goals/assign",
+                    "description": "Auto-generated OpenAPI description for Assign Goal | UI Name: PerformanceGoal Module | User Intent: Assign Goal | Java Controller: PerformanceGoalController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceGoal Module",
+                    "user_intent": "Assign Goal",
+                    "capability": "PerformanceGoal",
+                    "java_controller_name": "PerformanceGoalController",
+                    "api_name": "assignGoal"
+                },
+                {
+                    "endpoint_id": "updateGoalStatus",
+                    "method": "PUT",
+                    "path": "/api/goals/{goalId}/status",
+                    "description": "Auto-generated OpenAPI description for Update Goal Status | UI Name: PerformanceGoal Module | User Intent: Update Goal Status | Java Controller: PerformanceGoalController",
+                    "required_fields": [
+                        "goalId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PerformanceGoal Module",
+                    "user_intent": "Update Goal Status",
+                    "capability": "PerformanceGoal",
+                    "java_controller_name": "PerformanceGoalController",
+                    "api_name": "updateGoalStatus"
+                },
+                {
+                    "endpoint_id": "getAllCategories",
+                    "method": "GET",
+                    "path": "/api/assets/categories",
+                    "description": "Auto-generated OpenAPI description for Get All Categories | UI Name: AssetCategory Module | User Intent: Get All Categories | Java Controller: AssetCategoryController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetCategory Module",
+                    "user_intent": "Get All Categories",
+                    "capability": "AssetCategory",
+                    "java_controller_name": "AssetCategoryController",
+                    "api_name": "getAllCategories"
+                },
+                {
+                    "endpoint_id": "createCategory",
+                    "method": "POST",
+                    "path": "/api/assets/categories",
+                    "description": "Auto-generated OpenAPI description for Create Category | UI Name: AssetCategory Module | User Intent: Create Category | Java Controller: AssetCategoryController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetCategory Module",
+                    "user_intent": "Create Category",
+                    "capability": "AssetCategory",
+                    "java_controller_name": "AssetCategoryController",
+                    "api_name": "createCategory"
+                },
+                {
+                    "endpoint_id": "acknowledgePolicy",
+                    "method": "POST",
+                    "path": "/api/policies/acknowledge/{policyId}",
+                    "description": "Auto-generated OpenAPI description for Acknowledge Policy | UI Name: PolicyAcknowledgment Module | User Intent: Acknowledge Policy | Java Controller: PolicyAcknowledgmentController",
+                    "required_fields": [
+                        "policyId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "PolicyAcknowledgment Module",
+                    "user_intent": "Acknowledge Policy",
+                    "capability": "PolicyAcknowledgment",
+                    "java_controller_name": "PolicyAcknowledgmentController",
+                    "api_name": "acknowledgePolicy"
+                },
+                {
+                    "endpoint_id": "getAllCompensationDetails",
+                    "method": "GET",
+                    "path": "/api/compensation",
+                    "description": "Auto-generated OpenAPI description for Get All Compensation Details | UI Name: CompensationDetails Module | User Intent: Get All Compensation Details | Java Controller: CompensationDetailsController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CompensationDetails Module",
+                    "user_intent": "Get All Compensation Details",
+                    "capability": "CompensationDetails",
+                    "java_controller_name": "CompensationDetailsController",
+                    "api_name": "getAllCompensationDetails"
+                },
+                {
+                    "endpoint_id": "saveOrUpdate",
+                    "method": "POST",
+                    "path": "/api/compensation",
+                    "description": "Auto-generated OpenAPI description for Save Or Update | UI Name: CompensationDetails Module | User Intent: Save Or Update | Java Controller: CompensationDetailsController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "CompensationDetails Module",
+                    "user_intent": "Save Or Update",
+                    "capability": "CompensationDetails",
+                    "java_controller_name": "CompensationDetailsController",
+                    "api_name": "saveOrUpdate"
+                },
+                {
+                    "endpoint_id": "getAllEmployees",
+                    "method": "GET",
+                    "path": "/api/employees",
+                    "description": "Auto-generated OpenAPI description for Get All Employees | UI Name: Employee Module | User Intent: Get All Employees | Java Controller: EmployeeController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Employee Module",
+                    "user_intent": "Get All Employees",
+                    "capability": "Employee",
+                    "java_controller_name": "EmployeeController",
+                    "api_name": "getAllEmployees"
+                },
+                {
+                    "endpoint_id": "addEmployee",
+                    "method": "POST",
+                    "path": "/api/employees",
+                    "description": "Auto-generated OpenAPI description for Add Employee | UI Name: Employee Module | User Intent: Add Employee | Java Controller: EmployeeController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Employee Module",
+                    "user_intent": "Add Employee",
+                    "capability": "Employee",
+                    "java_controller_name": "EmployeeController",
+                    "api_name": "addEmployee"
+                },
+                {
+                    "endpoint_id": "getAllAssets",
+                    "method": "GET",
+                    "path": "/api/assets",
+                    "description": "Auto-generated OpenAPI description for Get All Assets | UI Name: AssetMaster Module | User Intent: Get All Assets | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetMaster Module",
+                    "user_intent": "Get All Assets",
+                    "capability": "AssetMaster",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getAllAssets"
+                },
+                {
+                    "endpoint_id": "getDashboardData",
+                    "method": "GET",
+                    "path": "/api/assets/summary",
+                    "description": "Auto-generated OpenAPI description for Get Dashboard Data | UI Name: AssetMaster Module | User Intent: Get Dashboard Data | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetMaster Module",
+                    "user_intent": "Get Dashboard Data",
+                    "capability": "AssetMaster",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getDashboardData"
+                },
+                {
+                    "endpoint_id": "createAsset",
+                    "method": "POST",
+                    "path": "/api/assets",
+                    "description": "Auto-generated OpenAPI description for Create Asset | UI Name: AssetMaster Module | User Intent: Create Asset | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "AssetMaster Module",
+                    "user_intent": "Create Asset",
+                    "capability": "AssetMaster",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "createAsset"
                 }
             ]
         }
