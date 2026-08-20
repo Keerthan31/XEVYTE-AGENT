@@ -172,7 +172,7 @@ async def load_catalog_from_spec() -> dict[str, CatalogEntry]:
     Returns a dict keyed by endpoint_id.
     """
     settings = get_settings()
-    url = settings.openapi_spec_url
+    url = settings.OPENAPI_SPEC_URL
     logger.info("Loading OpenAPI spec from %s …", url)
 
     try:

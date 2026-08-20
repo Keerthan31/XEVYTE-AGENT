@@ -61,9 +61,10 @@ export default function App() {
         // Decode JWT to extract details
         try {
           const payload = JSON.parse(atob(tokenFromURL.split('.')[1]));
-          if (payload.employeeId) {
-            localStorage.setItem('xeva_standalone_emp', payload.employeeId);
-            sessionStorage.setItem('employeeId', payload.employeeId);
+          const empId = payload.employeeId || payload.sub || payload.loginId || payload.email || 'User';
+          if (empId) {
+            localStorage.setItem('xeva_standalone_emp', empId);
+            sessionStorage.setItem('employeeId', empId);
           }
           if (payload.name || payload.employeeName) {
             localStorage.setItem('xeva_standalone_emp_name', payload.name || payload.employeeName);
@@ -228,6 +229,14 @@ export default function App() {
       console.warn('LocalStorage clear failed:', err)
     }
   }
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      handleLogout();
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, []);
 
   // Export Thread Handler
   const handleExportThread = () => {

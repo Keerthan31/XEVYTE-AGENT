@@ -22,7 +22,7 @@ def validate_and_extract_token(token: str) -> Optional[Dict[str, Any]]:
         # Validate the token using the shared JWT_SECRET
         payload = jwt.decode(
             token, 
-            settings.jwt_secret, 
+            settings.JWT_SECRET, 
             algorithms=["HS256"]
             # options={"verify_iss": True, "issuer": settings.jwt_issuer} # Uncomment if issuer is strictly enforced
         )

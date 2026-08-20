@@ -149,9 +149,9 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
           <div className="flex items-center gap-3 mt-3 w-full border-t border-slate-200/60 pt-3">
             <button
               onClick={() => onConfirmBtn(pendingToken, true)}
-              className="flex-1 flex items-center justify-center gap-2 bg-agent-accent hover:bg-agent-accent/90 text-white font-medium py-2 px-4 rounded-xl transition-colors text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl transition-colors text-sm"
             >
-              <Check size={16} /> Approve Action
+              <Check size={16} /> Confirm Approval
             </button>
             <button
               onClick={() => onConfirmBtn(pendingToken, false)}

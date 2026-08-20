@@ -2,7 +2,17 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true;
 
-const BASE = 'http://localhost:8443/api/agent'
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
+
+const BASE = 'http://localhost:8000/api/agent'
 
 export async function exchangeToken(token) {
   try {

@@ -12,8 +12,8 @@ logger = logging.getLogger("xeva.rag.indexer")
 class PolicyIndexer:
     def __init__(self):
         settings = get_settings()
-        self.persist_dir = settings.chroma_persist_dir
-        self.policies_dir = settings.rag_policies_dir
+        self.persist_dir = settings.CHROMA_PERSIST_DIR
+        self.policies_dir = settings.RAG_POLICIES_DIR
         
         try:
             self.client = chromadb.PersistentClient(path=self.persist_dir)

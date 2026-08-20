@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: Optional[str] = Field(default=None)
     CHAT_MODEL: str = Field(default="gpt-4o-mini")
     PLANNER_MODEL: str = Field(default="gpt-4o-mini")
+    LLM_MODEL: str = Field(default="gpt-4o-mini")
+    LLM_TEMPERATURE: float = Field(default=0.0)
+    LLM_MAX_TOKENS: int = Field(default=4096)
 
     # Embeddings — routed through LiteLLM so the provider is swappable
     # independently of the chat model (e.g. keep chat on OpenAI but use a
@@ -91,12 +94,19 @@ class Settings(BaseSettings):
 
     # ---- Chroma (RAG store) ----
     CHROMA_PERSIST_DIR: str = "./data/chroma"
+    RAG_POLICIES_DIR: str = "./data/policies"
     CHROMA_COLLECTION: str = "xevyte_endpoints"
     RAG_TOP_K: int = 12
 
     # ---- Catalog ----
     ENDPOINT_CATALOG_PATH: str = "app/catalog/endpoint_catalog.json"
     OPENAPI_CATALOG_PATH: str = "app/catalog/openapi_catalog.json"
+    JAVA_BACKEND_URL: str = "http://localhost:8082"
+    OPENAPI_SPEC_PATH: str = "/v3/api-docs"
+    OPENAPI_SPEC_URL: str = "http://localhost:8082/v3/api-docs"
+    CATALOG_PATH: str = "config/XEVYTE_API_CATALOG.json"
+    ENABLE_CONFIRMATIONS: bool = True
+    ENABLE_RAG: bool = True
 
     # ---- Live catalog auto-refresh ----
     # If set, the agent watches this directory (the Java controller/dto/
@@ -113,6 +123,7 @@ class Settings(BaseSettings):
     JAVA_SOURCE_WATCH_DEBOUNCE_SECONDS: float = 4.0
 
     # ---- Session / crypto ----
+    JWT_SECRET: str = Field(default="")
     SESSION_SECRET_KEY: str = Field(
         default="",
         description="32+ byte random secret used ONLY to encrypt agent session cookies "

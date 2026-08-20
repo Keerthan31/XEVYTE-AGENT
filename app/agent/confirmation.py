@@ -16,7 +16,7 @@ def _get_fernet():
     if _fernet is None:
         settings = get_settings()
         # Ensure it's 32 bytes url-safe base64 encoded
-        secret = settings.jwt_secret
+        secret = settings.JWT_SECRET
         if len(secret) < 32:
             secret = secret.ljust(32, '0')
         else:

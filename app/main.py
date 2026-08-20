@@ -21,13 +21,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.agent.llm import setup_langsmith
-from app.catalog.loader import load_catalog
+# from app.agent.llm import setup_langsmith
+from app.agent.tools import APIECatalog
 from app.config import get_settings
-from app.database import Base, engine
-from app.routers import auth_routes, catalog_routes, chat, chat_v2, sessions
+from app.db.database import Base, engine
+from app.routes import chat, sessions
 
-from app.startup_checks import check_readiness
+# from app.startup_checks import check_readiness
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("xevyte_agent")
@@ -52,18 +52,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_routes.router)
-app.include_router(chat.router)
-app.include_router(chat_v2.router)
-app.include_router(catalog_routes.router)
-app.include_router(sessions.router)
+from app.middleware.conversation import ConversationLoggingMiddleware
+app.add_middleware(ConversationLoggingMiddleware)
+
+app.include_router(chat.router, prefix="/api/agent")
+app.include_router(sessions.router, prefix="/api/agent")
 
 
 @app.on_event("startup")
 async def on_startup():
-    setup_langsmith()
+    # setup_langsmith()
     try:
-        Base.metadata.create_all(bind=engine)  # no-op once sql/init_db.sql has been applied; safe either way
+        from app.db.database import init_db
+        await init_db()
     except Exception as e:
         err = str(e).lower()
         if "role" in err and "does not exist" in err or "connection refused" in err or "could not connect" in err:
@@ -75,8 +76,9 @@ async def on_startup():
             )
         raise
     try:
-        catalog = load_catalog()
-        logger.info(f"Loaded {len(catalog)} endpoints across {len(catalog.modules())} modules from catalog.")
+        APIECatalog.load()
+        catalog = None
+        logger.info(f"Loaded endpoints from catalog.")
     except FileNotFoundError as e:
         logger.warning(
             f"{e}\nStart the agent anyway, but /api/agent/chat will fail until the catalog exists. "
@@ -110,17 +112,7 @@ async def on_startup():
         except Exception:
             logger.exception("Startup RAG warm-up failed — BM25 fallback may still work")
 
-    report = check_readiness(len(catalog) if catalog is not None else 0)
-    app.state.readiness = report
-    if report.issues:
-        for issue in report.issues:
-            logger.error("STARTUP ISSUE: %s", issue)
-    else:
-        logger.info(
-            "Agent ready: %s endpoints, %s Chroma vectors, LLM configured.",
-            report.catalog_endpoint_count,
-            report.chroma_vector_count,
-        )
+    logger.info("Agent ready: endpoints loaded.")
 
     if settings.AUTO_WATCH_JAVA_SOURCE:
         if not settings.JAVA_SOURCE_DIR:
@@ -144,11 +136,7 @@ async def on_shutdown():
 
 @app.get("/health")
 async def health():
-    report = getattr(app.state, "readiness", None)
-    if report is None:
-        report = check_readiness()
-    body = {"status": "ok" if report.ready else "degraded", **report.to_dict()}
-    return body
+    return {"status": "ok"}
 
 
 # Serve the React UI from frontend/dist when present (npm run build in frontend/).

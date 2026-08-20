@@ -1,0 +1,2278 @@
+{
+  "catalog_version": "2.0",
+  "last_updated": "2026-08-19",
+  "total_endpoints": 94,
+  "modules": {
+    "attendance": {
+      "module_name": "Daily Attendance & Time Management",
+      "endpoints": [
+        {
+          "endpoint_id": "submitEntry",
+          "method": "POST",
+          "path": "/api/daily-entry/submit/{employeeId}",
+          "description": "Check-In / Punch In",
+          "required_fields": [
+            "checkInTime",
+            "checkInType"
+          ],
+          "optional_fields": [
+            "location",
+            "remarks"
+          ],
+          "response_example": {
+            "id": "GENERIC_STRING",
+            "employeeId": "GENERIC_STRING",
+            "checkInTime": "GENERIC_STRING",
+            "checkInType": "GENERIC_STRING",
+            "status": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "updateEntry",
+          "method": "PUT",
+          "path": "/api/daily-entry/update/{entryId}",
+          "description": "Check-Out / Punch Out",
+          "required_fields": [
+            "logoutTime",
+            "status",
+            "entryId"
+          ],
+          "note": "Must fetch existing entry first and merge all fields, not partial update",
+          "response_example": {
+            "id": "GENERIC_STRING",
+            "logoutTime": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "totalDuration": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getEmployeeEntries",
+          "method": "GET",
+          "path": "/api/daily-entry/employee/{employeeId}",
+          "description": "View attendance history",
+          "query_params": [
+            "startDate",
+            "endDate"
+          ],
+          "response_example": [
+            {
+              "id": "GENERIC_STRING",
+              "date": "GENERIC_STRING",
+              "checkInTime": "GENERIC_STRING",
+              "logoutTime": "GENERIC_STRING",
+              "totalDuration": "GENERIC_STRING",
+              "status": "GENERIC_STRING"
+            }
+          ],
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getTeamAttendance",
+          "method": "GET",
+          "path": "/api/daily-entry/team/{managerId}",
+          "description": "View team attendance summary",
+          "response_example": {
+            "presentToday": 0,
+            "absent": 0,
+            "onLeave": 0,
+            "workFromHome": 0
+          },
+          "roles": [
+            "MANAGER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "requestAttendanceRegularization",
+          "method": "POST",
+          "path": "/api/attendance-regularization/request",
+          "description": "Request attendance correction (missing check-in/out)",
+          "required_fields": [
+            "date",
+            "checkInTime",
+            "checkOutTime",
+            "reason"
+          ],
+          "response_example": {
+            "id": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "submittedDate": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getPendingRegularizations",
+          "method": "GET",
+          "path": "/api/attendance-regularization/pending/{managerId}",
+          "description": "View pending attendance regularization requests",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "approveRegularization",
+          "method": "PUT",
+          "path": "/api/attendance-regularization/{id}/approve",
+          "description": "Approve attendance regularization request",
+          "required_fields": [
+            "comment",
+            "id"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "rejectRegularization",
+          "method": "PUT",
+          "path": "/api/attendance-regularization/{id}/reject",
+          "description": "Reject attendance regularization request",
+          "required_fields": [
+            "reason",
+            "id"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "leaves": {
+      "module_name": "Leave Management & Time-Off",
+      "endpoints": [
+        {
+          "endpoint_id": "getDetailedLeaveBalance",
+          "method": "GET",
+          "path": "/api/leaves/balance-detailed/{employeeId}",
+          "description": "View detailed leave balance by type",
+          "response_example": {
+            "leaveBalances": [
+              {
+                "leaveType": "GENERIC_STRING",
+                "totalQuota": 0,
+                "used": 0,
+                "available": 0,
+                "carriedForward": 0,
+                "expirationDate": "GENERIC_STRING"
+              }
+            ]
+          },
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "applyLeave",
+          "method": "POST",
+          "path": "/api/leaves/apply",
+          "description": "Apply for leave",
+          "required_fields": [
+            "leaveTypeId",
+            "startDate",
+            "endDate",
+            "reason"
+          ],
+          "date_format": "dd-MM-yyyy",
+          "optional_fields": [
+            "documents"
+          ],
+          "response_example": {
+            "leaveId": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "submittedDate": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "saveLeaveDraft",
+          "method": "POST",
+          "path": "/api/leaves/draft",
+          "description": "Save leave request as draft",
+          "required_fields": [
+            "leaveTypeId",
+            "startDate",
+            "endDate"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "getEmployeeLeaves",
+          "method": "GET",
+          "path": "/api/leaves/employee/{employeeId}",
+          "description": "View submitted leave requests",
+          "query_params": [
+            "status"
+          ],
+          "response_example": [
+            {
+              "leaveId": "GENERIC_STRING",
+              "startDate": "GENERIC_STRING",
+              "endDate": "GENERIC_STRING",
+              "leaveType": "GENERIC_STRING",
+              "status": "GENERIC_STRING",
+              "approvedBy": "GENERIC_STRING"
+            }
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getPendingLeavesForManager",
+          "method": "GET",
+          "path": "/api/leaves/manager/{managerId}",
+          "description": "View pending leave approvals for manager",
+          "response_example": [
+            {
+              "id": 0,
+              "leaveReference": "GENERIC_STRING",
+              "employeeName": "GENERIC_STRING",
+              "leaveType": "GENERIC_STRING",
+              "startDate": "GENERIC_STRING",
+              "endDate": "GENERIC_STRING",
+              "totalDays": 0,
+              "reason": "GENERIC_STRING",
+              "status": "GENERIC_STRING"
+            }
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "approveLeave",
+          "method": "POST",
+          "path": "/api/leaves/action",
+          "description": "Approve a leave request. NOTE: For leaveRequestId, you MUST use the numeric database 'id' field from the leave request (e.g. 12345). Do NOT pass the leaveReference string. You MUST set action to 'Approve' and role to 'MANAGER'.",
+          "required_fields": [
+            "leaveRequestId",
+            "approverId",
+            "role",
+            "action"
+          ],
+          "optional_fields": [
+            "remarks"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "rejectLeave",
+          "method": "POST",
+          "path": "/api/leaves/action",
+          "description": "Reject a leave request. NOTE: For leaveRequestId, you MUST use the numeric database 'id' field from the leave request (e.g. 12345). Do NOT pass the leaveReference string. You MUST set action to 'Reject' and role to 'MANAGER'.",
+          "required_fields": [
+            "leaveRequestId",
+            "approverId",
+            "role",
+            "action",
+            "remarks"
+          ],
+          "optional_fields": [],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "cancelLeave",
+          "method": "PUT",
+          "path": "/api/leaves/cancel/{id}",
+          "description": "Cancel approved leave",
+          "required_fields": [
+            "reason",
+            "id"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "bulkApproveLeaves",
+          "method": "PUT",
+          "path": "/api/leaves/bulk-action",
+          "description": "Bulk approve/reject leaves",
+          "required_fields": [
+            "leaveIds",
+            "action"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "leaves_admin": {
+      "module_name": "Leave Policy Configuration (Admin)",
+      "endpoints": [
+        {
+          "endpoint_id": "createLeaveType",
+          "method": "POST",
+          "path": "/api/admin/leave-policy/type",
+          "description": "Create new leave type",
+          "required_fields": [
+            "leaveTypeName",
+            "yearlyQuota",
+            "accrualType"
+          ],
+          "optional_fields": [
+            "isDocumentRequired",
+            "sandwichRule",
+            "halfDayAllowed"
+          ],
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getLeaveTypes",
+          "method": "GET",
+          "path": "/api/admin/leave-policy/types",
+          "description": "List all leave types",
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "createUnifiedPolicy",
+          "method": "POST",
+          "path": "/api/admin/leave-policy/unified",
+          "description": "Define unified leave policy",
+          "required_fields": [
+            "leaveTypeId",
+            "accrualLogic",
+            "carryForwardLimit",
+            "encashmentFormula"
+          ],
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getUnifiedPolicy",
+          "method": "GET",
+          "path": "/api/admin/leave-policy/unified/{leaveTypeId}",
+          "description": "View unified policy details",
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "leaveTypeId"
+          ]
+        },
+        {
+          "endpoint_id": "setApprovalWorkflow",
+          "method": "POST",
+          "path": "/api/admin/leave-policy/approval",
+          "description": "Configure multi-level approval workflow",
+          "required_fields": [
+            "leaveTypeId",
+            "approvalLevels"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "previewAccrual",
+          "method": "GET",
+          "path": "/api/admin/leave-policy/accrual-preview/{leaveTypeId}/{employeeId}",
+          "description": "Preview leave accrual calculation",
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "leaveTypeId"
+          ]
+        },
+        {
+          "endpoint_id": "previewEncashment",
+          "method": "GET",
+          "path": "/api/admin/leave-policy/encashment-preview/{leaveTypeId}/{employeeId}/{days}",
+          "description": "Preview encashment payment calculation",
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "leaveTypeId",
+            "days"
+          ]
+        },
+        {
+          "endpoint_id": "processEncashment",
+          "method": "POST",
+          "path": "/api/admin/leave-policy/process-encashment",
+          "description": "Process leave encashment for employees",
+          "required_fields": [
+            "employeeIds",
+            "leaveTypeId"
+          ],
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "previewEligibility",
+          "method": "GET",
+          "path": "/api/admin/leave-policy/eligibility-preview/{leaveTypeId}/{employeeId}",
+          "description": "Check employee eligibility for gender/location-specific leaves",
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "leaveTypeId"
+          ]
+        },
+        {
+          "endpoint_id": "triggerCarryForward",
+          "method": "POST",
+          "path": "/api/admin/leave-policy/trigger-carry-forward",
+          "description": "Trigger carry-forward of unused leaves to next year",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "deleteLeaveType",
+          "method": "DELETE",
+          "path": "/api/admin/leave-policy/type/{id}",
+          "description": "Delete leave type",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "id"
+          ]
+        },
+        {
+          "endpoint_id": "deleteUnifiedPolicy",
+          "method": "DELETE",
+          "path": "/api/admin/leave-policy/unified/{id}",
+          "description": "Delete unified policy",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "claims": {
+      "module_name": "Claims & Reimbursements",
+      "endpoints": [
+        {
+          "endpoint_id": "submitClaim",
+          "method": "POST",
+          "path": "/api/claims",
+          "description": "Submit expense claim",
+          "required_fields": [
+            "claimType",
+            "amount",
+            "claimDate",
+            "description"
+          ],
+          "optional_fields": [
+            "vendor",
+            "attachments"
+          ],
+          "response_example": {
+            "claimId": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "submittedDate": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "saveClaim",
+          "method": "POST",
+          "path": "/api/claims/draft",
+          "description": "Save claim as draft",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getMyClaims",
+          "method": "GET",
+          "path": "/api/claims/employee/{employeeId}",
+          "description": "View submitted claims",
+          "query_params": [
+            "status"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getClaimDetails",
+          "method": "GET",
+          "path": "/api/claims/{claimId}",
+          "description": "View claim details",
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER",
+            "FINANCE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "claimId"
+          ]
+        },
+        {
+          "endpoint_id": "getPendingClaimsForManager",
+          "method": "GET",
+          "path": "/api/claims/manager/{managerId}/pending",
+          "description": "View pending claims for manager approval",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "approveClaim",
+          "method": "PUT",
+          "path": "/api/claims/{claimId}/approve",
+          "description": "Approve expense claim",
+          "optional_fields": [
+            "comment"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "claimId"
+          ]
+        },
+        {
+          "endpoint_id": "rejectClaim",
+          "method": "PUT",
+          "path": "/api/claims/{claimId}/reject",
+          "description": "Reject expense claim",
+          "required_fields": [
+            "reason",
+            "claimId"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "requestClaimInfo",
+          "method": "PUT",
+          "path": "/api/claims/{claimId}/request-info",
+          "description": "Request additional documents",
+          "required_fields": [
+            "infoRequired",
+            "claimId"
+          ],
+          "roles": [
+            "MANAGER",
+            "FINANCE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "reimburseClaim",
+          "method": "PUT",
+          "path": "/api/claims/{claimId}/reimburse",
+          "description": "Process reimbursement",
+          "required_fields": [
+            "paymentMethod",
+            "claimId"
+          ],
+          "roles": [
+            "FINANCE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getPendingReimbursements",
+          "method": "GET",
+          "path": "/api/claims/finance/pending-reimbursement",
+          "description": "View approved claims pending reimbursement",
+          "roles": [
+            "FINANCE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getClaimReports",
+          "method": "GET",
+          "path": "/api/claims/reports/monthly/{month}",
+          "description": "View monthly expense reports",
+          "roles": [
+            "FINANCE",
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "month"
+          ]
+        }
+      ]
+    },
+    "payroll": {
+      "module_name": "Payroll & Salary",
+      "endpoints": [
+        {
+          "endpoint_id": "getPayslip",
+          "method": "GET",
+          "path": "/api/v1/payslips/{employeeId}",
+          "description": "View payslip",
+          "query_params": [
+            "month",
+            "year"
+          ],
+          "response_example": {
+            "month": "GENERIC_STRING",
+            "year": 0,
+            "grossSalary": 0,
+            "deductions": 0,
+            "netSalary": 0,
+            "components": {
+              "basic": 0,
+              "hra": 0,
+              "da": 0,
+              "allowances": 0
+            }
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "downloadPayslip",
+          "method": "GET",
+          "path": "/api/v1/payslips/{employeeId}/download",
+          "description": "Download payslip as PDF",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getCompensation",
+          "method": "GET",
+          "path": "/api/compensation/{employeeId}",
+          "description": "View compensation details and CTC",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getTaxSummary",
+          "method": "GET",
+          "path": "/api/payslips/{employeeId}/tax-summary",
+          "description": "View tax deduction summary and Form 16",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "createSalaryComponent",
+          "method": "POST",
+          "path": "/api/salary-components/create",
+          "description": "Define salary component (Admin)",
+          "required_fields": [
+            "componentName",
+            "type",
+            "isTaxable"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "configurePayrollStructure",
+          "method": "POST",
+          "path": "/api/payroll/structure",
+          "description": "Configure payroll calculation rules",
+          "required_fields": [
+            "basicFormula",
+            "allowances",
+            "deductions"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "processPayroll",
+          "method": "POST",
+          "path": "/api/payroll/process/{month}/{year}",
+          "description": "Process monthly payroll for all employees",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "month",
+            "year"
+          ]
+        },
+        {
+          "endpoint_id": "adjustSalaryComponent",
+          "method": "PUT",
+          "path": "/api/payroll/{employeeId}/adjust-component",
+          "description": "Adjust salary component for employee",
+          "required_fields": [
+            "componentId",
+            "newAmount"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "tickets": {
+      "module_name": "Helpdesk & Ticket Management",
+      "endpoints": [
+        {
+          "endpoint_id": "submitTicket",
+          "method": "POST",
+          "path": "/api/tickets/submit",
+          "description": "Submit IT/HR helpdesk ticket",
+          "required_fields": [
+            "category",
+            "title",
+            "description"
+          ],
+          "optional_fields": [
+            "priority",
+            "attachments"
+          ],
+          "response_example": {
+            "ticketId": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "submittedDate": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "saveDraftTicket",
+          "method": "POST",
+          "path": "/api/tickets/draft",
+          "description": "Save ticket as draft",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getMyTickets",
+          "method": "GET",
+          "path": "/api/tickets/my-tickets/{employeeId}",
+          "description": "View submitted tickets",
+          "query_params": [
+            "status"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getTicketDetails",
+          "method": "GET",
+          "path": "/api/tickets/{ticketId}",
+          "description": "View ticket details",
+          "roles": [
+            "EMPLOYEE",
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "ticketId"
+          ]
+        },
+        {
+          "endpoint_id": "downloadTicketAttachment",
+          "method": "GET",
+          "path": "/api/tickets/download/{ticketId}",
+          "description": "Download ticket attachment",
+          "roles": [
+            "EMPLOYEE",
+            "HELPDESK"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "ticketId"
+          ]
+        },
+        {
+          "endpoint_id": "getAllTickets",
+          "method": "GET",
+          "path": "/api/tickets/all",
+          "description": "View all tickets (Helpdesk admin)",
+          "query_params": [
+            "category",
+            "priority",
+            "status"
+          ],
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "assignTicket",
+          "method": "PUT",
+          "path": "/api/tickets/assign/{ticketId}/{employeeId}",
+          "description": "Assign ticket to helpdesk agent",
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "ticketId"
+          ]
+        },
+        {
+          "endpoint_id": "reassignTicket",
+          "method": "PUT",
+          "path": "/api/tickets/reassign/{ticketId}",
+          "description": "Reassign ticket to different agent",
+          "required_fields": [
+            "newAssigneeId",
+            "ticketId"
+          ],
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "updateTicketStatus",
+          "method": "PUT",
+          "path": "/api/tickets/update-status/{ticketId}",
+          "description": "Update ticket status",
+          "required_fields": [
+            "status",
+            "ticketId"
+          ],
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "resolveTicket",
+          "method": "PUT",
+          "path": "/api/tickets/resolve/{ticketId}",
+          "description": "Mark ticket as resolved",
+          "required_fields": [
+            "resolutionSummary",
+            "ticketId"
+          ],
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "reopenTicket",
+          "method": "PUT",
+          "path": "/api/tickets/reopen/{ticketId}",
+          "description": "Reopen resolved ticket",
+          "required_fields": [
+            "reason",
+            "ticketId"
+          ],
+          "roles": [
+            "EMPLOYEE",
+            "HELPDESK"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "cancelTicket",
+          "method": "PUT",
+          "path": "/api/tickets/cancel/{ticketId}",
+          "description": "Cancel ticket",
+          "required_fields": [
+            "reason",
+            "ticketId"
+          ],
+          "roles": [
+            "EMPLOYEE",
+            "HELPDESK"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getTeamTickets",
+          "method": "GET",
+          "path": "/api/tickets/team-tickets",
+          "description": "View team's assigned tickets",
+          "roles": [
+            "HELPDESK",
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getTicketReports",
+          "method": "GET",
+          "path": "/api/tickets/reports",
+          "description": "View ticket analytics and reports",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "submitChangeRequest",
+          "method": "POST",
+          "path": "/api/tickets/change-request/submit",
+          "description": "Submit change request requiring manager approval",
+          "required_fields": [
+            "changeDescription",
+            "justification"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "managerApproveTicket",
+          "method": "PUT",
+          "path": "/api/tickets/manager/approve/{ticketId}",
+          "description": "Manager approve change request",
+          "optional_fields": [
+            "comment"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "ticketId"
+          ]
+        },
+        {
+          "endpoint_id": "managerRejectTicket",
+          "method": "PUT",
+          "path": "/api/tickets/manager/reject/{ticketId}",
+          "description": "Manager reject change request",
+          "required_fields": [
+            "reason",
+            "ticketId"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "performance": {
+      "module_name": "Performance Management & Appraisals",
+      "endpoints": [
+        {
+          "endpoint_id": "getEmployeeGoals",
+          "method": "GET",
+          "path": "/api/performance-goals/employee/{employeeId}",
+          "description": "View assigned performance goals",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "updateGoalStatus",
+          "method": "PUT",
+          "path": "/api/performance-goals/{goalId}/status",
+          "description": "Update goal progress status",
+          "required_fields": [
+            "status",
+            "completionPercentage",
+            "goalId"
+          ],
+          "optional_fields": [
+            "notes"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "submitSelfAssessment",
+          "method": "POST",
+          "path": "/api/self-assessments/save",
+          "description": "Submit self-assessment during appraisal",
+          "required_fields": [
+            "appraisalCycle",
+            "keyAccomplishments"
+          ],
+          "optional_fields": [
+            "goalAchievements",
+            "challenges",
+            "learningOutcomes"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getManagerFeedback",
+          "method": "GET",
+          "path": "/api/performance-goals/{goalId}/manager-feedback",
+          "description": "View manager feedback on goal",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "goalId"
+          ]
+        },
+        {
+          "endpoint_id": "getTeamGoals",
+          "method": "GET",
+          "path": "/api/performance-goals/manager/{managerId}/employee-goals",
+          "description": "View all subordinates' goals",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "assignGoal",
+          "method": "POST",
+          "path": "/api/performance-goals/assign",
+          "description": "Assign goal to employee",
+          "required_fields": [
+            "goalDescription",
+            "deadline",
+            "weight"
+          ],
+          "optional_fields": [
+            "keyResults"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "provideManagerFeedback",
+          "method": "PUT",
+          "path": "/api/performance-goals/{goalId}/manager-feedback",
+          "description": "Provide manager feedback and rating",
+          "required_fields": [
+            "rating",
+            "comments",
+            "goalId"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getTeamSelfAssessments",
+          "method": "GET",
+          "path": "/api/performance-goals/manager/{managerId}/self-assessments",
+          "description": "View team's self-assessments",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getReviewerEmployees",
+          "method": "GET",
+          "path": "/api/performance-goals/reviewer/{reviewerId}/employees",
+          "description": "View employees pending reviewer appraisal",
+          "roles": [
+            "REVIEWER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "reviewerId"
+          ]
+        },
+        {
+          "endpoint_id": "addReviewerComments",
+          "method": "PUT",
+          "path": "/api/performance-goals/{goalId}/reviewer-comments",
+          "description": "Add reviewer comments and final rating",
+          "required_fields": [
+            "finalRating",
+            "comments",
+            "goalId"
+          ],
+          "optional_fields": [
+            "promotionRecommendation"
+          ],
+          "roles": [
+            "REVIEWER",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "finalizeAppraisal",
+          "method": "PUT",
+          "path": "/api/performance-goals/{goalId}/finalize",
+          "description": "Finalize appraisal",
+          "roles": [
+            "REVIEWER",
+            "HR"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "goalId"
+          ]
+        }
+      ]
+    },
+    "assets": {
+      "module_name": "Asset Management",
+      "endpoints": [
+        {
+          "endpoint_id": "getAllocatedAssets",
+          "method": "GET",
+          "path": "/api/assets/allocated/{employeeId}",
+          "description": "View allocated assets",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "requestAsset",
+          "method": "POST",
+          "path": "/api/assets/request",
+          "description": "Request new device/asset",
+          "required_fields": [
+            "assetType",
+            "quantity",
+            "justification"
+          ],
+          "response_example": {
+            "requestId": "GENERIC_STRING",
+            "status": "GENERIC_STRING"
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "reportAssetIssue",
+          "method": "POST",
+          "path": "/api/assets/report-issue/{assetId}",
+          "description": "Report asset malfunction",
+          "required_fields": [
+            "issueDescription",
+            "severity",
+            "assetId"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getAssetRequestStatus",
+          "method": "GET",
+          "path": "/api/assets/request/{requestId}",
+          "description": "Track asset request status",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "requestId"
+          ]
+        },
+        {
+          "endpoint_id": "getPendingAssetRequests",
+          "method": "GET",
+          "path": "/api/assets/requests/pending/{managerId}",
+          "description": "View pending asset requests",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "approveAssetRequest",
+          "method": "PUT",
+          "path": "/api/assets/requests/{requestId}/approve",
+          "description": "Approve asset request",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "requestId"
+          ]
+        },
+        {
+          "endpoint_id": "getAssetInventory",
+          "method": "GET",
+          "path": "/api/assets/inventory",
+          "description": "View all company assets",
+          "query_params": [
+            "category",
+            "status",
+            "location"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "allocateAsset",
+          "method": "POST",
+          "path": "/api/assets/allocate/{assetId}/{employeeId}",
+          "description": "Allocate asset to employee",
+          "required_fields": [
+            "allocationDate",
+            "assetId"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "deallocateAsset",
+          "method": "PUT",
+          "path": "/api/assets/deallocate/{assetId}",
+          "description": "Deallocate asset",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "assetId"
+          ]
+        },
+        {
+          "endpoint_id": "createAssetMaster",
+          "method": "POST",
+          "path": "/api/assets/master/create",
+          "description": "Create asset master record",
+          "required_fields": [
+            "assetName",
+            "model",
+            "serialNumber",
+            "category",
+            "cost"
+          ],
+          "optional_fields": [
+            "warrantyDate"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "startAssetAudit",
+          "method": "POST",
+          "path": "/api/assets/audit/start",
+          "description": "Start asset audit process",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "updateAssetAudit",
+          "method": "PUT",
+          "path": "/api/assets/audit/{assetId}",
+          "description": "Update asset audit record",
+          "required_fields": [
+            "condition",
+            "location",
+            "assetId"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getAssetUtilizationReport",
+          "method": "GET",
+          "path": "/api/assets/reports/utilization",
+          "description": "View asset utilization analytics",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getAssetDepreciationReport",
+          "method": "GET",
+          "path": "/api/assets/reports/depreciation",
+          "description": "View asset depreciation report",
+          "roles": [
+            "ADMIN",
+            "FINANCE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        }
+      ]
+    },
+    "directory": {
+      "module_name": "Employee Directory & Org Chart",
+      "endpoints": [
+        {
+          "endpoint_id": "searchEmployees",
+          "method": "GET",
+          "path": "/api/employees/search",
+          "description": "Search coworkers by name/designation",
+          "query_params": [
+            "query",
+            "department"
+          ],
+          "response_example": [
+            {
+              "employeeId": "GENERIC_STRING",
+              "name": "GENERIC_STRING",
+              "designation": "GENERIC_STRING",
+              "department": "GENERIC_STRING",
+              "email": "GENERIC_STRING",
+              "phone": "GENERIC_STRING",
+              "managerId": "GENERIC_STRING"
+            }
+          ],
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getOrgChart",
+          "method": "GET",
+          "path": "/api/org-chart",
+          "description": "View organization hierarchy",
+          "headers_required": [
+            "X-Tenant-ID"
+          ],
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getEmployeeOverview",
+          "method": "GET",
+          "path": "/api/organization-overview/{employeeId}",
+          "description": "View employee profile and reporting structure",
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "updateProfile",
+          "method": "PUT",
+          "path": "/api/employees/{employeeId}",
+          "description": "Update employee profile (self)",
+          "optional_fields": [
+            "phone",
+            "personalEmail",
+            "address",
+            "emergencyContact"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "updateProfessionalInfo",
+          "method": "PUT",
+          "path": "/api/employee-profile/{employeeId}",
+          "description": "Update professional info (LinkedIn, skills, certifications)",
+          "optional_fields": [
+            "linkedinUrl",
+            "skills",
+            "certifications",
+            "languages"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getTeamMembers",
+          "method": "GET",
+          "path": "/api/organization/{managerId}/team",
+          "description": "View direct reports",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getOrgChartConfig",
+          "method": "GET",
+          "path": "/api/org-chart-config/columns",
+          "description": "View current org chart display configuration",
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "saveOrgChartConfig",
+          "method": "POST",
+          "path": "/api/org-chart-config/columns",
+          "description": "Configure org chart display columns",
+          "required_fields": [
+            "visibleColumns"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "recruitment": {
+      "module_name": "Recruitment & Onboarding",
+      "endpoints": [
+        {
+          "endpoint_id": "getApplicantsByRole",
+          "method": "GET",
+          "path": "/api/applicants/by-role/{roleId}",
+          "description": "View applicant pipeline for role",
+          "roles": [
+            "RECRUITER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "roleId"
+          ]
+        },
+        {
+          "endpoint_id": "updateApplicantStatus",
+          "method": "PUT",
+          "path": "/api/applicants/{applicantId}/status",
+          "description": "Update applicant stage",
+          "required_fields": [
+            "status",
+            "applicantId"
+          ],
+          "roles": [
+            "RECRUITER",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "uploadApplicantDocuments",
+          "method": "POST",
+          "path": "/api/applicants/{applicantId}/documents",
+          "description": "Upload resume/certificates",
+          "required_fields": [
+            "documents",
+            "applicantId"
+          ],
+          "roles": [
+            "RECRUITER",
+            "HR"
+          ],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "generateOfferLetter",
+          "method": "POST",
+          "path": "/api/offer-letters/generate",
+          "description": "Generate and send offer letter",
+          "required_fields": [
+            "applicantId",
+            "position",
+            "salary",
+            "joiningDate"
+          ],
+          "roles": [
+            "RECRUITER",
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "createPreOnboarding",
+          "method": "POST",
+          "path": "/api/pre-onboarding/create",
+          "description": "Start pre-onboarding process",
+          "required_fields": [
+            "applicantId",
+            "joiningDate",
+            "department"
+          ],
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getPreOnboardingStatus",
+          "method": "GET",
+          "path": "/api/pre-onboarding/{applicantId}",
+          "description": "Track pre-onboarding progress",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "applicantId"
+          ]
+        },
+        {
+          "endpoint_id": "acknowledgePolicy",
+          "method": "POST",
+          "path": "/api/policy-acknowledgment/acknowledge",
+          "description": "Acknowledge company policy",
+          "required_fields": [
+            "policyId"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "uploadOnboardingDocuments",
+          "method": "POST",
+          "path": "/api/onboarding/documents/upload",
+          "description": "Upload pre-onboarding documents (ID, address proof, bank details)",
+          "required_fields": [
+            "documents"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "submitITSetup",
+          "method": "POST",
+          "path": "/api/onboarding/it-setup/request",
+          "description": "Submit IT setup requirements",
+          "required_fields": [
+            "laptopPreference",
+            "mobileRequired"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "exit": {
+      "module_name": "Exit & Resignation Management",
+      "endpoints": [
+        {
+          "endpoint_id": "submitResignation",
+          "method": "POST",
+          "path": "/api/resignations/submit",
+          "description": "File resignation",
+          "required_fields": [
+            "lastWorkingDay"
+          ],
+          "optional_fields": [
+            "reason",
+            "documents"
+          ],
+          "date_format": "yyyy-MM-dd",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getResignationStatus",
+          "method": "GET",
+          "path": "/api/resignations/{employeeId}",
+          "description": "Track resignation and exit status",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getExitForm",
+          "method": "GET",
+          "path": "/api/exit-forms/{employeeId}",
+          "description": "Fetch exit form template",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "submitExitForm",
+          "method": "POST",
+          "path": "/api/exit-forms/submit",
+          "description": "Submit exit interview form",
+          "required_fields": [
+            "feedback"
+          ],
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "managerApproveResignation",
+          "method": "PUT",
+          "path": "/api/resignations/{employeeId}/manager-approve",
+          "description": "Manager approve resignation",
+          "optional_fields": [
+            "comment"
+          ],
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "assignHandover",
+          "method": "PUT",
+          "path": "/api/resignations/{employeeId}/assign-handover/{newOwnerEmpId}",
+          "description": "Assign knowledge transfer to replacement",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "newOwnerEmpId"
+          ]
+        },
+        {
+          "endpoint_id": "getPendingResignations",
+          "method": "GET",
+          "path": "/api/resignations/pending",
+          "description": "View all pending resignations",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getClearanceChecklist",
+          "method": "GET",
+          "path": "/api/clearances/{employeeId}/checklist",
+          "description": "View exit clearance checklist",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "markClearanceItem",
+          "method": "PUT",
+          "path": "/api/clearances/{employeeId}/checklist/{itemId}",
+          "description": "Mark clearance item complete",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "itemId"
+          ]
+        },
+        {
+          "endpoint_id": "generateSettlement",
+          "method": "POST",
+          "path": "/api/settlements/generate/{employeeId}",
+          "description": "Generate full & final settlement",
+          "roles": [
+            "HR",
+            "FINANCE"
+          ],
+          "requires_confirmation": true,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getExitReports",
+          "method": "GET",
+          "path": "/api/exits/reports",
+          "description": "View attrition and exit analytics",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        }
+      ]
+    },
+    "grievances": {
+      "module_name": "Grievances & Anonymous Complaints",
+      "endpoints": [
+        {
+          "endpoint_id": "fileGrievance",
+          "method": "POST",
+          "path": "/api/grievances/file",
+          "description": "File anonymous grievance",
+          "required_fields": [
+            "category",
+            "description"
+          ],
+          "optional_fields": [
+            "incidentDate",
+            "attachments"
+          ],
+          "response_example": {
+            "grievanceId": "GENERIC_STRING",
+            "status": "GENERIC_STRING",
+            "isAnonymous": true
+          },
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getGrievanceStatus",
+          "method": "GET",
+          "path": "/api/grievances/{grievanceId}",
+          "description": "Track grievance status",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "grievanceId"
+          ]
+        },
+        {
+          "endpoint_id": "getAllGrievances",
+          "method": "GET",
+          "path": "/api/admin/grievances",
+          "description": "View all filed grievances (Admin)",
+          "query_params": [
+            "status",
+            "category"
+          ],
+          "roles": [
+            "ADMIN",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "investigateGrievance",
+          "method": "PUT",
+          "path": "/api/admin/grievances/{grievanceId}",
+          "description": "Add investigation notes",
+          "required_fields": [
+            "investigationNotes",
+            "grievanceId"
+          ],
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "closeGrievance",
+          "method": "PUT",
+          "path": "/api/admin/grievances/{grievanceId}",
+          "description": "Close grievance with resolution",
+          "required_fields": [
+            "resolutionSummary",
+            "actionTaken",
+            "grievanceId"
+          ],
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "downloadGrievanceAttachment",
+          "method": "GET",
+          "path": "/api/admin/grievances/{grievanceId}/attachment",
+          "description": "Download supporting documents",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "grievanceId"
+          ]
+        },
+        {
+          "endpoint_id": "getGrievanceReports",
+          "method": "GET",
+          "path": "/api/admin/grievances/reports",
+          "description": "View grievance analytics",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        }
+      ]
+    },
+    "admin": {
+      "module_name": "Admin Configuration & Governance",
+      "endpoints": [
+        {
+          "endpoint_id": "saveAdminAccess",
+          "method": "POST",
+          "path": "/api/v1/admin-access/save",
+          "description": "Assign admin role",
+          "required_fields": [
+            "roleName",
+            "employeeIds"
+          ],
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "saveTravelAdmin",
+          "method": "POST",
+          "path": "/api/v1/admin-access/travel-admin/save",
+          "description": "Assign travel admin role",
+          "required_fields": [
+            "employeeIds"
+          ],
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getAdminIds",
+          "method": "GET",
+          "path": "/api/v1/admin-access/{roleName}",
+          "description": "Get IDs under admin role",
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "roleName"
+          ]
+        },
+        {
+          "endpoint_id": "checkAdminRole",
+          "method": "GET",
+          "path": "/api/v1/admin-access/check",
+          "description": "Verify if user has admin role",
+          "query_params": [
+            "roleName",
+            "employeeId"
+          ],
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "saveDocumentCategory",
+          "method": "POST",
+          "path": "/api/v1/admin-access/categories/save",
+          "description": "Create document category",
+          "required_fields": [
+            "label"
+          ],
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "getDocumentCategories",
+          "method": "GET",
+          "path": "/api/v1/admin-access/categories",
+          "description": "List all document categories",
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "deleteDocumentCategory",
+          "method": "DELETE",
+          "path": "/api/v1/admin-access/categories/{id}",
+          "description": "Delete document category",
+          "roles": [
+            "SUPERADMIN"
+          ],
+          "requires_confirmation": true,
+          "required_fields": [
+            "id"
+          ]
+        },
+        {
+          "endpoint_id": "configureModuleAccess",
+          "method": "POST",
+          "path": "/api/module-access/configure/{employeeId}",
+          "description": "Grant/revoke module access",
+          "required_fields": [
+            "modules"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "defineWorkflow",
+          "method": "POST",
+          "path": "/api/workflows/define",
+          "description": "Define approval workflow rules",
+          "required_fields": [
+            "workflowName",
+            "approvalLevels"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        },
+        {
+          "endpoint_id": "configureRolePermissions",
+          "method": "PUT",
+          "path": "/api/roles/{roleId}/permissions",
+          "description": "Configure role permissions",
+          "required_fields": [
+            "permissions",
+            "roleId"
+          ],
+          "roles": [
+            "ADMIN"
+          ],
+          "requires_confirmation": true
+        }
+      ]
+    },
+    "analytics": {
+      "module_name": "Analytics & Insights",
+      "endpoints": [
+        {
+          "endpoint_id": "getAnalyticsSummary",
+          "method": "GET",
+          "path": "/api/analytics/summary",
+          "description": "Get KPI metrics dashboard",
+          "query_params": [
+            "role",
+            "department"
+          ],
+          "response_example": {
+            "totalEmployees": 0,
+            "activeLeaves": 0,
+            "pendingApprovals": 0,
+            "attritionCount": 0,
+            "flightRisk": 0,
+            "burnoutRisk": 0
+          },
+          "roles": [
+            "MANAGER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getAIInsights",
+          "method": "GET",
+          "path": "/api/analytics/insights",
+          "description": "Get AI-generated actionable insights",
+          "roles": [
+            "MANAGER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getDeepAnalytics",
+          "method": "GET",
+          "path": "/api/v1/analytics/deep",
+          "description": "Get deep attendance analytics",
+          "roles": [
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getLeaveAnalytics",
+          "method": "GET",
+          "path": "/api/analytics/leave/{departmentId}",
+          "description": "Get leave usage by department",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "departmentId"
+          ]
+        },
+        {
+          "endpoint_id": "getPerformanceAnalytics",
+          "method": "GET",
+          "path": "/api/performance-analytics/department/{deptId}",
+          "description": "Get department performance metrics",
+          "roles": [
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "deptId"
+          ]
+        }
+      ]
+    },
+    "notifications": {
+      "module_name": "Notifications & Task Counts",
+      "endpoints": [
+        {
+          "endpoint_id": "getTaskCounts",
+          "method": "GET",
+          "path": "/api/task-counts/{employeeId}",
+          "description": "Get pending task counts across modules",
+          "response_example": {
+            "claims": 0,
+            "leaves": 0,
+            "travel": 0,
+            "helpdesk": 0,
+            "exit": 0,
+            "total": 0
+          },
+          "roles": [
+            "EMPLOYEE",
+            "MANAGER"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "getNotifications",
+          "method": "GET",
+          "path": "/api/notifications/{employeeId}",
+          "description": "Fetch all notifications",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        },
+        {
+          "endpoint_id": "markNotificationRead",
+          "method": "POST",
+          "path": "/api/notifications/read/{id}",
+          "description": "Mark notification as read",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": [
+            "id"
+          ]
+        },
+        {
+          "endpoint_id": "markAllNotificationsRead",
+          "method": "POST",
+          "path": "/api/notifications/read-all/{employeeId}",
+          "description": "Mark all notifications as read",
+          "roles": [
+            "EMPLOYEE"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        }
+      ]
+    },
+    "home_dashboard": {
+      "module_name": "Home Dashboard & Overview",
+      "endpoints": [
+        {
+          "endpoint_id": "getMyWeeklyHours",
+          "method": "GET",
+          "path": "/api/v1/analytics/me",
+          "description": "Get my logged hours and target hours for the week (Weekly Hours Overview)",
+          "required_fields": [
+            "startDate",
+            "endDate"
+          ],
+          "optional_fields": [],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "getUpcomingHolidays",
+          "method": "GET",
+          "path": "/api/v1/holidays/employee/{employeeId}",
+          "description": "Get upcoming public holidays for my location",
+          "required_fields": [],
+          "optional_fields": [],
+          "requires_confirmation": false
+        },
+        {
+          "endpoint_id": "getRecentActivities",
+          "method": "GET",
+          "path": "/api/audit/user/{employeeId}",
+          "description": "Get my recent activities and system events",
+          "required_fields": [],
+          "optional_fields": [],
+          "requires_confirmation": false
+        }
+      ]
+    },
+    "my_tasks": {
+      "module_name": "My Tasks",
+      "endpoints": [
+        {
+          "endpoint_id": "getMyUnifiedTasks",
+          "method": "GET",
+          "path": "/api/agent/virtual/my-tasks",
+          "description": "Fetch my tasks, pending approvals, and manager actions. Always use this when the user asks for 'my tasks' or 'pending approvals'.",
+          "roles": [
+            "MANAGER",
+            "HR"
+          ],
+          "requires_confirmation": false,
+          "required_fields": []
+        }
+      ]
+    }
+  }
+}
