@@ -1,0 +1,585 @@
+ui name,user intent,capability,java controler name,description,api name,end point
+Analytics Module,Get Analytics Summary,Analytics,AnalyticsController,Auto-generated OpenAPI description for Get Analytics Summary,getAnalyticsSummary,/api/analytics/summary
+Analytics Module,Get Ai Insights,Analytics,AnalyticsController,Auto-generated OpenAPI description for Get Ai Insights,getAiInsights,/api/analytics/insights
+AssetDropdownOption Module,Get Options,AssetDropdownOption,AssetDropdownOptionController,Auto-generated OpenAPI description for Get Options,getOptions,/api/assets/options/{type}
+AssetDropdownOption Module,Get Batch Options,AssetDropdownOption,AssetDropdownOptionController,Auto-generated OpenAPI description for Get Batch Options,getBatchOptions,/api/assets/options/batch
+AssetDropdownOption Module,Add Option,AssetDropdownOption,AssetDropdownOptionController,Auto-generated OpenAPI description for Add Option,addOption,/api/assets/options/{type}
+AssetDropdownOption Module,Delete Option,AssetDropdownOption,AssetDropdownOptionController,Auto-generated OpenAPI description for Delete Option,deleteOption,/api/assets/options/{id}
+AssetDropdownOption Module,Update Option,AssetDropdownOption,AssetDropdownOptionController,Auto-generated OpenAPI description for Update Option,updateOption,/api/assets/options/{id}
+Sow Module,Get Sows By Customer,Sow,SowController,Auto-generated OpenAPI description for Get Sows By Customer,getSowsByCustomer,/api/sows/customer/{customerId}
+Sow Module,Download Sow Document,Sow,SowController,Auto-generated OpenAPI description for Download Sow Document,downloadSowDocument,/api/sows/{id}/download
+Sow Module,Update Sow,Sow,SowController,Auto-generated OpenAPI description for Update Sow,updateSow,/api/sows/{sowId}
+Payslip Module,API Endpoint,Payslip,PayslipController,Auto-generated OpenAPI description,savePayslip,/api/v1/payslips/save
+Payslip Module,If,Payslip,PayslipController,Auto-generated OpenAPI description for If,uploadPayslipExcel,/api/v1/payslips/upload
+Payslip Module,If,Payslip,PayslipController,Auto-generated OpenAPI description for If,getPayslipByEmployee,/api/v1/payslips/by-employee/{employeeId}
+Payslip Module,API Endpoint,Payslip,PayslipController,Auto-generated OpenAPI description,generatePayslips,/api/v1/payslips/generate
+Payslip Module,Return,Payslip,PayslipController,Auto-generated OpenAPI description for Return,get,/api/v1/payslips/{id}
+Payslip Module,If,Payslip,PayslipController,Auto-generated OpenAPI description for If,getPayslipByEmployeeAndMonth,/api/v1/payslips/by-employee/{employeeId}/month/{month}
+Ticket Module,Submit Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Submit Ticket,submitTicket,/api/tickets/submit
+Ticket Module,Submit Change Request,Ticket,TicketController,Auto-generated OpenAPI description for Submit Change Request,submitChangeRequest,/api/tickets/change-request/submit
+Ticket Module,Get My Tickets,Ticket,TicketController,Auto-generated OpenAPI description for Get My Tickets,getMyTickets,/api/tickets/my-tickets/{employeeId}
+Ticket Module,If,Ticket,TicketController,Auto-generated OpenAPI description for If,downloadAttachment,/api/tickets/download/{ticketId}
+Ticket Module,Get All Tickets,Ticket,TicketController,Auto-generated OpenAPI description for Get All Tickets,getAllTickets,/api/tickets/all
+Ticket Module,Assign Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Assign Ticket,assignTicket,/api/tickets/assign/{ticketId}/{employeeId}
+Ticket Module,Update Ticket Status,Ticket,TicketController,Auto-generated OpenAPI description for Update Ticket Status,updateTicketStatus,/api/tickets/update-status/{ticketId}
+Ticket Module,Get Team Tickets,Ticket,TicketController,Auto-generated OpenAPI description for Get Team Tickets,getTeamTickets,/api/tickets/team-tickets
+Ticket Module,Approve By Manager,Ticket,TicketController,Auto-generated OpenAPI description for Approve By Manager,approveByManager,/api/tickets/manager/approve/{ticketId}
+Ticket Module,Reject By Manager,Ticket,TicketController,Auto-generated OpenAPI description for Reject By Manager,rejectByManager,/api/tickets/manager/reject/{ticketId}
+Ticket Module,Get Tickets For Manager,Ticket,TicketController,Auto-generated OpenAPI description for Get Tickets For Manager,getTicketsForManager,/api/tickets/manager/{managerId}
+Ticket Module,Debug Manager Assignments,Ticket,TicketController,Auto-generated OpenAPI description for Debug Manager Assignments,debugManagerAssignments,/api/tickets/manager/{managerId}/debug
+Ticket Module,Transfer Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Transfer Ticket,transferTicket,/api/tickets/transfer/{ticketId}
+Ticket Module,Reassign Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Reassign Ticket,reassignTicket,/api/tickets/reassign/{ticketId}
+Ticket Module,Resolve Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Resolve Ticket,resolveTicket,/api/tickets/resolve/{ticketId}
+Ticket Module,Reopen Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Reopen Ticket,reopenTicket,/api/tickets/reopen/{ticketId}
+Ticket Module,Resend Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Resend Ticket,resendTicket,/api/tickets/resend/{ticketId}
+Ticket Module,Resubmit Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Resubmit Ticket,resubmitTicket,/api/tickets/resubmit/{ticketId}
+Ticket Module,Cancel Ticket,Ticket,TicketController,Auto-generated OpenAPI description for Cancel Ticket,cancelTicket,/api/tickets/cancel/{ticketId}
+Ticket Module,Get Helpdesk Report,Ticket,TicketController,Auto-generated OpenAPI description for Get Helpdesk Report,getHelpdeskReport,/api/tickets/reports
+Ticket Module,Save Draft,Ticket,TicketController,Auto-generated OpenAPI description for Save Draft,saveDraft,/api/tickets/draft
+Ticket Module,Save Change Request Draft,Ticket,TicketController,Auto-generated OpenAPI description for Save Change Request Draft,saveChangeRequestDraft,/api/tickets/change-request/draft
+Ticket Module,Get Drafts,Ticket,TicketController,Auto-generated OpenAPI description for Get Drafts,getDrafts,/api/tickets/drafts/{employeeId}
+Ticket Module,Get Change Request Drafts,Ticket,TicketController,Auto-generated OpenAPI description for Get Change Request Drafts,getChangeRequestDrafts,/api/tickets/change-request/drafts/{employeeId}
+Ticket Module,Delete Draft,Ticket,TicketController,Auto-generated OpenAPI description for Delete Draft,deleteDraft,/api/tickets/draft/{draftId}
+Ticket Module,Delete Change Request Draft,Ticket,TicketController,Auto-generated OpenAPI description for Delete Change Request Draft,deleteChangeRequestDraft,/api/tickets/change-request/draft/{draftId}
+KnowledgeHub Module,Upload,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Upload,upload,/api/knowledge-hub/upload
+KnowledgeHub Module,Get Latest,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Get Latest,getLatest,/api/knowledge-hub/latest
+KnowledgeHub Module,Get All,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Get All,getAll,/api/knowledge-hub/all
+KnowledgeHub Module,If,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for If,serveFile,/api/knowledge-hub/file/{id}
+KnowledgeHub Module,Delete Handbook,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Delete Handbook,deleteHandbook,/api/knowledge-hub/delete/{id}
+KnowledgeHub Module,Get Categories,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Get Categories,getCategories,/api/knowledge-hub/categories
+KnowledgeHub Module,Add Category,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Add Category,addCategory,/api/knowledge-hub/categories
+KnowledgeHub Module,Delete Category,KnowledgeHub,KnowledgeHubController,Auto-generated OpenAPI description for Delete Category,deleteCategory,/api/knowledge-hub/categories/{id}
+AssetAllocation Module,Process Return,AssetAllocation,AssetAllocationController,Auto-generated OpenAPI description for Process Return,processReturn,/api/assets/allocations/{id}/return
+AssetAllocation Module,Delete Allocation,AssetAllocation,AssetAllocationController,Auto-generated OpenAPI description for Delete Allocation,deleteAllocation,/api/assets/allocations/{id}
+CompanyLocation Module,Get Location By Id,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Get Location By Id,getLocationById,/api/admin/company-locations/{id}
+CompanyLocation Module,Get Active Locations,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Get Active Locations,getActiveLocations,/api/admin/company-locations/active
+CompanyLocation Module,Get Inactive Locations,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Get Inactive Locations,getInactiveLocations,/api/admin/company-locations/inactive
+CompanyLocation Module,Update Location,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Update Location,updateLocation,/api/admin/company-locations/{id}
+CompanyLocation Module,Delete Location,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Delete Location,deleteLocation,/api/admin/company-locations/{id}
+CompanyLocation Module,Permanently Delete Location,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Permanently Delete Location,permanentlyDeleteLocation,/api/admin/company-locations/{id}/permanent
+CompanyLocation Module,Search Locations,CompanyLocation,CompanyLocationController,Auto-generated OpenAPI description for Search Locations,searchLocations,/api/admin/company-locations/search
+AppointmentLetter Module,If,AppointmentLetter,AppointmentLetterController,Auto-generated OpenAPI description for If,generateAppointment,/api/v1/letters/appointment/{applicantId}/{templateName}
+AppointmentLetter Module,API Endpoint,AppointmentLetter,AppointmentLetterController,Auto-generated OpenAPI description,generateAppointmentPdf,/api/v1/letters/appointment/pdf/{applicantId}/{templateName}
+SalaryComponent Module,Update,SalaryComponent,SalaryComponentController,Auto-generated OpenAPI description for Update,update,/api/salary-components/{id}
+SalaryComponent Module,Delete,SalaryComponent,SalaryComponentController,Auto-generated OpenAPI description for Delete,delete,/api/salary-components/{id}
+Notification Module,Get Notifications,Notification,NotificationController,Auto-generated OpenAPI description for Get Notifications,getNotifications,/api/notifications/{employeeId}
+Notification Module,Mark As Read,Notification,NotificationController,Auto-generated OpenAPI description for Mark As Read,markAsRead,/api/notifications/read/{id}
+Notification Module,Mark All As Read,Notification,NotificationController,Auto-generated OpenAPI description for Mark All As Read,markAllAsRead,/api/notifications/read-all/{employeeId}
+Department Module,Get Department By Id,Department,DepartmentController,Auto-generated OpenAPI description for Get Department By Id,getDepartmentById,/api/departments/{id}
+Department Module,API Endpoint,Department,DepartmentController,Auto-generated OpenAPI description,deleteDepartment,/api/departments/{id}
+ITDeclarationCard Module,Get All Cards,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Get All Cards,getAllCards,/api/it-declaration-cards/all
+ITDeclarationCard Module,Get All Cards Absolute,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Get All Cards Absolute,getAllCardsAbsolute,/api/it-declaration-cards/absolute-all
+ITDeclarationCard Module,Get Active Cards,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Get Active Cards,getActiveCards,/api/it-declaration-cards/active
+ITDeclarationCard Module,Clone Configuration,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Clone Configuration,cloneConfiguration,/api/it-declaration-cards/clone
+ITDeclarationCard Module,Save Card,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Save Card,saveCard,/api/it-declaration-cards/save
+ITDeclarationCard Module,Delete Card,ITDeclarationCard,ITDeclarationCardController,Auto-generated OpenAPI description for Delete Card,deleteCard,/api/it-declaration-cards/{id}
+Customer Module,Download Msa,Customer,CustomerController,Auto-generated OpenAPI description for Download Msa,downloadMSA,/api/customers/{id}/download
+Customer Module,Get Customer By Id,Customer,CustomerController,Auto-generated OpenAPI description for Get Customer By Id,getCustomerById,/api/customers/{id}
+Customer Module,Get Customers For Employee,Customer,CustomerController,Auto-generated OpenAPI description for Get Customers For Employee,getCustomersForEmployee,/api/customers/employee/{employeeId}
+Customer Module,Update Customer,Customer,CustomerController,Auto-generated OpenAPI description for Update Customer,updateCustomer,/api/customers/{id}
+Resignation Module,Submit Resignation,Resignation,ResignationController,Auto-generated OpenAPI description for Submit Resignation,submitResignation,/api/v1/exit-management/resignations
+Resignation Module,Get All Resignations,Resignation,ResignationController,Auto-generated OpenAPI description for Get All Resignations,getAllResignations,/api/v1/exit-management/resignations
+Resignation Module,Get Resignation By Id,Resignation,ResignationController,Auto-generated OpenAPI description for Get Resignation By Id,getResignationById,/api/v1/exit-management/resignations/{id}
+Resignation Module,Update Resignation,Resignation,ResignationController,Auto-generated OpenAPI description for Update Resignation,updateResignation,/api/v1/exit-management/resignations/{id}
+Resignation Module,Delete Resignation,Resignation,ResignationController,Auto-generated OpenAPI description for Delete Resignation,deleteResignation,/api/v1/exit-management/resignations/{id}
+Resignation Module,Get Manager Pending Resignations,Resignation,ResignationController,Auto-generated OpenAPI description for Get Manager Pending Resignations,getManagerPendingResignations,/api/v1/exit-management/manager/pending-resignations
+Resignation Module,Approve Resignation By Manager,Resignation,ResignationController,Auto-generated OpenAPI description for Approve Resignation By Manager,approveResignationByManager,/api/v1/exit-management/manager/resignations/{id}/approve
+Resignation Module,Reject Resignation By Manager,Resignation,ResignationController,Auto-generated OpenAPI description for Reject Resignation By Manager,rejectResignationByManager,/api/v1/exit-management/manager/resignations/{id}/reject
+Resignation Module,Get Reviewer Pending Resignations,Resignation,ResignationController,Auto-generated OpenAPI description for Get Reviewer Pending Resignations,getReviewerPendingResignations,/api/v1/exit-management/reviewer/pending-resignations
+Resignation Module,Approve Resignation By Reviewer,Resignation,ResignationController,Auto-generated OpenAPI description for Approve Resignation By Reviewer,approveResignationByReviewer,/api/v1/exit-management/reviewer/resignations/{id}/approve
+Resignation Module,Reject Resignation By Reviewer,Resignation,ResignationController,Auto-generated OpenAPI description for Reject Resignation By Reviewer,rejectResignationByReviewer,/api/v1/exit-management/reviewer/resignations/{id}/reject
+Resignation Module,Approve Resignation By Hr,Resignation,ResignationController,Auto-generated OpenAPI description for Approve Resignation By Hr,approveResignationByHr,/api/v1/exit-management/hr/resignations/{id}/approve
+Resignation Module,Reject Resignation By Hr,Resignation,ResignationController,Auto-generated OpenAPI description for Reject Resignation By Hr,rejectResignationByHr,/api/v1/exit-management/hr/resignations/{id}/reject
+Resignation Module,Get Hr Assigned Resignations,Resignation,ResignationController,Auto-generated OpenAPI description for Get Hr Assigned Resignations,getHRAssignedResignations,/api/v1/exit-management/hr/approved-resignations
+Resignation Module,Edit Lwd By Hr,Resignation,ResignationController,Auto-generated OpenAPI description for Edit Lwd By Hr,editLwdByHr,/api/v1/exit-management/hr/resignations/{id}/edit-lwd
+Resignation Module,Edit Lwd By Manager,Resignation,ResignationController,Auto-generated OpenAPI description for Edit Lwd By Manager,editLwdByManager,/api/v1/exit-management/manager/resignations/{id}/edit-lwd
+Resignation Module,Get Finance Pending Resignations,Resignation,ResignationController,Auto-generated OpenAPI description for Get Finance Pending Resignations,getFinancePendingResignations,/api/v1/exit-management/finance/pending-resignations
+Resignation Module,Submit Hr Clearance,Resignation,ResignationController,Auto-generated OpenAPI description for Submit Hr Clearance,submitHrClearance,/api/v1/exit-management/hr/clearance/{id}
+Resignation Module,Submit Admin Clearance,Resignation,ResignationController,Auto-generated OpenAPI description for Submit Admin Clearance,submitAdminClearance,/api/v1/exit-management/admin/clearance/{id}
+Resignation Module,If,Resignation,ResignationController,Auto-generated OpenAPI description for If,downloadResignationDocument,/api/v1/exit-management/document/{id}
+Resignation Module,Submit Finance Settlement,Resignation,ResignationController,Auto-generated OpenAPI description for Submit Finance Settlement,submitFinanceSettlement,/api/v1/exit-management/finance/final-settlement/{id}
+Resignation Module,Reject By Admin,Resignation,ResignationController,Auto-generated OpenAPI description for Reject By Admin,rejectByAdmin,/api/v1/exit-management/admin/resignations/{id}/reject
+Resignation Module,Reject Resignation By Finance,Resignation,ResignationController,Auto-generated OpenAPI description for Reject Resignation By Finance,rejectResignationByFinance,/api/v1/exit-management/finance/resignations/{id}/reject
+Resignation Module,Get Pending Resignations For Admin,Resignation,ResignationController,Auto-generated OpenAPI description for Get Pending Resignations For Admin,getPendingResignationsForAdmin,/api/v1/exit-management/admin/pending-resignations
+Resignation Module,Update Status,Resignation,ResignationController,Auto-generated OpenAPI description for Update Status,updateStatus,/api/v1/exit-management/resignations/{id}/update-status
+Resignation Module,Add Exit Reason,Resignation,ResignationController,Auto-generated OpenAPI description for Add Exit Reason,addExitReason,/api/v1/exit-management/exit-reasons
+Resignation Module,Get All Reasons,Resignation,ResignationController,Auto-generated OpenAPI description for Get All Reasons,getAllReasons,/api/v1/exit-management/exit-reasons
+Resignation Module,Get Resignations Report,Resignation,ResignationController,Auto-generated OpenAPI description for Get Resignations Report,getResignationsReport,/api/v1/exit-management/reports
+Resignation Module,Delete Exit Reason,Resignation,ResignationController,Auto-generated OpenAPI description for Delete Exit Reason,deleteExitReason,/api/v1/exit-management/exit-reasons/{id}
+Resignation Module,Get Notice Period,Resignation,ResignationController,Auto-generated OpenAPI description for Get Notice Period,getNoticePeriod,/api/v1/exit-management/notice-period
+Resignation Module,Update Notice Period,Resignation,ResignationController,Auto-generated OpenAPI description for Update Notice Period,updateNoticePeriod,/api/v1/exit-management/notice-period
+Resignation Module,Add Exit Question,Resignation,ResignationController,Auto-generated OpenAPI description for Add Exit Question,addExitQuestion,/api/v1/exit-management/exit-questions
+Resignation Module,Get Exit Questions,Resignation,ResignationController,Auto-generated OpenAPI description for Get Exit Questions,getExitQuestions,/api/v1/exit-management/exit-questions
+Resignation Module,Delete Exit Question,Resignation,ResignationController,Auto-generated OpenAPI description for Delete Exit Question,deleteExitQuestion,/api/v1/exit-management/exit-questions/{id}
+Resignation Module,Submit It Clearance,Resignation,ResignationController,Auto-generated OpenAPI description for Submit It Clearance,submitItClearance,/api/v1/exit-management/it/clearance/{id}
+Resignation Module,Adjust Lwd For Ui,Resignation,ResignationController,Auto-generated OpenAPI description for Adjust Lwd For Ui,adjustLwdForUi,/api/v1/exit-management/adjust-lwd
+Resignation Module,Trigger Exits Manually,Resignation,ResignationController,Auto-generated OpenAPI description for Trigger Exits Manually,triggerExitsManually,/api/v1/exit-management/resignations/trigger-exits
+LeaveDraft Module,Update Draft,LeaveDraft,LeaveDraftController,Auto-generated OpenAPI description for Update Draft,updateDraft,/api/leaves/drafts/{id}
+LeaveDraft Module,Get Drafts,LeaveDraft,LeaveDraftController,Auto-generated OpenAPI description for Get Drafts,getDrafts,/api/leaves/drafts/{employeeId}
+LeaveDraft Module,Get Draft By Id,LeaveDraft,LeaveDraftController,Auto-generated OpenAPI description for Get Draft By Id,getDraftById,/api/leaves/drafts/single/{id}
+LeaveDraft Module,Http Headers,LeaveDraft,LeaveDraftController,Auto-generated OpenAPI description for Http Headers,downloadDraftFile,/api/leaves/drafts/download/{id}
+LeaveDraft Module,Delete Draft,LeaveDraft,LeaveDraftController,Auto-generated OpenAPI description for Delete Draft,deleteDraft,/api/leaves/drafts/{id}
+ClearanceChecklist Module,Get Checklist,ClearanceChecklist,ClearanceChecklistController,Auto-generated OpenAPI description for Get Checklist,getChecklist,/api/clearance/checklist/{department}
+ClearanceChecklist Module,Delete Checklist,ClearanceChecklist,ClearanceChecklistController,Auto-generated OpenAPI description for Delete Checklist,deleteChecklist,/api/clearance/checklist/{id}
+TestTransaction Module,Test Bulk Allocation,TestTransaction,TestTransactionController,Auto-generated OpenAPI description for Test Bulk Allocation,testBulkAllocation,/api/test/bulk-allocation-test
+AttendanceAnalytics Module,Get My Analytics,AttendanceAnalytics,AttendanceAnalyticsController,Auto-generated OpenAPI description for Get My Analytics,getMyAnalytics,/api/v1/analytics/me
+AttendanceAnalytics Module,Get Deep Analytics,AttendanceAnalytics,AttendanceAnalyticsController,Auto-generated OpenAPI description for Get Deep Analytics,getDeepAnalytics,/api/v1/analytics/deep
+AttendanceAnalytics Module,Get Team Members,AttendanceAnalytics,AttendanceAnalyticsController,Auto-generated OpenAPI description for Get Team Members,getTeamMembers,/api/v1/analytics/team-members
+AttendanceAnalytics Module,Get Team Analytics,AttendanceAnalytics,AttendanceAnalyticsController,Auto-generated OpenAPI description for Get Team Analytics,getTeamAnalytics,/api/v1/analytics/team
+AttendanceAnalytics Module,Get Deep Analytics Test,AttendanceAnalytics,AttendanceAnalyticsController,Auto-generated OpenAPI description for Get Deep Analytics Test,getDeepAnalyticsTest,/api/v1/analytics/deep-test
+Location Module,Add Location,Location,LocationController,Auto-generated OpenAPI description for Add Location,addLocation,/api/v1/locations/add
+Location Module,Get All Locations,Location,LocationController,Auto-generated OpenAPI description for Get All Locations,getAllLocations,/api/v1/locations/all
+Delegation Module,Save Delegation,Delegation,DelegationController,Auto-generated OpenAPI description for Save Delegation,saveDelegation,/api/delegations/save
+Delegation Module,Get Delegations By Delegator,Delegation,DelegationController,Auto-generated OpenAPI description for Get Delegations By Delegator,getDelegationsByDelegator,/api/delegations/delegator/{delegatorId}
+Delegation Module,Get Delegations By Delegate,Delegation,DelegationController,Auto-generated OpenAPI description for Get Delegations By Delegate,getDelegationsByDelegate,/api/delegations/delegate/{delegateId}
+Delegation Module,Delete Delegation,Delegation,DelegationController,Auto-generated OpenAPI description for Delete Delegation,deleteDelegation,/api/delegations/delete/{id}
+AssetAudit Module,Delete Audit Log,AssetAudit,AssetAuditController,Auto-generated OpenAPI description for Delete Audit Log,deleteAuditLog,/api/assets/audit-logs/{id}
+AssetAudit Module,Delete All Audit Logs,AssetAudit,AssetAuditController,Auto-generated OpenAPI description for Delete All Audit Logs,deleteAllAuditLogs,/api/assets/audit-logs/all
+AssetAudit Module,Delete Audit Logs Older Than,AssetAudit,AssetAuditController,Auto-generated OpenAPI description for Delete Audit Logs Older Than,deleteAuditLogsOlderThan,/api/assets/audit-logs/older-than
+TravelRequestDraft Module,Get Drafts By Employee,TravelRequestDraft,TravelRequestDraftController,Auto-generated OpenAPI description for Get Drafts By Employee,getDraftsByEmployee,/api/travel/drafts/employee/{employeeId}
+TravelRequestDraft Module,Get Draft By Id,TravelRequestDraft,TravelRequestDraftController,Auto-generated OpenAPI description for Get Draft By Id,getDraftById,/api/travel/drafts/{id}
+TravelRequestDraft Module,Delete Draft,TravelRequestDraft,TravelRequestDraftController,Auto-generated OpenAPI description for Delete Draft,deleteDraft,/api/travel/drafts/{id}
+UnifiedAnalytics Module,Get Analytics Hub,UnifiedAnalytics,UnifiedAnalyticsController,Auto-generated OpenAPI description for Get Analytics Hub,getAnalyticsHub,/api/v1/data/metrics/hub
+CalcStructure Module,Create Structure,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Create Structure,createStructure,/api/v1/calculations/structures
+CalcStructure Module,Update Structure,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Update Structure,updateStructure,/api/v1/calculations/structures/{id}
+CalcStructure Module,Update Structure Status,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Update Structure Status,updateStructureStatus,/api/v1/calculations/structures/{id}/status
+CalcStructure Module,Delete Structure,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Delete Structure,deleteStructure,/api/v1/calculations/structures/{id}
+CalcStructure Module,List Structures,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for List Structures,listStructures,/api/v1/calculations/structures
+CalcStructure Module,Get Structure,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Get Structure,getStructure,/api/v1/calculations/structures/{id}
+CalcStructure Module,Add Component,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Add Component,addComponent,/api/v1/calculations/structures/{structureId}/components
+CalcStructure Module,Update Component,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Update Component,updateComponent,/api/v1/calculations/components/{componentId}
+CalcStructure Module,Delete Component,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Delete Component,deleteComponent,/api/v1/calculations/components/{componentId}
+CalcStructure Module,Execute Calculation,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Execute Calculation,executeCalculation,/api/v1/calculations/structures/{id}/execute
+CalcStructure Module,List Templates,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for List Templates,listTemplates,/api/v1/calculations/templates
+CalcStructure Module,Save As Template,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Save As Template,saveAsTemplate,/api/v1/calculations/structures/{id}/save-as-template
+CalcStructure Module,Validate Formula,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Validate Formula,validateFormula,/api/v1/calculations/structures/{structureId}/validate-formula
+CalcStructure Module,Upload Image,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Upload Image,uploadImage,/api/v1/calculations/upload-image
+CalcStructure Module,Process Image,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Process Image,processImage,/api/v1/calculations/process-image
+CalcStructure Module,Create Structure From Image,CalcStructure,CalcStructureController,Auto-generated OpenAPI description for Create Structure From Image,createStructureFromImage,/api/v1/calculations/structures/from-image
+Grievance Module,Submit Grievance,Grievance,GrievanceController,Auto-generated OpenAPI description for Submit Grievance,submitGrievance,/api/grievances/anonymous
+Grievance Module,Get Grievance,Grievance,GrievanceController,Auto-generated OpenAPI description for Get Grievance,getGrievance,/api/grievances/{grievanceId}
+Health Module,Health,Health,HealthController,Auto-generated OpenAPI description for Health,health,/health
+ModuleAccess Module,Save,ModuleAccess,ModuleAccessController,Auto-generated OpenAPI description for Save,save,/api/v1/module-access/save
+ModuleAccess Module,Get Employees,ModuleAccess,ModuleAccessController,Auto-generated OpenAPI description for Get Employees,getEmployees,/api/v1/module-access/module/{moduleKey}
+ModuleAccess Module,Get Access,ModuleAccess,ModuleAccessController,Auto-generated OpenAPI description for Get Access,getAccess,/api/v1/module-access/employee/{employeeId}
+ModuleAccess Module,Remove Employee,ModuleAccess,ModuleAccessController,Auto-generated OpenAPI description for Remove Employee,removeEmployee,/api/v1/module-access/module/{moduleKey}/employee/{employeeId}
+WorkflowEngine Module,Get All Workflows,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get All Workflows,getAllWorkflows,/api/v1/workflow-engine/all
+WorkflowEngine Module,Get Workflow Employees,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get Workflow Employees,getWorkflowEmployees,/api/v1/workflow-engine/employees
+WorkflowEngine Module,Get Workflow Distinct Locations,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get Workflow Distinct Locations,getWorkflowDistinctLocations,/api/v1/workflow-engine/distinct-locations
+WorkflowEngine Module,Get Workflow Distinct Roles,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get Workflow Distinct Roles,getWorkflowDistinctRoles,/api/v1/workflow-engine/distinct-roles
+WorkflowEngine Module,Get Workflow Distinct Departments,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get Workflow Distinct Departments,getWorkflowDistinctDepartments,/api/v1/workflow-engine/distinct-departments
+WorkflowEngine Module,If,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for If,updateWorkflow,/api/v1/workflow-engine/{id}
+WorkflowEngine Module,Delete Workflow,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Delete Workflow,deleteWorkflow,/api/v1/workflow-engine/{id}
+WorkflowEngine Module,Get Approval Groups,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Get Approval Groups,getApprovalGroups,/api/v1/workflow-engine/approval-groups
+WorkflowEngine Module,Create Approval Group,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Create Approval Group,createApprovalGroup,/api/v1/workflow-engine/approval-groups
+WorkflowEngine Module,Delete Approval Group,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Delete Approval Group,deleteApprovalGroup,/api/v1/workflow-engine/approval-groups/{id}
+WorkflowEngine Module,Is Approver,WorkflowEngine,WorkflowEngineController,Auto-generated OpenAPI description for Is Approver,isApprover,/api/v1/workflow-engine/is-approver/{employeeId}
+LeaveAssignment Module,Get Leave Balance,LeaveAssignment,LeaveAssignmentController,Auto-generated OpenAPI description for Get Leave Balance,getLeaveBalance,/api/leaves/balance/{employeeId}
+RevisionType Module,Delete,RevisionType,RevisionTypeController,Auto-generated OpenAPI description for Delete,delete,/api/revision-types/{id}
+RoleAccess Module,Save Role Data,RoleAccess,RoleAccessController,Auto-generated OpenAPI description for Save Role Data,saveRoleData,/api/v1/roles/save
+RoleAccess Module,Get Role Employees,RoleAccess,RoleAccessController,Auto-generated OpenAPI description for Get Role Employees,getRoleEmployees,/api/v1/roles/{roleName}
+RoleAccess Module,Check Role,RoleAccess,RoleAccessController,Auto-generated OpenAPI description for Check Role,checkRole,/api/v1/roles/check
+RoleAccess Module,Remove Employee,RoleAccess,RoleAccessController,Auto-generated OpenAPI description for Remove Employee,removeEmployee,/api/v1/roles/remove
+EmployeeHandbook Module,Upload,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Upload,upload,/api/handbook/upload
+EmployeeHandbook Module,Get Latest,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Get Latest,getLatest,/api/handbook/latest
+EmployeeHandbook Module,Get All,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Get All,getAll,/api/handbook/all
+EmployeeHandbook Module,If,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for If,serveFile,/api/handbook/file/{id}
+EmployeeHandbook Module,Delete Handbook,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Delete Handbook,deleteHandbook,/api/handbook/delete/{id}
+EmployeeHandbook Module,Get Categories,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Get Categories,getCategories,/api/handbook/categories
+EmployeeHandbook Module,Add Category,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Add Category,addCategory,/api/handbook/categories
+EmployeeHandbook Module,Delete Category,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Delete Category,deleteCategory,/api/handbook/categories/{id}
+EmployeeHandbook Module,Get Handbook Pages,EmployeeHandbook,EmployeeHandbookController,Auto-generated OpenAPI description for Get Handbook Pages,getHandbookPages,/api/handbook/pages/{id}
+PerformanceGoalTemplate Module,Get Templates By Department,PerformanceGoalTemplate,PerformanceGoalTemplateController,Auto-generated OpenAPI description for Get Templates By Department,getTemplatesByDepartment,/api/performance/templates/department/{department}
+PerformanceGoalTemplate Module,Delete Template,PerformanceGoalTemplate,PerformanceGoalTemplateController,Auto-generated OpenAPI description for Delete Template,deleteTemplate,/api/performance/templates/{id}
+LeaveBalanceAdmin Module,Round All Balances,LeaveBalanceAdmin,LeaveBalanceAdminController,Auto-generated OpenAPI description for Round All Balances,roundAllBalances,/api/admin/leave-balances/round-all
+PreOnboarding Module,Save,PreOnboarding,PreOnboardingController,Auto-generated OpenAPI description for Save,save,/api/v1/preonboarding/{applicantId}/save
+PreOnboarding Module,Get,PreOnboarding,PreOnboardingController,Auto-generated OpenAPI description for Get,get,/api/v1/preonboarding/{applicantId}
+PreOnboarding Module,Suggest Work Email,PreOnboarding,PreOnboardingController,Auto-generated OpenAPI description for Suggest Work Email,suggestWorkEmail,/api/v1/preonboarding/suggest-work-email
+PreOnboarding Module,Save Draft Only,PreOnboarding,PreOnboardingController,Auto-generated OpenAPI description for Save Draft Only,saveDraftOnly,/api/v1/preonboarding/{applicantId}/save-draft
+AdminAccess Module,Save Admin Access,AdminAccess,AdminAccessController,Grants SuperAdmin or Admin access roles to a list of employees.,saveAdminAccess,/api/v1/admin-access/save
+AdminAccess Module,Save Travel Admin,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Save Travel Admin,saveTravelAdmin,/api/v1/admin-access/travel-admin/save
+AdminAccess Module,Get Admin Ids,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Get Admin Ids,getAdminIds,/api/v1/admin-access/{roleName}
+AdminAccess Module,Check Admin Role,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Check Admin Role,checkAdminRole,/api/v1/admin-access/check
+AdminAccess Module,Save Category,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Save Category,saveCategory,/api/v1/admin-access/categories/save
+AdminAccess Module,Get Categories,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Get Categories,getCategories,/api/v1/admin-access/categories
+AdminAccess Module,Delete Category,AdminAccess,AdminAccessController,Auto-generated OpenAPI description for Delete Category,deleteCategory,/api/v1/admin-access/categories/{id}
+PublicExitForm Module,Get Exit Questions,PublicExitForm,PublicExitFormController,Auto-generated OpenAPI description for Get Exit Questions,getExitQuestions,/api/external/exit-management/exit-questions
+PublicExitForm Module,Get Feedback Form By Token,PublicExitForm,PublicExitFormController,Auto-generated OpenAPI description for Get Feedback Form By Token,getFeedbackFormByToken,/api/external/exit-management/feedback/{token}
+PublicExitForm Module,Submit Feedback,PublicExitForm,PublicExitFormController,Auto-generated OpenAPI description for Submit Feedback,submitFeedback,/api/external/exit-management/{formId}/submit-feedback
+PerformanceDepartment Module,Delete Department,PerformanceDepartment,PerformanceDepartmentController,Auto-generated OpenAPI description for Delete Department,deleteDepartment,/api/performance/departments/{id}
+Leave Module,Apply Leave,Leave,LeaveController,Auto-generated OpenAPI description for Apply Leave,applyLeave,/api/leaves/apply
+Leave Module,Apply Leave With Existing File,Leave,LeaveController,Auto-generated OpenAPI description for Apply Leave With Existing File,applyLeaveWithExistingFile,/api/leaves/apply-with-existing-file
+Leave Module,Submit Draft,Leave,LeaveController,Auto-generated OpenAPI description for Submit Draft,submitDraft,/api/leaves/submit-draft/{draftId}
+Leave Module,Take Action,Leave,LeaveController,Auto-generated OpenAPI description for Take Action,takeAction,/api/leaves/action
+Leave Module,Manual Deduct,Leave,LeaveController,Auto-generated OpenAPI description for Manual Deduct,manualDeduct,/api/leaves/manual-deduct/{leaveId}
+Leave Module,Get Employee Leaves,Leave,LeaveController,Auto-generated OpenAPI description for Get Employee Leaves,getEmployeeLeaves,/api/leaves/employee/{employeeId}
+Leave Module,Get Manager Leaves,Leave,LeaveController,Auto-generated OpenAPI description for Get Manager Leaves,getManagerLeaves,/api/leaves/manager/{managerId}
+Leave Module,Get Hr Leaves,Leave,LeaveController,Auto-generated OpenAPI description for Get Hr Leaves,getHrLeaves,/api/leaves/hr/{hrId}
+Leave Module,Download Leave Document,Leave,LeaveController,Auto-generated OpenAPI description for Download Leave Document,downloadLeaveDocument,/api/leaves/download/{id}
+Leave Module,Assign Leaves,Leave,LeaveController,Auto-generated OpenAPI description for Assign Leaves,assignLeaves,/api/leaves/assign/{employeeId}
+Leave Module,Cancel Leave,Leave,LeaveController,Auto-generated OpenAPI description for Cancel Leave,cancelLeave,/api/leaves/cancel/{id}
+Leave Module,Get Approved Leave Dates,Leave,LeaveController,Auto-generated OpenAPI description for Get Approved Leave Dates,getApprovedLeaveDates,/api/leaves/approved-dates/{employeeId}
+Leave Module,Get Used Optional Holidays,Leave,LeaveController,Auto-generated OpenAPI description for Get Used Optional Holidays,getUsedOptionalHolidays,/api/leaves/used-optional-holidays/{employeeId}
+Leave Module,Get All Holidays,Leave,LeaveController,Auto-generated OpenAPI description for Get All Holidays,getAllHolidays,/api/leaves/holidays
+Leave Module,Add Holiday,Leave,LeaveController,Auto-generated OpenAPI description for Add Holiday,addHoliday,/api/leaves/holidays
+Leave Module,Update Holiday,Leave,LeaveController,Auto-generated OpenAPI description for Update Holiday,updateHoliday,/api/leaves/holidays/{id}
+Leave Module,Delete Holiday,Leave,LeaveController,Auto-generated OpenAPI description for Delete Holiday,deleteHoliday,/api/leaves/holidays/{id}
+Leave Module,Get Holiday By Id,Leave,LeaveController,Auto-generated OpenAPI description for Get Holiday By Id,getHolidayById,/api/leaves/holidays/{id}
+Leave Module,Get Holiday By Date,Leave,LeaveController,Auto-generated OpenAPI description for Get Holiday By Date,getHolidayByDate,/api/leaves/holidays/date/{date}
+Leave Module,Get Holidays By Month,Leave,LeaveController,Auto-generated OpenAPI description for Get Holidays By Month,getHolidaysByMonth,/api/leaves/holidays/{year}/{month}
+Leave Module,Get Holidays By Year,Leave,LeaveController,Auto-generated OpenAPI description for Get Holidays By Year,getHolidaysByYear,/api/leaves/holidays/year/{year}
+Leave Module,Get Non Working Days,Leave,LeaveController,Auto-generated OpenAPI description for Get Non Working Days,getNonWorkingDays,/api/leaves/non-working-days
+Leave Module,Get Employee Name,Leave,LeaveController,Auto-generated OpenAPI description for Get Employee Name,getEmployeeName,/api/leaves/employee-name/{employeeId}
+Leave Module,Get Leaves Report,Leave,LeaveController,Auto-generated OpenAPI description for Get Leaves Report,getLeavesReport,/api/leaves/reports
+Leave Module,Get Leave Types,Leave,LeaveController,Auto-generated OpenAPI description for Get Leave Types,getLeaveTypes,/api/leaves/types
+Leave Module,Add Leave Type,Leave,LeaveController,Auto-generated OpenAPI description for Add Leave Type,addLeaveType,/api/leaves/type/add
+Leave Module,Get Holidays By Employee Location,Leave,LeaveController,Auto-generated OpenAPI description for Get Holidays By Employee Location,getHolidaysByEmployeeLocation,/api/leaves/holidays/location/{employeeId}
+Leave Module,Preview Leave Calculation,Leave,LeaveController,Auto-generated OpenAPI description for Preview Leave Calculation,previewLeaveCalculation,/api/leaves/calculate-preview
+Leave Module,Get Leave Status Details,Leave,LeaveController,Auto-generated OpenAPI description for Get Leave Status Details,getLeaveStatusDetails,/api/leaves/status-details/{id}
+Leave Module,Get Leave By Id,Leave,LeaveController,Auto-generated OpenAPI description for Get Leave By Id,getLeaveById,/api/leaves/single/{id}
+InsuranceNominee Module,Get Nominees,InsuranceNominee,InsuranceNomineeController,Auto-generated OpenAPI description for Get Nominees,getNominees,/api/employees/{employeeId}/insurance-nominees
+InsuranceNominee Module,Add Nominee,InsuranceNominee,InsuranceNomineeController,Auto-generated OpenAPI description for Add Nominee,addNominee,/api/employees/{employeeId}/insurance-nominees
+Auth Module,Get Global Settings,Auth,AuthController,Auto-generated OpenAPI description for Get Global Settings,getGlobalSettings,/api/auth/global-settings/{key}
+Auth Module,Login,Auth,AuthController,Auto-generated OpenAPI description for Login,login,/api/auth/login
+Auth Module,Forgot Password,Auth,AuthController,Auto-generated OpenAPI description for Forgot Password,forgotPassword,/api/auth/forgot-password
+Auth Module,Reset Password,Auth,AuthController,Auto-generated OpenAPI description for Reset Password,resetPassword,/api/auth/reset-password
+Auth Module,Change Password,Auth,AuthController,Auto-generated OpenAPI description for Change Password,changePassword,/api/auth/change-password
+DesignationCategory Module,Delete,DesignationCategory,DesignationCategoryController,Auto-generated OpenAPI description for Delete,delete,/api/designation-categories/{id}
+LMS Module,Assign Training,LMS,LMSController,Auto-generated OpenAPI description for Assign Training,assignTraining,/api/lms/assign
+LMS Module,Assign Training To All,LMS,LMSController,Auto-generated OpenAPI description for Assign Training To All,assignTrainingToAll,/api/lms/assign-all
+LMS Module,Get All Trainings,LMS,LMSController,Auto-generated OpenAPI description for Get All Trainings,getAllTrainings,/api/lms/all
+LMS Module,Get Trainings By Employee,LMS,LMSController,Auto-generated OpenAPI description for Get Trainings By Employee,getTrainingsByEmployee,/api/lms/employee/{employeeId}
+LMS Module,Get Trainings By Employee And Category,LMS,LMSController,Auto-generated OpenAPI description for Get Trainings By Employee And Category,getTrainingsByEmployeeAndCategory,/api/lms/employee/{employeeId}/category/{category}
+LMS Module,Update Progress,LMS,LMSController,Auto-generated OpenAPI description for Update Progress,updateProgress,/api/lms/update-progress/{id}
+LMS Module,Update Status,LMS,LMSController,Auto-generated OpenAPI description for Update Status,updateStatus,/api/lms/update-status/{id}
+LMS Module,Get Team Trainings,LMS,LMSController,Auto-generated OpenAPI description for Get Team Trainings,getTeamTrainings,/api/lms/team-trainings/{managerId}
+LMS Module,Delete Training,LMS,LMSController,Auto-generated OpenAPI description for Delete Training,deleteTraining,/api/lms/delete/{id}
+HelpDeskTeamAccess Module,Save Team Access,HelpDeskTeamAccess,HelpDeskTeamAccessController,Auto-generated OpenAPI description for Save Team Access,saveTeamAccess,/api/v1/helpdesk-teams/save
+HelpDeskTeamAccess Module,Create Team,HelpDeskTeamAccess,HelpDeskTeamAccessController,Auto-generated OpenAPI description for Create Team,createTeam,/api/v1/helpdesk-teams/create
+HelpDeskTeamAccess Module,Get All Teams,HelpDeskTeamAccess,HelpDeskTeamAccessController,Auto-generated OpenAPI description for Get All Teams,getAllTeams,/api/v1/helpdesk-teams/all
+HelpDeskTeamAccess Module,Get Exact Team Access,HelpDeskTeamAccess,HelpDeskTeamAccessController,Auto-generated OpenAPI description for Get Exact Team Access,getExactTeamAccess,/api/v1/helpdesk-teams/team-exact/{employeeId}
+HelpDeskTeamAccess Module,Get Team,HelpDeskTeamAccess,HelpDeskTeamAccessController,Auto-generated OpenAPI description for Get Team,getTeam,/api/v1/helpdesk-teams/team/{teamName}
+Holiday Module,Download Template,Holiday,HolidayController,Auto-generated OpenAPI description for Download Template,downloadTemplate,/api/v1/holidays/template
+Holiday Module,Upload Holiday File,Holiday,HolidayController,Auto-generated OpenAPI description for Upload Holiday File,uploadHolidayFile,/api/v1/holidays/upload
+Holiday Module,Get All Holidays,Holiday,HolidayController,Auto-generated OpenAPI description for Get All Holidays,getAllHolidays,/api/v1/holidays/all
+Holiday Module,Get Holidays By Location,Holiday,HolidayController,Auto-generated OpenAPI description for Get Holidays By Location,getHolidaysByLocation,/api/v1/holidays/by-location
+Holiday Module,Get Holidays For Employee,Holiday,HolidayController,Auto-generated OpenAPI description for Get Holidays For Employee,getHolidaysForEmployee,/api/v1/holidays/employee/{employeeId}
+Holiday Module,Delete Holiday,Holiday,HolidayController,Auto-generated OpenAPI description for Delete Holiday,deleteHoliday,/api/v1/holidays/{id}
+OrgChartConfig Module,Get Selected Columns,OrgChartConfig,OrgChartConfigController,Auto-generated OpenAPI description for Get Selected Columns,getSelectedColumns,/api/org-chart-config/columns
+OrgChartConfig Module,Save Selected Columns,OrgChartConfig,OrgChartConfigController,Auto-generated OpenAPI description for Save Selected Columns,saveSelectedColumns,/api/org-chart-config/columns
+Role Module,Get Assigned Roles,Role,RoleController,Auto-generated OpenAPI description for Get Assigned Roles,getAssignedRoles,/api/access/assigned-ids/{employeeId}
+AdminGrievance Module,Get,AdminGrievance,AdminGrievanceController,Auto-generated OpenAPI description for Get,get,/api/admin/grievances/{grievanceId}
+AdminGrievance Module,Update,AdminGrievance,AdminGrievanceController,Auto-generated OpenAPI description for Update,update,/api/admin/grievances/{grievanceId}
+AdminGrievance Module,Download Attachment,AdminGrievance,AdminGrievanceController,Auto-generated OpenAPI description for Download Attachment,downloadAttachment,/api/admin/grievances/{grievanceId}/attachment
+Project Module,Get Projects By Sow Id,Project,ProjectController,Auto-generated OpenAPI description for Get Projects By Sow Id,getProjectsBySowId,/api/projects/sow/{sowId}
+Project Module,Get All Projects By Customer,Project,ProjectController,Auto-generated OpenAPI description for Get All Projects By Customer,getAllProjectsByCustomer,/api/projects/customer/{customerId}/all-projects
+Project Module,Get Projects For Employee By Customer,Project,ProjectController,Auto-generated OpenAPI description for Get Projects For Employee By Customer,getProjectsForEmployeeByCustomer,/api/projects/employee/{employeeId}/customer/{customerId}
+Project Module,Update Project,Project,ProjectController,Auto-generated OpenAPI description for Update Project,updateProject,/api/projects/{projectId}
+SelfAssessment Module,Save Assessment,SelfAssessment,SelfAssessmentController,Auto-generated OpenAPI description for Save Assessment,saveAssessment,/api/self-assessments/save
+SelfAssessment Module,Get Assessment By Id,SelfAssessment,SelfAssessmentController,Auto-generated OpenAPI description for Get Assessment By Id,getAssessmentById,/api/self-assessments/{id}
+SelfAssessment Module,Get Assessments By Employee Id,SelfAssessment,SelfAssessmentController,Auto-generated OpenAPI description for Get Assessments By Employee Id,getAssessmentsByEmployeeId,/api/self-assessments/employee/{employeeId}
+DailyEntry Module,Submit Entry,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Submit Entry,submitEntry,/api/daily-entry/submit/{employeeId}
+DailyEntry Module,Get Employee Entries,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Employee Entries,getEmployeeEntries,/api/daily-entry/employee/{employeeId}
+DailyEntry Module,Get Manager Entries,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Manager Entries,getManagerEntries,/api/daily-entry/manager/{managerId}
+DailyEntry Module,Get Hr Entries,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Hr Entries,getHrEntries,/api/daily-entry/hr/{hrId}
+DailyEntry Module,Get Employee Entries For Manager,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Employee Entries For Manager,getEmployeeEntriesForManager,/api/daily-entry/manager/{managerId}/employee/{employeeId}
+DailyEntry Module,Get Employee Entries For Hr,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Employee Entries For Hr,getEmployeeEntriesForHr,/api/daily-entry/hr/{hrId}/employee/{employeeId}
+DailyEntry Module,Get Submitted Dates By Employee,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Submitted Dates By Employee,getSubmittedDatesByEmployee,/api/daily-entry/submitted-dates/{employeeId}
+DailyEntry Module,Get Total Hours By Employee,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Total Hours By Employee,getTotalHoursByEmployee,/api/daily-entry/total-hours/{employeeId}
+DailyEntry Module,Get Frozen Dates,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Frozen Dates,getFrozenDates,/api/daily-entry/frozen-dates/{employeeId}
+DailyEntry Module,Freeze Timesheets,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Freeze Timesheets,freezeTimesheets,/api/daily-entry/freeze
+DailyEntry Module,Update Entry,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Update Entry,updateEntry,/api/daily-entry/update/{entryId}
+DailyEntry Module,Unfreeze Timesheets,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Unfreeze Timesheets,unfreezeTimesheets,/api/daily-entry/unfreeze
+DailyEntry Module,Get Timesheet Report,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Get Timesheet Report,getTimesheetReport,/api/daily-entry/fetch-reports
+DailyEntry Module,Trigger Reminders,DailyEntry,DailyEntryController,Auto-generated OpenAPI description for Trigger Reminders,triggerReminders,/api/daily-entry/trigger-reminders
+AdminLeavePolicy Module,Save Leave Type,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Save Leave Type,saveLeaveType,/api/admin/leave-policy/type
+AdminLeavePolicy Module,Save Unified Policy,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Save Unified Policy,saveUnifiedPolicy,/api/admin/leave-policy/unified
+AdminLeavePolicy Module,Toggle Status,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Toggle Status,toggleStatus,/api/admin/leave-policy/{id}/status
+AdminLeavePolicy Module,Get All Leave Types,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Get All Leave Types,getAllLeaveTypes,/api/admin/leave-policy/types
+AdminLeavePolicy Module,Get Unified Policies,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Get Unified Policies,getUnifiedPolicies,/api/admin/leave-policy/unified/{leaveTypeId}
+AdminLeavePolicy Module,Save Approval Workflow,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Save Approval Workflow,saveApprovalWorkflow,/api/admin/leave-policy/approval
+AdminLeavePolicy Module,Get Policy Summary,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Get Policy Summary,getPolicySummary,/api/admin/leave-policy/summary/{leaveTypeId}
+AdminLeavePolicy Module,Process Encashment,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Process Encashment,processEncashment,/api/admin/leave-policy/process-encashment
+AdminLeavePolicy Module,Preview Eligibility,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Preview Eligibility,previewEligibility,/api/admin/leave-policy/eligibility-preview/{leaveTypeId}/{employeeId}
+AdminLeavePolicy Module,Get Eligibility Options,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Get Eligibility Options,getEligibilityOptions,/api/admin/leave-policy/eligibility-options
+AdminLeavePolicy Module,Is Approver,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Is Approver,isApprover,/api/admin/leave-policy/approvals/is-approver/{employeeId}
+AdminLeavePolicy Module,Delete Unified Policy,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Delete Unified Policy,deleteUnifiedPolicy,/api/admin/leave-policy/unified/{id}
+AdminLeavePolicy Module,Delete Leave Type,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Delete Leave Type,deleteLeaveType,/api/admin/leave-policy/type/{id}
+AdminLeavePolicy Module,Trigger Carry Forward,AdminLeavePolicy,AdminLeavePolicyController,Auto-generated OpenAPI description for Trigger Carry Forward,triggerCarryForward,/api/admin/leave-policy/trigger-carry-forward
+ExternalApi Module,Health Check,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Health Check,healthCheck,/api/external/health
+ExternalApi Module,Get All Applicants,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Applicants,getAllApplicants,/api/external/applicants
+ExternalApi Module,Get Applicant By Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Applicant By Id,getApplicantById,/api/external/applicants/{applicantId}
+ExternalApi Module,Get Applicants By Status,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Applicants By Status,getApplicantsByStatus,/api/external/applicants/status/{status}
+ExternalApi Module,Save Or Update Employee,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Save Or Update Employee,saveOrUpdateEmployee,/api/external/employees
+ExternalApi Module,Get All Active Employees,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Active Employees,getAllActiveEmployees,/api/external/employees
+ExternalApi Module,Get All Employees,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Employees,getAllEmployees,/api/external/employees/all
+ExternalApi Module,Get All Employees For Migration,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Employees For Migration,getAllEmployeesForMigration,/api/external/employees/migration
+ExternalApi Module,Get Employee By Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Employee By Id,getEmployeeById,/api/external/employees/{employeeId}
+ExternalApi Module,Get Employees By Department,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Employees By Department,getEmployeesByDepartment,/api/external/employees/department/{department}
+ExternalApi Module,Get All Payroll Records,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Payroll Records,getAllPayrollRecords,/api/external/payroll
+ExternalApi Module,Get Payroll By Employee Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Payroll By Employee Id,getPayrollByEmployeeId,/api/external/payroll/employee/{employeeId}
+ExternalApi Module,Get Payroll By Month,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Payroll By Month,getPayrollByMonth,/api/external/payroll/month/{month}
+ExternalApi Module,Get All Compensation Records,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All Compensation Records,getAllCompensationRecords,/api/external/compensation
+ExternalApi Module,Get Compensation By Employee Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Compensation By Employee Id,getCompensationByEmployeeId,/api/external/compensation/employee/{employeeId}
+ExternalApi Module,Get Latest Compensation By Employee Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Latest Compensation By Employee Id,getLatestCompensationByEmployeeId,/api/external/compensation/employee/{employeeId}/latest
+ExternalApi Module,Get All It Declarations,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get All It Declarations,getAllITDeclarations,/api/external/it-declarations
+ExternalApi Module,Get It Declarations By Employee Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get It Declarations By Employee Id,getITDeclarationsByEmployeeId,/api/external/it-declarations/employee/{employeeId}
+ExternalApi Module,Get Latest It Declaration By Employee Id,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Get Latest It Declaration By Employee Id,getLatestITDeclarationByEmployeeId,/api/external/it-declarations/employee/{employeeId}/latest
+ExternalApi Module,Save Or Update Tenant,ExternalApi,ExternalApiController,Auto-generated OpenAPI description for Save Or Update Tenant,saveOrUpdateTenant,/api/external/tenants
+ExitForm Module,Get By Hr,ExitForm,ExitFormController,Auto-generated OpenAPI description for Get By Hr,getByHr,/api/v1/exit-forms/hr/{hrId}
+ExitForm Module,Get By Employee,ExitForm,ExitFormController,Auto-generated OpenAPI description for Get By Employee,getByEmployee,/api/v1/exit-forms/employee/{employeeId}
+ExitForm Module,Get By Resignation,ExitForm,ExitFormController,Auto-generated OpenAPI description for Get By Resignation,getByResignation,/api/v1/exit-forms/resignation/{resignationId}
+ExitForm Module,Schedule Exit Interview,ExitForm,ExitFormController,Auto-generated OpenAPI description for Schedule Exit Interview,scheduleExitInterview,/api/v1/exit-forms/{formId}/schedule-interview
+ExitForm Module,Submit Feedback,ExitForm,ExitFormController,Auto-generated OpenAPI description for Submit Feedback,submitFeedback,/api/v1/exit-forms/{formId}/submit-feedback
+ExitForm Module,Get Feedback Form By Token,ExitForm,ExitFormController,Auto-generated OpenAPI description for Get Feedback Form By Token,getFeedbackFormByToken,/api/v1/exit-forms/feedback/{token}
+Applicant Module,Save Onboarding Data,Applicant,ApplicantController,Auto-generated OpenAPI description for Save Onboarding Data,saveOnboardingData,/api/v1/applicants/{applicantId}/onboarding
+Applicant Module,Get Applicant By Applicant Id,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Applicant By Applicant Id,getApplicantByApplicantId,/api/v1/applicants/{applicantId}
+Applicant Module,Approve Candidate,Applicant,ApplicantController,Auto-generated OpenAPI description for Approve Candidate,approveCandidate,/api/v1/applicants/approve
+Applicant Module,Mark Revision Pending,Applicant,ApplicantController,Auto-generated OpenAPI description for Mark Revision Pending,markRevisionPending,/api/v1/applicants/revision-pending/{applicantId}
+Applicant Module,Approve By Finance,Applicant,ApplicantController,Auto-generated OpenAPI description for Approve By Finance,approveByFinance,/api/v1/applicants/approve-finance/{applicantId}
+Applicant Module,Update Applicant Status,Applicant,ApplicantController,Auto-generated OpenAPI description for Update Applicant Status,updateApplicantStatus,/api/v1/applicants/status/{applicantId}
+Applicant Module,Upload Signed Docs,Applicant,ApplicantController,Auto-generated OpenAPI description for Upload Signed Docs,uploadSignedDocs,/api/v1/applicants/upload/{applicantId}
+Applicant Module,Get Accepted Applicants,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Accepted Applicants,getAcceptedApplicants,/api/v1/applicants/accepted
+Applicant Module,Reject Documents,Applicant,ApplicantController,Auto-generated OpenAPI description for Reject Documents,rejectDocuments,/api/v1/applicants/reject-documents/{applicantId}
+Applicant Module,Get Filtered Reports,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Filtered Reports,getFilteredReports,/api/v1/applicants/reports
+Applicant Module,Get Clients,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Clients,getClients,/api/v1/applicants/clients
+Applicant Module,Get Positions,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Positions,getPositions,/api/v1/applicants/positions
+Applicant Module,Get Statuses,Applicant,ApplicantController,Auto-generated OpenAPI description for Get Statuses,getStatuses,/api/v1/applicants/statuses
+Profiler Module,Update Profile,Profiler,ProfilerController,Auto-generated OpenAPI description for Update Profile,updateProfile,/api/profile/update/{employeeId}
+Profiler Module,Remove Profile Picture,Profiler,ProfilerController,Auto-generated OpenAPI description for Remove Profile Picture,removeProfilePicture,/api/profile/remove-picture/{employeeId}
+Profiler Module,Get Profile,Profiler,ProfilerController,Auto-generated OpenAPI description for Get Profile,getProfile,/api/profile/{employeeId}
+Claim Module,Submit Claim,Claim,ClaimController,Auto-generated OpenAPI description for Submit Claim,submitClaim,/api/claims/submit
+Claim Module,Submit Bulk Claims,Claim,ClaimController,Auto-generated OpenAPI description for Submit Bulk Claims,submitBulkClaims,/api/claims/submit-bulk
+Claim Module,Get Pending Claims For User,Claim,ClaimController,Auto-generated OpenAPI description for Get Pending Claims For User,getPendingClaimsForUser,/api/claims/pending/{userId}
+Claim Module,Approve Claim,Claim,ClaimController,Auto-generated OpenAPI description for Approve Claim,approveClaim,/api/claims/approve/{id}
+Claim Module,Approve Claims Bulk,Claim,ClaimController,Auto-generated OpenAPI description for Approve Claims Bulk,approveClaimsBulk,/api/claims/approve-bulk
+Claim Module,Reject Claim,Claim,ClaimController,Auto-generated OpenAPI description for Reject Claim,rejectClaim,/api/claims/reject/{id}
+Claim Module,Reject Claims Bulk,Claim,ClaimController,Auto-generated OpenAPI description for Reject Claims Bulk,rejectClaimsBulk,/api/claims/reject-bulk
+Claim Module,Take Action,Claim,ClaimController,Auto-generated OpenAPI description for Take Action,takeAction,/api/claims/action
+Claim Module,Cancel Claim,Claim,ClaimController,Auto-generated OpenAPI description for Cancel Claim,cancelClaim,/api/claims/cancel/{id}
+Claim Module,Get Claim Status Details,Claim,ClaimController,Auto-generated OpenAPI description for Get Claim Status Details,getClaimStatusDetails,/api/claims/status-details/{id}
+Claim Module,Get Summary,Claim,ClaimController,Auto-generated OpenAPI description for Get Summary,getSummary,/api/claims/summary/{employeeId}
+Claim Module,Update Finance Status,Claim,ClaimController,Auto-generated OpenAPI description for Update Finance Status,updateFinanceStatus,/api/claims/finance/update-status/{id}
+Claim Module,If,Claim,ClaimController,Auto-generated OpenAPI description for If,getClaimReceipt,/api/claims/receipt/{id}
+Claim Module,If,Claim,ClaimController,Auto-generated OpenAPI description for If,getDraftReceipt,/api/claims/draft/receipt/{draftId}
+Claim Module,Save Draft,Claim,ClaimController,Auto-generated OpenAPI description for Save Draft,saveDraft,/api/claims/draft
+Claim Module,Update Draft,Claim,ClaimController,Auto-generated OpenAPI description for Update Draft,updateDraft,/api/claims/draft/{draftId}
+Claim Module,Get Draft Receipts,Claim,ClaimController,Auto-generated OpenAPI description for Get Draft Receipts,getDraftReceipts,/api/claims/draft/{draftId}/receipts
+Claim Module,Runtime Exception,Claim,ClaimController,Auto-generated OpenAPI description for Runtime Exception,getDraftReceiptData,/api/claims/draft/{draftId}/receipts/{receiptId}
+Claim Module,Get Draft For Edit,Claim,ClaimController,Auto-generated OpenAPI description for Get Draft For Edit,getDraftForEdit,/api/claims/draft/{draftId}
+Claim Module,Get Employee Drafts,Claim,ClaimController,Auto-generated OpenAPI description for Get Employee Drafts,getEmployeeDrafts,/api/claims/drafts/{employeeId}
+Claim Module,Get Drafts By Group Id,Claim,ClaimController,Auto-generated OpenAPI description for Get Drafts By Group Id,getDraftsByGroupId,/api/claims/draft/group/{groupId}
+Claim Module,Submit Draft From Draft,Claim,ClaimController,Auto-generated OpenAPI description for Submit Draft From Draft,submitDraftFromDraft,/api/claims/submit-draft/{draftId}
+Claim Module,Delete Draft,Claim,ClaimController,Auto-generated OpenAPI description for Delete Draft,deleteDraft,/api/claims/draft/delete/{id}
+Claim Module,Submit Updated Draft,Claim,ClaimController,Auto-generated OpenAPI description for Submit Updated Draft,submitUpdatedDraft,/api/claims/submit-draft/{draftId}
+Claim Module,Get Reimbursement Settings,Claim,ClaimController,Auto-generated OpenAPI description for Get Reimbursement Settings,getReimbursementSettings,/api/claims/settings
+Claim Module,Save Reimbursement Settings,Claim,ClaimController,Auto-generated OpenAPI description for Save Reimbursement Settings,saveReimbursementSettings,/api/claims/settings
+Claim Module,Get Active Categories,Claim,ClaimController,Auto-generated OpenAPI description for Get Active Categories,getActiveCategories,/api/claims/categories
+Claim Module,Create Category,Claim,ClaimController,Auto-generated OpenAPI description for Create Category,createCategory,/api/claims/categories
+Claim Module,Delete Category,Claim,ClaimController,Auto-generated OpenAPI description for Delete Category,deleteCategory,/api/claims/categories/{id}
+Claim Module,Get Claims Report,Claim,ClaimController,Auto-generated OpenAPI description for Get Claims Report,getClaimsReport,/api/claims/reports
+Claim Module,If,Claim,ClaimController,Auto-generated OpenAPI description for If,downloadClaimReceipt,/api/claims/{claimId}/receipts/{receiptId}
+EmployeeSummary Module,Get All Employees Summary,EmployeeSummary,EmployeeSummaryController,Auto-generated OpenAPI description for Get All Employees Summary,getAllEmployeesSummary,/api/employeesdetails/summary
+EmployeeSummary Module,Get Employee Suggestions,EmployeeSummary,EmployeeSummaryController,Auto-generated OpenAPI description for Get Employee Suggestions,getEmployeeSuggestions,/api/employeesdetails/suggestions
+EmployeeSummary Module,Get Approver Suggestions,EmployeeSummary,EmployeeSummaryController,Auto-generated OpenAPI description for Get Approver Suggestions,getApproverSuggestions,/api/employeesdetails/approver-suggestions
+PerformanceAttribute Module,Get Attribute Report,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Attribute Report,getAttributeReport,/api/attributes/fetch-reports
+PerformanceAttribute Module,Assign Attribute,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Assign Attribute,assignAttribute,/api/attributes/assign
+PerformanceAttribute Module,Assign Attributes Batch,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Assign Attributes Batch,assignAttributesBatch,/api/attributes/assign-batch
+PerformanceAttribute Module,Submit Bulk Self Assessment,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Submit Bulk Self Assessment,submitBulkSelfAssessment,/api/attributes/employee/self-assessments
+PerformanceAttribute Module,Update Employee Feedback,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Update Employee Feedback,updateEmployeeFeedback,/api/attributes/{attributeId}/employee-feedback
+PerformanceAttribute Module,Get Attributes For Employee,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Attributes For Employee,getAttributesForEmployee,/api/attributes/employee/{empId}
+PerformanceAttribute Module,Delete Attribute,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Delete Attribute,deleteAttribute,/api/attributes/delete/{attributeId}
+PerformanceAttribute Module,Get Attributes For Manager,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Attributes For Manager,getAttributesForManager,/api/attributes/manager/{managerId}
+PerformanceAttribute Module,Get Rejected Attributes By Manager,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Rejected Attributes By Manager,getRejectedAttributesByManager,/api/attributes/rejected/{managerId}
+PerformanceAttribute Module,Reassign Attribute,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Reassign Attribute,reassignAttribute,/api/attributes/reassign/{attributeId}
+PerformanceAttribute Module,Get Employees Assigned By Manager,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Employees Assigned By Manager,getEmployeesAssignedByManager,/api/attributes/manager/{managerId}/employees
+PerformanceAttribute Module,Get Submitted Attributes For Manager,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Submitted Attributes For Manager,getSubmittedAttributesForManager,/api/attributes/submitted/{managerId}
+PerformanceAttribute Module,Get Employee Attribute Details Under Manager,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Employee Attribute Details Under Manager,getEmployeeAttributeDetailsUnderManager,/api/attributes/manager/{managerId}/employee/{employeeId}
+PerformanceAttribute Module,Update Attribute Status,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Update Attribute Status,updateAttributeStatus,/api/attributes/{attributeId}/status
+PerformanceAttribute Module,Get Employees,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Employees,getEmployees,/api/attributes/reviewer/{reviewerId}/employees
+PerformanceAttribute Module,Get Employees By Hr Id,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Employees By Hr Id,getEmployeesByHrId,/api/attributes/hr/{hrId}/employees
+PerformanceAttribute Module,Review Attributes,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Review Attributes,reviewAttributes,/api/attributes/review
+PerformanceAttribute Module,Get Feedback,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Feedback,getFeedback,/api/attributes/{attributeId}/feedback
+PerformanceAttribute Module,Update Manager Feedback,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Update Manager Feedback,updateManagerFeedback,/api/attributes/{attributeId}/manager-feedback
+PerformanceAttribute Module,Submit Bulk Feedback,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Submit Bulk Feedback,submitBulkFeedback,/api/attributes/manager-feedback
+PerformanceAttribute Module,Get Manager Feedback,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Manager Feedback,getManagerFeedback,/api/attributes/{attributeId}/manager-feedback
+PerformanceAttribute Module,Update Reviewer Comments,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Update Reviewer Comments,updateReviewerComments,/api/attributes/{attributeId}/reviewer-comments
+PerformanceAttribute Module,Get Reviewer Comments,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Reviewer Comments,getReviewerComments,/api/attributes/{attributeId}/reviewer-comments
+PerformanceAttribute Module,Get Attribute History,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Attribute History,getAttributeHistory,/api/attributes/history/employee/{employeeId}
+PerformanceAttribute Module,Get Available Years,PerformanceAttribute,PerformanceAttributeController,Auto-generated OpenAPI description for Get Available Years,getAvailableYears,/api/attributes/history/employee/{employeeId}/years
+OrgChart Module,Get Org Chart Tree,OrgChart,OrgChartController,Auto-generated OpenAPI description for Get Org Chart Tree,getOrgChartTree,/api/org-chart
+OrgChart Module,Get Organization Overview,OrgChart,OrgChartController,Auto-generated OpenAPI description for Get Organization Overview,getOrganizationOverview,/api/organization-overview/{employeeId}
+PayrollManagement Module,Calculate Payroll,PayrollManagement,PayrollManagementController,Auto-generated OpenAPI description for Calculate Payroll,calculatePayroll,/api/payroll-management/calculate
+ApplicantDocuments Module,Upload Documents,ApplicantDocuments,ApplicantDocumentsController,Auto-generated OpenAPI description for Upload Documents,uploadDocuments,/api/v1/documents/upload/{id}
+ApplicantDocuments Module,Get All Templates,ApplicantDocuments,ApplicantDocumentsController,Auto-generated OpenAPI description for Get All Templates,getAllTemplates,/api/v1/documents/templates
+ApplicantDocuments Module,Delete Documents,ApplicantDocuments,ApplicantDocumentsController,Auto-generated OpenAPI description for Delete Documents,deleteDocuments,/api/v1/documents/{id}
+ITDeclarationField Module,Get Fields By Card,ITDeclarationField,ITDeclarationFieldController,Auto-generated OpenAPI description for Get Fields By Card,getFieldsByCard,/api/it-declaration-fields/card/{cardId}
+ITDeclarationField Module,Save Field,ITDeclarationField,ITDeclarationFieldController,Auto-generated OpenAPI description for Save Field,saveField,/api/it-declaration-fields/card/{cardId}/save
+ITDeclarationField Module,Delete Field,ITDeclarationField,ITDeclarationFieldController,Auto-generated OpenAPI description for Delete Field,deleteField,/api/it-declaration-fields/{id}
+ITDeclarationField Module,Get All Fields,ITDeclarationField,ITDeclarationFieldController,Auto-generated OpenAPI description for Get All Fields,getAllFields,/api/it-declaration-fields/all
+OfferLetter Module,Http Headers,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for Http Headers,generateOffer,/api/v1/letters/offer/{applicantId}/{templateName}
+OfferLetter Module,If,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for If,generateOfferPdf,/api/v1/letters/offer/pdf/{applicantId}/{templateName}
+OfferLetter Module,Send Both Letters,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for Send Both Letters,sendBothLetters,/api/v1/letters/sendBoth/{applicantId}/{offerFile}/{appointFile}
+OfferLetter Module,Send Both Letters Pdf,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for Send Both Letters Pdf,sendBothLettersPdf,/api/v1/letters/sendBoth/pdf/{applicantId}/{offerFile}/{appointFile}
+OfferLetter Module,Send Offer Letter Pdf,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for Send Offer Letter Pdf,sendOfferLetterPdf,/api/v1/letters/sendOffer/pdf/{applicantId}/{offerFile}
+OfferLetter Module,Send Appointment Letter Pdf,OfferLetter,OfferLetterController,Auto-generated OpenAPI description for Send Appointment Letter Pdf,sendAppointmentLetterPdf,/api/v1/letters/sendAppointment/pdf/{applicantId}/{appointFile}
+TravelRequest Module,Upload Multiple Files,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Upload Multiple Files,uploadMultipleFiles,/api/travel/admin/upload-pdfs/{requestId}
+TravelRequest Module,Get Documents By Request Id,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get Documents By Request Id,getDocumentsByRequestId,/api/travel/documents/{requestId}
+TravelRequest Module,If,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for If,downloadDocument,/api/travel/download-document/{documentId}
+TravelRequest Module,Create Request,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Create Request,createRequest,/api/travel/create
+TravelRequest Module,Get All Requests For Manager,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get All Requests For Manager,getAllRequestsForManager,/api/travel/manager/all/{managerId}
+TravelRequest Module,Get Pending For Manager,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get Pending For Manager,getPendingForManager,/api/travel/manager/pending/{managerId}
+TravelRequest Module,Approve Request,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Approve Request,approveRequest,/api/travel/approve/{id}
+TravelRequest Module,Reject Request,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Reject Request,rejectRequest,/api/travel/reject/{id}
+TravelRequest Module,Reject Request By Admin,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Reject Request By Admin,rejectRequestByAdmin,/api/travel/admin/reject/{id}
+TravelRequest Module,Cancel Request,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Cancel Request,cancelRequest,/api/travel/cancel/{id}
+TravelRequest Module,Get Requests Assigned To Admin,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get Requests Assigned To Admin,getRequestsAssignedToAdmin,/api/travel/admin/assigned-requests/{adminId}
+TravelRequest Module,Assign To Admin,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Assign To Admin,assignToAdmin,/api/travel/admin/assign/{id}
+TravelRequest Module,Transfer To Admin,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Transfer To Admin,transferToAdmin,/api/travel/admin/transfer/{id}
+TravelRequest Module,Get All Requests By Employee,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get All Requests By Employee,getAllRequestsByEmployee,/api/travel/employee/all/{employeeId}
+TravelRequest Module,Get Active Requests By Employee,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get Active Requests By Employee,getActiveRequestsByEmployee,/api/travel/employee/active/{employeeId}
+TravelRequest Module,Mark As Downloaded,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Mark As Downloaded,markAsDownloaded,/api/travel/mark-downloaded/{requestId}
+TravelRequest Module,Get Travel Reports,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Get Travel Reports,getTravelReports,/api/travel/reports
+TravelRequest Module,Reassign Manager,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Reassign Manager,reassignManager,/api/travel/admin/reassign-manager/{requestId}
+TravelRequest Module,Debug Pending Requests,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Debug Pending Requests,debugPendingRequests,/api/travel/debug/pending-requests/{employeeId}
+TravelRequest Module,Test Reassign,TravelRequest,TravelRequestController,Auto-generated OpenAPI description for Test Reassign,testReassign,/api/travel/debug/test-reassign/{employeeId}
+TaskCount Module,Get Task Counts,TaskCount,TaskCountController,Auto-generated OpenAPI description for Get Task Counts,getTaskCounts,/api/task-counts/{employeeId}
+Audit Module,Get Audit Logs By User Id,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By User Id,getAuditLogsByUserId,/api/audit/user/{userId}
+Audit Module,Get Audit Logs By Module,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By Module,getAuditLogsByModule,/api/audit/module/{module}
+Audit Module,Get Audit Logs By Entity,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By Entity,getAuditLogsByEntity,/api/audit/entity/{entityName}/{entityId}
+Audit Module,Get Audit Logs By Date Range,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By Date Range,getAuditLogsByDateRange,/api/audit/date-range
+Audit Module,Get Audit Logs By User And Date Range,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By User And Date Range,getAuditLogsByUserAndDateRange,/api/audit/user/{userId}/date-range
+Audit Module,Get Audit Logs By Module And Date Range,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By Module And Date Range,getAuditLogsByModuleAndDateRange,/api/audit/module/{module}/date-range
+Audit Module,Get Audit Logs By Reference Id,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Logs By Reference Id,getAuditLogsByReferenceId,/api/audit/reference/{referenceId}
+Audit Module,Get Audit Statistics,Audit,AuditController,Auto-generated OpenAPI description for Get Audit Statistics,getAuditStatistics,/api/audit/statistics
+Audit Module,Get Login Attempts,Audit,AuditController,Auto-generated OpenAPI description for Get Login Attempts,getLoginAttempts,/api/audit/login-attempts
+Audit Module,Test Audit Logging,Audit,AuditController,Auto-generated OpenAPI description for Test Audit Logging,testAuditLogging,/api/audit/test-audit
+Audit Module,Test Claim Audit Logging,Audit,AuditController,Auto-generated OpenAPI description for Test Claim Audit Logging,testClaimAuditLogging,/api/audit/test-claim-audit
+Audit Module,Get Failed Logins,Audit,AuditController,Auto-generated OpenAPI description for Get Failed Logins,getFailedLogins,/api/audit/failed-logins
+Allocation Module,Get Allocation Report,Allocation,AllocationController,Auto-generated OpenAPI description for Get Allocation Report,getAllocationReport,/api/allocations/fetch-reports
+Allocation Module,Get Allocations By Project,Allocation,AllocationController,Auto-generated OpenAPI description for Get Allocations By Project,getAllocationsByProject,/api/allocations/project/{projectId}
+Allocation Module,Create Bulk Allocations,Allocation,AllocationController,Auto-generated OpenAPI description for Create Bulk Allocations,createBulkAllocations,/api/allocations/bulk
+Allocation Module,Get Allocations For Employee,Allocation,AllocationController,Auto-generated OpenAPI description for Get Allocations For Employee,getAllocationsForEmployee,/api/allocations/employee/{employeeId}
+Allocation Module,Get Allocations For Manager,Allocation,AllocationController,Auto-generated OpenAPI description for Get Allocations For Manager,getAllocationsForManager,/api/allocations/manager/{managerId}
+Allocation Module,Get Allocations By Employee And Date,Allocation,AllocationController,Auto-generated OpenAPI description for Get Allocations By Employee And Date,getAllocationsByEmployeeAndDate,/api/allocations/employee/{employeeId}/date/{date}
+Allocation Module,Update Allocation,Allocation,AllocationController,Auto-generated OpenAPI description for Update Allocation,updateAllocation,/api/allocations/{allocationId}
+Allocation Module,Get Contract Management Report,Allocation,AllocationController,Auto-generated OpenAPI description for Get Contract Management Report,getContractManagementReport,/api/allocations/contract-report
+ExitAnswers Module,Get Exit Answers For Form,ExitAnswers,ExitAnswersController,Auto-generated OpenAPI description for Get Exit Answers For Form,getExitAnswersForForm,/api/v1/exit-management/exit-answers/{formId}
+OnboardingAuth Module,Send Otp,OnboardingAuth,OnboardingAuthController,Auto-generated OpenAPI description for Send Otp,sendOtp,/api/v1/auth/send-otp
+PerformanceGoal Module,Get Performance Report,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Performance Report,getPerformanceReport,/api/goals/fetch-reports
+PerformanceGoal Module,Assign Goal,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Assign Goal,assignGoal,/api/goals/assign
+PerformanceGoal Module,Assign Goals Batch,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Assign Goals Batch,assignGoalsBatch,/api/goals/assign-batch
+PerformanceGoal Module,Submit Bulk Self Assessment,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Submit Bulk Self Assessment,submitBulkSelfAssessment,/api/goals/employee/self-assessments
+PerformanceGoal Module,Update Employee Feedback,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Update Employee Feedback,updateEmployeeFeedback,/api/goals/{goalId}/employee-feedback
+PerformanceGoal Module,Get Goals For Employee,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Goals For Employee,getGoalsForEmployee,/api/goals/employee/{empId}
+PerformanceGoal Module,Delete Goal,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Delete Goal,deleteGoal,/api/goals/delete/{goalId}
+PerformanceGoal Module,Get Goals For Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Goals For Manager,getGoalsForManager,/api/goals/manager/{managerId}
+PerformanceGoal Module,Get Rejected Goals By Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Rejected Goals By Manager,getRejectedGoalsByManager,/api/goals/rejected/{managerId}
+PerformanceGoal Module,Reassign Goal,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Reassign Goal,reassignGoal,/api/goals/reassign/{goalId}
+PerformanceGoal Module,Get Employees Assigned By Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employees Assigned By Manager,getEmployeesAssignedByManager,/api/goals/manager/{managerId}/employees
+PerformanceGoal Module,Get Submitted Goals For Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Submitted Goals For Manager,getSubmittedGoalsForManager,/api/goals/submitted/{managerId}
+PerformanceGoal Module,Get Goals Under Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Goals Under Manager,getGoalsUnderManager,/api/goals/manager/{managerId}/employee-goals
+PerformanceGoal Module,Get Employee Goal Details Under Manager,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employee Goal Details Under Manager,getEmployeeGoalDetailsUnderManager,/api/goals/manager/{managerId}/employee/{employeeId}
+PerformanceGoal Module,Update Goal Status,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Update Goal Status,updateGoalStatus,/api/goals/{goalId}/status
+PerformanceGoal Module,Get Employees,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employees,getEmployees,/api/goals/reviewer/{reviewerId}/employees
+PerformanceGoal Module,Get Employees By Hr Id,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employees By Hr Id,getEmployeesByHrId,/api/goals/hr/{hrId}/employees
+PerformanceGoal Module,Review Goals,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Review Goals,reviewGoals,/api/goals/review
+PerformanceGoal Module,Get Feedback,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Feedback,getFeedback,/api/goals/{goalId}/feedback
+PerformanceGoal Module,Update Manager Feedback,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Update Manager Feedback,updateManagerFeedback,/api/goals/{goalId}/manager-feedback
+PerformanceGoal Module,Submit Bulk Feedback,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Submit Bulk Feedback,submitBulkFeedback,/api/goals/manager-feedback
+PerformanceGoal Module,Get Manager Feedback,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Manager Feedback,getManagerFeedback,/api/goals/{goalId}/manager-feedback
+PerformanceGoal Module,Update Reviewer Comments,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Update Reviewer Comments,updateReviewerComments,/api/goals/{goalId}/reviewer-comments
+PerformanceGoal Module,Get Reviewer Comments,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Reviewer Comments,getReviewerComments,/api/goals/{goalId}/reviewer-comments
+PerformanceGoal Module,Get Employee By Id,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employee By Id,getEmployeeById,/api/goals/{employeeId}
+PerformanceGoal Module,Get Employees By Role And Id,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Employees By Role And Id,getEmployeesByRoleAndId,/api/goals/by-role/{role}/{roleId}
+PerformanceGoal Module,Get Goal History,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Goal History,getGoalHistory,/api/goals/history/employee/{employeeId}
+PerformanceGoal Module,Get Available Years,PerformanceGoal,PerformanceGoalController,Auto-generated OpenAPI description for Get Available Years,getAvailableYears,/api/goals/history/employee/{employeeId}/years
+AssetCategory Module,Get Parent Categories,AssetCategory,AssetCategoryController,Auto-generated OpenAPI description for Get Parent Categories,getParentCategories,/api/assets/categories/roots
+AssetCategory Module,Create Categories,AssetCategory,AssetCategoryController,Auto-generated OpenAPI description for Create Categories,createCategories,/api/assets/categories/bulk
+AssetCategory Module,Update Category,AssetCategory,AssetCategoryController,Auto-generated OpenAPI description for Update Category,updateCategory,/api/assets/categories/{id}
+AssetCategory Module,Delete Category,AssetCategory,AssetCategoryController,Auto-generated OpenAPI description for Delete Category,deleteCategory,/api/assets/categories/{id}
+Email Module,Send Onboarding Email,Email,EmailController,Auto-generated OpenAPI description for Send Onboarding Email,sendOnboardingEmail,/api/v1/emails/send-onboarding-link
+Email Module,Test Email,Email,EmailController,Auto-generated OpenAPI description for Test Email,testEmail,/api/v1/emails/test
+Email Module,Send Reupload Mail,Email,EmailController,Auto-generated OpenAPI description for Send Reupload Mail,sendReuploadMail,/api/v1/emails/send-reupload-mail
+PolicyAcknowledgment Module,Get Pending Policies,PolicyAcknowledgment,PolicyAcknowledgmentController,Auto-generated OpenAPI description for Get Pending Policies,getPendingPolicies,/api/policies/pending
+PolicyAcknowledgment Module,Acknowledge Policy,PolicyAcknowledgment,PolicyAcknowledgmentController,Auto-generated OpenAPI description for Acknowledge Policy,acknowledgePolicy,/api/policies/acknowledge/{policyId}
+Clearance Module,Get Clearance,Clearance,ClearanceController,Auto-generated OpenAPI description for Get Clearance,getClearance,/api/clearance/{resignationId}
+Clearance Module,Create Or Update Clearance,Clearance,ClearanceController,Auto-generated OpenAPI description for Create Or Update Clearance,createOrUpdateClearance,/api/clearance/{resignationId}
+CompensationDetails Module,Get Proxy Ytd Report,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get Proxy Ytd Report,getProxyYtdReport,/api/compensation/ytd-report
+CompensationDetails Module,Get Designation Categories,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get Designation Categories,getDesignationCategories,/api/compensation/designation-categories
+CompensationDetails Module,Create Designation Category,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Create Designation Category,createDesignationCategory,/api/compensation/designation-categories
+CompensationDetails Module,Delete Designation Category,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Delete Designation Category,deleteDesignationCategory,/api/compensation/designation-categories/{id}
+CompensationDetails Module,Get Employee History,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get Employee History,getEmployeeHistory,/api/compensation/history/{employeeId}
+CompensationDetails Module,Get Pending Tasks,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get Pending Tasks,getPendingTasks,/api/compensation/approver/{approverId}
+CompensationDetails Module,Get History,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get History,getHistory,/api/compensation/history
+CompensationDetails Module,Manual Sync,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Manual Sync,manualSync,/api/compensation/sync
+CompensationDetails Module,Get By Employee Id,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get By Employee Id,getByEmployeeId,/api/compensation/{employeeId}
+CompensationDetails Module,Approve,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Approve,approve,/api/compensation/approve
+CompensationDetails Module,Reject,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Reject,reject,/api/compensation/reject
+CompensationDetails Module,Finalize Compensation,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Finalize Compensation,finalizeCompensation,/api/compensation/finalize
+CompensationDetails Module,Get Templates,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Get Templates,getTemplates,/api/compensation/templates
+CompensationDetails Module,Finalize With Doc,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Finalize With Doc,finalizeWithDoc,/api/compensation/finalize-with-doc
+CompensationDetails Module,Upload Template,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Upload Template,uploadTemplate,/api/compensation/upload-template
+CompensationDetails Module,Delete Template,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Delete Template,deleteTemplate,/api/compensation/templates/{id}
+CompensationDetails Module,If,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for If,previewTemplate,/api/compensation/templates/{id}/preview
+CompensationDetails Module,Save Bulk,CompensationDetails,CompensationDetailsController,Auto-generated OpenAPI description for Save Bulk,saveBulk,/api/compensation/bulk
+AllCategories Module,Add Category,AllCategories,AllCategoriesController,Auto-generated OpenAPI description for Add Category,addCategory,/api/v1/all-categories/category/add
+AllCategories Module,Add Type,AllCategories,AllCategoriesController,Auto-generated OpenAPI description for Add Type,addType,/api/v1/all-categories/type/add
+AllCategories Module,Get All,AllCategories,AllCategoriesController,Auto-generated OpenAPI description for Get All,getAll,/api/v1/all-categories/all
+HelpDeskCategory Module,Create Category,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Create Category,createCategory,/api/v1/helpdesk-categories/create
+HelpDeskCategory Module,Get Categories,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Get Categories,getCategories,/api/v1/helpdesk-categories/by-team-type
+HelpDeskCategory Module,Create Sub Cat,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Create Sub Cat,createSubCat,/api/v1/helpdesk-categories/{categoryId}/subcategories/create
+HelpDeskCategory Module,Get Sub Categories,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Get Sub Categories,getSubCategories,/api/v1/helpdesk-categories/{categoryId}/subcategories
+HelpDeskCategory Module,Get Categories By Ticket Type,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Get Categories By Ticket Type,getCategoriesByTicketType,/api/v1/helpdesk-categories/ticket-type
+HelpDeskCategory Module,Get All Ticket Types,HelpDeskCategory,HelpDeskCategoryController,Auto-generated OpenAPI description for Get All Ticket Types,getAllTicketTypes,/api/v1/helpdesk-categories/ticket-types
+Workflow Module,Upload Workflow Document,Workflow,WorkflowController,Auto-generated OpenAPI description for Upload Workflow Document,uploadWorkflowDocument,/api/v1/workflow/upload
+Workflow Module,Get Employee Documents,Workflow,WorkflowController,Auto-generated OpenAPI description for Get Employee Documents,getEmployeeDocuments,/api/v1/workflow/documents
+Workflow Module,Get Employee Documents By Year,Workflow,WorkflowController,Auto-generated OpenAPI description for Get Employee Documents By Year,getEmployeeDocumentsByYear,/api/v1/workflow/documents/by-year
+Workflow Module,View Document,Workflow,WorkflowController,Auto-generated OpenAPI description for View Document,viewDocument,/api/v1/workflow/document/{id}/view
+Workflow Module,Download Document,Workflow,WorkflowController,Auto-generated OpenAPI description for Download Document,downloadDocument,/api/v1/workflow/document/{id}/download
+Workflow Module,Validate Employee Ids,Workflow,WorkflowController,Auto-generated OpenAPI description for Validate Employee Ids,validateEmployeeIds,/api/v1/workflow/validate-employee-ids
+Workflow Module,Delete Document,Workflow,WorkflowController,Auto-generated OpenAPI description for Delete Document,deleteDocument,/api/v1/workflow/document/{id}
+Employee Module,Get Employee By Employee Id,Employee,EmployeeController,Auto-generated OpenAPI description for Get Employee By Employee Id,getEmployeeByEmployeeId,/api/employees/{employeeId}
+Employee Module,Bulk Onboard Employees,Employee,EmployeeController,Auto-generated OpenAPI description for Bulk Onboard Employees,bulkOnboardEmployees,/api/employees/bulk-onboard
+Employee Module,Update Employee Profile,Employee,EmployeeController,Auto-generated OpenAPI description for Update Employee Profile,updateEmployeeProfile,/api/employees/{employeeId}
+Employee Module,Update Employee Bank Details,Employee,EmployeeController,Auto-generated OpenAPI description for Update Employee Bank Details,updateEmployeeBankDetails,/api/employees/{employeeId}/bank-details
+Employee Module,Validate Employee Ids,Employee,EmployeeController,Auto-generated OpenAPI description for Validate Employee Ids,validateEmployeeIds,/api/employees/validate
+Employee Module,Get Master Data Report,Employee,EmployeeController,Auto-generated OpenAPI description for Get Master Data Report,getMasterDataReport,/api/employees/master-data-report
+Employee Module,Get Distinct Roles,Employee,EmployeeController,Auto-generated OpenAPI description for Get Distinct Roles,getDistinctRoles,/api/employees/distinct-roles
+Employee Module,Get Distinct Work Locations,Employee,EmployeeController,Auto-generated OpenAPI description for Get Distinct Work Locations,getDistinctWorkLocations,/api/employees/distinct-locations
+Employee Module,Get Distinct Genders,Employee,EmployeeController,Auto-generated OpenAPI description for Get Distinct Genders,getDistinctGenders,/api/employees/distinct-genders
+Employee Module,Get Distinct Departments,Employee,EmployeeController,Auto-generated OpenAPI description for Get Distinct Departments,getDistinctDepartments,/api/employees/distinct-departments
+Employee Module,Get Employee Personal Details,Employee,EmployeeController,Auto-generated OpenAPI description for Get Employee Personal Details,getEmployeePersonalDetails,/api/employees/{employeeId}/personal-details
+Employee Module,Update Employee Personal Details,Employee,EmployeeController,Auto-generated OpenAPI description for Update Employee Personal Details,updateEmployeePersonalDetails,/api/employees/{employeeId}/personal-details
+Payroll Module,Generate Payslips For All,Payroll,PayrollController,Auto-generated OpenAPI description for Generate Payslips For All,generatePayslipsForAll,/api/payroll/generate-payslips
+Payroll Module,Generate Payslip For Employee,Payroll,PayrollController,Auto-generated OpenAPI description for Generate Payslip For Employee,generatePayslipForEmployee,/api/payroll/generate-payslip/{employeeId}
+Payroll Module,Get All Payslips,Payroll,PayrollController,Auto-generated OpenAPI description for Get All Payslips,getAllPayslips,/api/payroll/payslips
+Payroll Module,Get Payslip By Id,Payroll,PayrollController,Auto-generated OpenAPI description for Get Payslip By Id,getPayslipById,/api/payroll/payslips/{id}
+Payroll Module,Get Payslips By Employee,Payroll,PayrollController,Auto-generated OpenAPI description for Get Payslips By Employee,getPayslipsByEmployee,/api/payroll/payslips/employee/{employeeId}
+Payroll Module,Get Payslips By Month Year,Payroll,PayrollController,Auto-generated OpenAPI description for Get Payslips By Month Year,getPayslipsByMonthYear,/api/payroll/payslips/month/{month}/year/{year}
+Payroll Module,If,Payroll,PayrollController,Auto-generated OpenAPI description for If,downloadPayslipPdf,/api/payroll/payslip/{id}/pdf
+Payroll Module,Delete Payslip,Payroll,PayrollController,Auto-generated OpenAPI description for Delete Payslip,deletePayslip,/api/payroll/payslips/{id}
+Payroll Module,Upload Salary Config Excel,Payroll,PayrollController,Auto-generated OpenAPI description for Upload Salary Config Excel,uploadSalaryConfigExcel,/api/payroll/salary-config/bulk-excel
+Payroll Module,Release Payslips,Payroll,PayrollController,Auto-generated OpenAPI description for Release Payslips,releasePayslips,/api/payroll/release-payslips
+Payroll Module,Open Payslip With Password,Payroll,PayrollController,Auto-generated OpenAPI description for Open Payslip With Password,openPayslipWithPassword,/api/payroll/payslip/{id}/open
+Payroll Module,API Endpoint,Payroll,PayrollController,Auto-generated OpenAPI description,downloadSalaryConfigTemplate,/api/payroll/salary-config/template
+Payroll Module,Config Exists For Month Year,Payroll,PayrollController,Auto-generated OpenAPI description for Config Exists For Month Year,configExistsForMonthYear,/api/payroll/salary-config/exist
+Payroll Module,Do Payslips Exist,Payroll,PayrollController,Auto-generated OpenAPI description for Do Payslips Exist,doPayslipsExist,/api/payroll/payslips/exist
+TestRounding Module,Test Rounding,TestRounding,TestRoundingController,Auto-generated OpenAPI description for Test Rounding,testRounding,/api/test/round
+AssetMaster Module,API Endpoint,AssetMaster,AssetMasterController,Auto-generated OpenAPI description,downloadTemplate,/api/assets/template
+AssetMaster Module,Import Assets,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Import Assets,importAssets,/api/assets/import
+AssetMaster Module,Get Asset By Id,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Get Asset By Id,getAssetById,/api/assets/{id}
+AssetMaster Module,Update Asset,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Update Asset,updateAsset,/api/assets/{id}
+AssetMaster Module,Update Status,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Update Status,updateStatus,/api/assets/{id}/status
+AssetMaster Module,Get Dashboard Data,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Get Dashboard Data,getDashboardData,/api/assets/dashboard-data
+AssetMaster Module,Get Available Assets,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Get Available Assets,getAvailableAssets,/api/assets/available
+AssetMaster Module,Delete Asset,AssetMaster,AssetMasterController,Auto-generated OpenAPI description for Delete Asset,deleteAsset,/api/assets/{id}
+ITDeclaration Module,Save Or Update,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Save Or Update,saveOrUpdate,/api/it-declarations/{employeeId}
+ITDeclaration Module,Get By Employee,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get By Employee,getByEmployee,/api/it-declarations/{employeeId}
+ITDeclaration Module,Get By Employee And Year,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get By Employee And Year,getByEmployeeAndYear,/api/it-declarations/{employeeId}/{financialYear}
+ITDeclaration Module,Get All,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get All,getAll,/api/it-declarations/all
+ITDeclaration Module,Get By Status,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get By Status,getByStatus,/api/it-declarations/status/{status}
+ITDeclaration Module,Update Status,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Update Status,updateStatus,/api/it-declarations/{id}/status
+ITDeclaration Module,Is Finance Person,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Is Finance Person,isFinancePerson,/api/it-declarations/is-finance/{employeeId}
+ITDeclaration Module,Get Finance Declarations,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get Finance Declarations,getFinanceDeclarations,/api/it-declarations/finance/{financeId}
+ITDeclaration Module,Get Finance Declaration View,ITDeclaration,ITDeclarationController,Auto-generated OpenAPI description for Get Finance Declaration View,getFinanceDeclarationView,/api/it-declarations/finance/view/{employeeId}/{financialYear}
