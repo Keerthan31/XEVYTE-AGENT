@@ -409,6 +409,8 @@ async def call_xevyte_api(
             if emp_id and entry_id_str:
                 try:
                     body = await WorkflowHelpers.build_checkout_payload(user_context, token, entry_id_str, body)
+                    if body.get("id"):
+                        actual_path = actual_path.replace("{entryId}", str(body["id"]))
                 except Exception as e:
                     logger.error(f"Failed to build check-out payload: {e}")
                     return {
@@ -922,6 +924,7 @@ class WorkflowHelpers:
             
         import datetime
         now = datetime.datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
         time_str = now.strftime("%H:%M:%S")
         
         # 1. Fetch the existing entry
@@ -938,14 +941,17 @@ class WorkflowHelpers:
                 if resp.status_code == 200:
                     entries = resp.json()
                     for e in entries:
-                        if str(e.get("id")) == str(entry_id):
+                        if entry_id and entry_id != "{entryId}" and str(e.get("id")) == str(entry_id):
+                            existing_entry = e
+                            break
+                        elif e.get("date") == date_str:
                             existing_entry = e
                             break
         except Exception as e:
             logger.warning(f"Failed to fetch existing entry {entry_id} for check-out merge: {e}")
             
         if not existing_entry:
-            raise ValueError(f"Could not find today's check-in entry with ID {entry_id}")
+            raise ValueError(f"Could not find today's check-in entry for check-out")
             
         # 2. Merge user-provided fields
         payload = dict(existing_entry)
