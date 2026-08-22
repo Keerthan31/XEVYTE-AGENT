@@ -967,9 +967,12 @@ class WorkflowHelpers:
         try:
             login_time_str = payload.get("loginTime")
             if login_time_str:
-                login_dt = datetime.datetime.strptime(login_time_str, "%H:%M:%S")
-                logout_dt = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                from dateutil import parser
+                login_dt = parser.parse(login_time_str)
+                logout_dt = parser.parse(time_str)
                 diff = logout_dt - login_dt
+                if diff.total_seconds() < 0:
+                    diff += datetime.timedelta(days=1)
                 hours = diff.total_seconds() / 3600.0
                 payload["totalHours"] = round(hours, 2)
         except Exception as e:
