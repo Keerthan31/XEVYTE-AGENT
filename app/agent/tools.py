@@ -967,8 +967,16 @@ class WorkflowHelpers:
         try:
             login_time_str = payload.get("loginTime")
             if login_time_str:
-                login_dt = datetime.datetime.strptime(login_time_str, "%H:%M:%S")
-                logout_dt = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                try:
+                    login_dt = datetime.datetime.strptime(login_time_str, "%H:%M:%S")
+                except ValueError:
+                    login_dt = datetime.datetime.strptime(login_time_str, "%H:%M")
+
+                try:
+                    logout_dt = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                except ValueError:
+                    logout_dt = datetime.datetime.strptime(time_str, "%H:%M")
+
                 diff = logout_dt - login_dt
                 hours = diff.total_seconds() / 3600.0
                 payload["totalHours"] = round(hours, 2)
