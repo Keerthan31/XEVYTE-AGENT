@@ -392,7 +392,8 @@ async def call_xevyte_api(
     if method in ("POST", "PUT", "DELETE", "PATCH"):
         
         # Special handling for Check-In (submitEntry)
-        if endpoint_id == "submitEntry" and method == "POST" and body:
+        if endpoint_id == "submitEntry" and method == "POST":
+            body = body or {}
             try:
                 body = await WorkflowHelpers.build_checkin_payload(user_context, token, body)
             except Exception as e:
@@ -403,7 +404,8 @@ async def call_xevyte_api(
                 }
         
         # Special handling for Check-Out (updateEntry)
-        if endpoint_id == "updateEntry" and method == "PUT" and body:
+        if endpoint_id == "updateEntry" and method == "PUT":
+            body = body or {}
             emp_id = user_context.get("employeeId")
             entry_id_str = actual_path.split("/")[-1]
             if emp_id and entry_id_str:
@@ -417,7 +419,8 @@ async def call_xevyte_api(
                     }
                     
         # Special handling for Leave Application (applyLeave)
-        if endpoint_id == "applyLeave" and method == "POST" and body:
+        if endpoint_id == "applyLeave" and method == "POST":
+            body = body or {}
             try:
                 leave_result = await WorkflowHelpers.collect_leave_data(
                     user_context, token,
