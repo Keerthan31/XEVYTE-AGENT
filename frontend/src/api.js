@@ -12,7 +12,7 @@ axios.interceptors.response.use(
   }
 );
 
-const BASE = 'http://localhost:8000/api/agent'
+const BASE = '/api/agent'
 
 export async function exchangeToken(token) {
   try {
@@ -112,7 +112,7 @@ export async function fetchSessionsDB(employeeId, token) {
     return res.data
   } catch (e) {
     console.warn('Failed to fetch sessions from DB:', e)
-    return []
+    return null
   }
 }
 
@@ -169,38 +169,97 @@ export async function fetchAgentBriefing({ token, employeeId }) {
   
   try {
     const headers = { Authorization: `Bearer ${token}` }
-    const res = await axios.get(`http://localhost:8082/api/notifications/${employeeId}`, { headers })
-    const notifications = Array.isArray(res.data) ? res.data : []
     
-    // Filter unread notifications
-    const unread = notifications.filter(n => !n.read)
-    
-    if (unread.length === 0) return []
+    // Fetch notifications, task counts (approvals), and pending policies in parallel
+    const [notifsResult, tasksResult, policiesResult] = await Promise.allSettled([
+      axios.get(`${BASE}/notifications/${employeeId}`, { headers }),
+      axios.get(`${BASE}/task-counts/${employeeId}`, { headers }),
+      axios.get(`${BASE}/policies/pending`, { headers })
+    ])
     
     const briefing = []
-    
-    // Group or summarize them. If there's just a few, show them, otherwise summarize.
-    if (unread.length === 1) {
-      briefing.push({
-        tag: 'Notification',
-        tier: 'safe',
-        text: unread[0].message
-      })
-    } else {
-      briefing.push({
-        tag: 'Notifications',
-        tier: 'safe',
-        text: `You have ${unread.length} unread notifications.`
-      })
-      
-      // Optionally show the first one or two
-      for (let i = 0; i < Math.min(2, unread.length); i++) {
+
+    // 1. Process Task Counts / Pending Manager & HR Approvals
+    if (tasksResult.status === 'fulfilled' && tasksResult.value?.data) {
+      const counts = tasksResult.value.data
+      if (counts.leaves > 0) {
         briefing.push({
-          tag: 'Alert',
-          tier: 'safe',
-          text: unread[i].message
+          tag: 'Pending Approvals',
+          tier: 'confirm',
+          text: `You have ${counts.leaves} leave request(s) awaiting your approval.`
         })
       }
+      if (counts.claims > 0) {
+        briefing.push({
+          tag: 'Pending Claims',
+          tier: 'confirm',
+          text: `You have ${counts.claims} expense claim(s) awaiting your review.`
+        })
+      }
+      if (counts.helpdesk > 0) {
+        briefing.push({
+          tag: 'Pending Tickets',
+          tier: 'confirm',
+          text: `You have ${counts.helpdesk} helpdesk change request(s) assigned for action.`
+        })
+      }
+      if (counts.travel > 0) {
+        briefing.push({
+          tag: 'Pending Travel',
+          tier: 'confirm',
+          text: `You have ${counts.travel} travel request(s) awaiting your approval.`
+        })
+      }
+      if (counts.regularization > 0) {
+        briefing.push({
+          tag: 'Regularization',
+          tier: 'confirm',
+          text: `You have ${counts.regularization} attendance regularization request(s) pending.`
+        })
+      }
+      if (counts.exit > 0) {
+        briefing.push({
+          tag: 'Exit Management',
+          tier: 'confirm',
+          text: `You have ${counts.exit} resignation/exit request(s) pending your review.`
+        })
+      }
+    }
+
+    // 2. Process Notifications & System Alerts
+    if (notifsResult.status === 'fulfilled' && Array.isArray(notifsResult.value?.data)) {
+      const notifications = notifsResult.value.data
+      const unread = notifications.filter(n => !n.read && !n.is_read)
+      
+      if (unread.length === 1) {
+        briefing.push({
+          tag: 'Notification',
+          tier: 'safe',
+          text: unread[0].message
+        })
+      } else if (unread.length > 1) {
+        briefing.push({
+          tag: 'Notifications',
+          tier: 'safe',
+          text: `You have ${unread.length} unread notification alerts.`
+        })
+        for (let i = 0; i < Math.min(3, unread.length); i++) {
+          briefing.push({
+            tag: 'Alert',
+            tier: 'safe',
+            text: unread[i].message
+          })
+        }
+      }
+    }
+
+    // 3. Process Pending Policies
+    if (policiesResult.status === 'fulfilled' && Array.isArray(policiesResult.value?.data) && policiesResult.value.data.length > 0) {
+      briefing.push({
+        tag: 'Policy Review',
+        tier: 'confirm',
+        text: `You have ${policiesResult.value.data.length} company policy/policies pending acknowledgment.`
+      })
     }
     
     return briefing

@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Bot, User, Copy, Check, Terminal, X } from 'lucide-react'
+import { Bot, User, Copy, Check, Terminal, X, Loader2, Sparkles, Cpu, FileText, File, Paperclip, Table, Image as ImageIcon } from 'lucide-react'
 import TicketForm from './TicketForm.jsx'
 import LeaveForm from './LeaveForm.jsx'
 
@@ -11,9 +11,105 @@ function formatTime(ts) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function MessageBubble({ role, content, ts, onSend, pendingToken, isLast, onConfirmBtn }) {
+function renderUserContent(rawText, onOpenFile, attachment) {
+  if (!rawText) return null
+
+  // Check for attachment patterns: "📎 filename.csv" or "[Attached file: filename.csv]"
+  const attachMatches = [...rawText.matchAll(/(?:📎\s*([^\n\r]+)|\[Attached file:\s*([^\]\n\r]+)\])/g)]
+  
+  if (attachMatches.length === 0 && !attachment) {
+    return <div className="turn-user text-[13.5px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 shadow-sm">{rawText}</div>
+  }
+
+  const filename = (attachment?.filename || attachMatches[0]?.[1] || attachMatches[0]?.[2] || '').trim()
+  const cleanText = rawText.replace(/(?:📎\s*[^\n\r]+|\[Attached file:\s*[^\]\n\r]+\])/g, '').trim()
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+
+  const isSpreadsheet = ['csv', 'xlsx', 'xls'].includes(ext)
+  const isPdf = ext === 'pdf'
+  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)
+
+  return (
+    <div className="flex flex-col gap-2 items-end">
+      {cleanText && (
+        <div className="turn-user text-[13.5px] leading-relaxed whitespace-pre-wrap px-4 py-2.5 shadow-sm">
+          {cleanText}
+        </div>
+      )}
+      <div 
+        onClick={() => onOpenFile && onOpenFile(attachment || { filename })}
+        className="flex items-center gap-3 p-2.5 px-3.5 rounded-xl bg-white border border-slate-200/90 shadow-sm hover:border-agent-accent hover:shadow-md transition-all max-w-sm cursor-pointer group/card"
+        title="Click to open and inspect file contents"
+      >
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover/card:scale-105 ${
+          isSpreadsheet 
+            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
+            : isPdf 
+            ? 'bg-rose-50 text-rose-600 border border-rose-200'
+            : isImage
+            ? 'bg-blue-50 text-blue-600 border border-blue-200'
+            : 'bg-slate-50 text-slate-600 border border-slate-200'
+        }`}>
+          {isSpreadsheet ? <Table size={18} /> : isPdf ? <FileText size={18} /> : isImage ? <ImageIcon size={18} /> : <File size={18} />}
+        </div>
+        <div className="flex flex-col min-w-0 pr-1 text-left">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-slate-800 truncate max-w-[180px] group-hover/card:text-agent-accent transition-colors">
+              {filename}
+            </span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono ${
+              isSpreadsheet 
+                ? 'bg-emerald-100 text-emerald-700' 
+                : isPdf 
+                ? 'bg-rose-100 text-rose-700'
+                : 'bg-slate-100 text-slate-700'
+            }`}>
+              {ext.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[10px] text-agent-accent font-semibold">Click to view & inspect</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const DEFAULT_LOADING_STEPS = [
+  "Analyzing your request...",
+  "Searching HRMS catalog & APIs...",
+  "Processing parameters & permissions...",
+  "Executing requested action...",
+  "Generating response..."
+]
+
+export default function MessageBubble({ 
+  role, 
+  content, 
+  ts, 
+  onSend, 
+  pendingToken, 
+  isLast, 
+  onConfirmBtn,
+  isLoading,
+  thoughts,
+  onOpenFile,
+  attachment
+}) {
   const isUser = role === 'user'
   const [copied, setCopied] = useState(false)
+  const [stepIndex, setStepIndex] = useState(0)
+
+  // Cycle through loading steps if thoughts aren't actively updating
+  useEffect(() => {
+    if (!content) {
+      const timer = setInterval(() => {
+        setStepIndex((prev) => (prev + 1) % DEFAULT_LOADING_STEPS.length)
+      }, 2500)
+      return () => clearInterval(timer)
+    }
+  }, [content])
 
   let displayContent = content
   let formType = null
@@ -48,18 +144,19 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
   if (isUser) {
     return (
       <div className="flex items-start gap-3 turn-animate flex-row-reverse">
-        <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-white border border-agent-accent/25 text-agent-accent mt-0.5">
+        <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-white border border-agent-accent/25 text-agent-accent mt-0.5 shadow-sm">
           <User size={13} />
         </div>
         <div className="flex flex-col gap-1 items-end max-w-[85%]">
-          <div className="turn-user text-[13.5px] leading-relaxed whitespace-pre-wrap px-4 py-2.5">
-            {displayContent}
-          </div>
-          {ts && <span className="text-[10px] font-agent-mono text-agent-panel-raised px-1" style={{ color: 'var(--text-muted)' }}>{formatTime(ts)}</span>}
+          {renderUserContent(displayContent, onOpenFile, attachment)}
+          {ts && <span className="text-[10px] font-agent-mono text-slate-400 px-1">{formatTime(ts)}</span>}
         </div>
       </div>
     )
   }
+
+  const activeThought = thoughts && thoughts.length > 0 ? thoughts[thoughts.length - 1] : null
+  const currentStatusText = activeThought?.text || DEFAULT_LOADING_STEPS[stepIndex]
 
   return (
     <div className="flex items-start gap-3 turn-animate">
@@ -69,7 +166,7 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
 
       <div className="flex flex-col gap-1 items-start max-w-[88%] flex-1 min-w-0">
         {displayContent ? (
-          <div className="turn-agent text-[13.5px] leading-relaxed prose prose-invert prose-sm max-w-none relative group/bubble px-4 py-3 w-full">
+          <div className="turn-agent text-[13.5px] leading-relaxed prose prose-invert prose-sm max-w-none relative group/bubble px-4 py-3 w-full shadow-sm">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -102,13 +199,13 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
                 },
                 table({ children }) {
                   return (
-                    <div className="overflow-x-auto my-3 border border-white/8 rounded-lg">
-                      <table className="min-w-full text-left text-sm divide-y divide-white/8">{children}</table>
+                    <div className="overflow-x-auto my-3 border border-slate-200 rounded-lg">
+                      <table className="min-w-full text-left text-sm divide-y divide-slate-200">{children}</table>
                     </div>
                   )
                 },
                 thead({ children }) {
-                  return <thead className="bg-white">{children}</thead>
+                  return <thead className="bg-slate-50">{children}</thead>
                 },
                 th({ children }) {
                   return <th className="px-4 py-2 font-semibold text-slate-800 text-xs uppercase tracking-wide">{children}</th>
@@ -130,10 +227,41 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
             </button>
           </div>
         ) : (
-          <div className="turn-agent flex items-center gap-1.5 py-3 px-4 w-fit">
-            <span className="typing-dot w-1.5 h-1.5 bg-agent-accent rounded-full" />
-            <span className="typing-dot w-1.5 h-1.5 bg-agent-accent rounded-full" />
-            <span className="typing-dot w-1.5 h-1.5 bg-agent-accent rounded-full" />
+          /* ── INFORMATIVE AGENT WORKING / LOADING CARD ── */
+          <div className="turn-agent px-4 py-3 rounded-2xl border border-agent-accent/25 bg-gradient-to-r from-teal-50/60 via-emerald-50/40 to-white shadow-sm flex flex-col gap-2.5 min-w-[280px] sm:min-w-[340px] turn-animate">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-md bg-agent-accent/15 flex items-center justify-center text-agent-accent">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                </div>
+                <span className="text-xs font-semibold text-agent-accent tracking-wide font-agent-mono">
+                  {currentStatusText}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-agent-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-agent-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-agent-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+
+            {thoughts && thoughts.length > 1 && (
+              <div className="pt-2 border-t border-slate-200/60 flex flex-col gap-1.5">
+                {thoughts.slice(-3).map((t, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-[11px] font-agent-mono">
+                    {t.status === 'loading' ? (
+                      <Loader2 className="w-2.5 h-2.5 text-agent-accent animate-spin flex-shrink-0" />
+                    ) : (
+                      <Check className="w-2.5 h-2.5 text-emerald-600 flex-shrink-0" />
+                    )}
+                    <span className={t.status === 'loading' ? 'text-agent-accent font-medium' : 'text-slate-500'}>
+                      {t.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -149,21 +277,22 @@ export default function MessageBubble({ role, content, ts, onSend, pendingToken,
           <div className="flex items-center gap-3 mt-3 w-full border-t border-slate-200/60 pt-3">
             <button
               onClick={() => onConfirmBtn(pendingToken, true)}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl transition-colors text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl transition-colors text-sm shadow-sm cursor-pointer"
             >
               <Check size={16} /> Confirm Approval
             </button>
             <button
               onClick={() => onConfirmBtn(pendingToken, false)}
-              className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-xl transition-colors text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-xl transition-colors text-sm shadow-sm cursor-pointer"
             >
               <X size={16} /> Decline
             </button>
           </div>
         )}
 
-        {ts && <span className="text-[10px] font-agent-mono px-1" style={{ color: 'var(--text-muted)' }}>{formatTime(ts)}</span>}
+        {ts && <span className="text-[10px] font-agent-mono text-slate-400 px-1">{formatTime(ts)}</span>}
       </div>
     </div>
   )
 }
+

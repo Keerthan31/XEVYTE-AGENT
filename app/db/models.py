@@ -25,6 +25,8 @@ class ChatMessage(Base):
     session_id: Mapped[str] = mapped_column(ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True)
     role: Mapped[str] = mapped_column(String(50)) # 'user', 'assistant', 'system', 'tool'
     content: Mapped[str] = mapped_column(Text)
+    pending_confirmation_token: Mapped[str] = mapped_column(Text, nullable=True)
+    pending_action: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     
     session: Mapped["ChatSession"] = relationship(back_populates="messages")

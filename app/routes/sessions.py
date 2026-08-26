@@ -35,7 +35,11 @@ async def list_sessions(
     if not authorization:
         raise HTTPException(status_code=401, detail="Unauthorized")
         
-    stmt = select(ChatSession).where(ChatSession.employee_id == employee_id).order_by(ChatSession.created_at.desc())
+    user_context = validate_and_extract_token(authorization)
+    if not user_context:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    stmt = select(ChatSession).where(ChatSession.employee_id == user_context["employeeId"]).order_by(ChatSession.created_at.desc())
     result = await db.execute(stmt)
     sessions = result.scalars().all()
     
@@ -63,13 +67,28 @@ async def create_session(
         raise HTTPException(status_code=401, detail="Invalid token")
         
     new_id = data.id if data.id else str(uuid.uuid4())
+    stmt = select(ChatSession).where(ChatSession.id == new_id)
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+    if existing:
+        return {"id": existing.id, "title": existing.title, "is_pinned": existing.is_pinned}
+        
     session = ChatSession(
         id=new_id,
         employee_id=user_context["employeeId"],
         title=data.title
     )
     db.add(session)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        stmt = select(ChatSession).where(ChatSession.id == new_id)
+        result = await db.execute(stmt)
+        existing = result.scalar_one_or_none()
+        if existing:
+            return {"id": existing.id, "title": existing.title, "is_pinned": existing.is_pinned}
+        raise
     
     return {"id": new_id, "title": data.title, "is_pinned": False}
 
@@ -132,6 +151,82 @@ async def get_messages(
             "id": m.id,
             "role": m.role,
             "content": m.content,
-            "created_at": m.created_at.isoformat()
+            "created_at": m.created_at.isoformat(),
+            "pending_confirmation_token": m.pending_confirmation_token,
+            "pending_action": m.pending_action
         } for m in messages if m.role in ("user", "assistant")
     ]
+
+@router.get("/notifications/{employee_id}")
+async def get_notifications(
+    employee_id: str,
+    authorization: str = Header(None)
+):
+    """Proxy notifications from the Java HRMS backend with authorization."""
+    from app.config import get_settings
+    import httpx
+    import logging
+    log = logging.getLogger("xeva.notifications")
+    
+    settings = get_settings()
+    headers = {"Authorization": authorization} if authorization else {}
+    target_url = f"{settings.HRMS_API_BASE_URL}/api/notifications/{employee_id}"
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(target_url, headers=headers)
+            if resp.is_success:
+                return resp.json()
+            return []
+    except Exception as e:
+        log.warning(f"Failed to proxy notifications for {employee_id}: {e}")
+        return []
+
+@router.get("/task-counts/{employee_id}")
+async def get_task_counts(
+    employee_id: str,
+    authorization: str = Header(None)
+):
+    """Proxy task counts / pending approvals from Java HRMS backend."""
+    from app.config import get_settings
+    import httpx
+    import logging
+    log = logging.getLogger("xeva.task_counts")
+    
+    settings = get_settings()
+    headers = {"Authorization": authorization} if authorization else {}
+    target_url = f"{settings.HRMS_API_BASE_URL}/api/task-counts/{employee_id}"
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(target_url, headers=headers)
+            if resp.is_success:
+                return resp.json()
+            return {}
+    except Exception as e:
+        log.warning(f"Failed to proxy task counts for {employee_id}: {e}")
+        return {}
+
+@router.get("/policies/pending")
+async def get_pending_policies(
+    authorization: str = Header(None)
+):
+    """Proxy pending policy acknowledgments from Java HRMS backend."""
+    from app.config import get_settings
+    import httpx
+    import logging
+    log = logging.getLogger("xeva.policies")
+    
+    settings = get_settings()
+    headers = {"Authorization": authorization} if authorization else {}
+    target_url = f"{settings.HRMS_API_BASE_URL}/api/policies/pending"
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(target_url, headers=headers)
+            if resp.is_success:
+                return resp.json()
+            return []
+    except Exception as e:
+        log.warning(f"Failed to proxy pending policies: {e}")
+        return []

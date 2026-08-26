@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Trash2, LogOut, Bot, PanelLeftOpen, Sparkles, Download, Calendar, Ticket, Bell, User, Clock, Cpu, Sliders, Paperclip, FileText, Image as ImageIcon, X } from 'lucide-react'
-import logoUrl from '../assests/image.png'
+import logoUrl from '../assets/image.png'
 import MessageBubble from './components/MessageBubble.jsx'
 import TypingIndicator from './components/TypingIndicator.jsx'
 import Login from './components/Login.jsx'
@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ThoughtProcess from './components/ThoughtProcess.jsx'
 import AgentInspector from './components/AgentInspector.jsx'
 import EnterpriseCapabilityGrid from './components/EnterpriseCapabilityGrid.jsx'
+import FilePreviewModal from './components/FilePreviewModal.jsx'
 import { getThoughtText } from './utils/formatters.js'
 import {
   streamMessage,
@@ -117,11 +118,11 @@ export default function App() {
   const [error, setError] = useState('')
   const [imgError, setImgError] = useState(false)
 
-  // ── File attachments (PDF / images) — uploaded ahead of send, then
-  // referenced by file_id in the message so the agent can read/attach them ──
-  const [pendingAttachment, setPendingAttachment] = useState(null) // { file_id, filename, content_type } | null
+  // ── File attachments (PDF / images / spreadsheets) ──
+  const [pendingAttachment, setPendingAttachment] = useState(null) // { filename, content_type, file, text } | null
   const [attachError, setAttachError] = useState('')
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [previewFile, setPreviewFile] = useState(null)
   const fileInputRef = useRef(null)
 
   // ── Autonomous session-start briefing: on login, the agent proactively
@@ -136,21 +137,41 @@ export default function App() {
 
   // Fetch sessions from PostgreSQL database on login
   useEffect(() => {
-    if (!configured || !employeeId) return
+    if (!configured || !employeeId || !token) return
+    let isMounted = true
 
     async function loadDBSessions() {
       await exchangeToken(token)
       const dbSessions = await fetchSessionsDB(employeeId, token)
+      if (!isMounted) return
+
       if (Array.isArray(dbSessions) && dbSessions.length > 0) {
+        // Step 1: Instantly populate the sidebar with session titles (0ms delay)
+        const initialList = dbSessions.map(s => ({
+          ...s,
+          isPinned: !!s.is_pinned,
+          messages: [WELCOME],
+          history: []
+        }))
+        setSessions(initialList)
+        setActiveSessionId(prev => (prev && initialList.some(x => x.id === prev) ? prev : initialList[0].id))
+
+        // Step 2: Hydrate full message history asynchronously in background
         const formatted = await Promise.all(dbSessions.map(async s => {
-          const rawMsgs = await fetchSessionMessagesDB(s.id, token)
           let parsedMsgs = []
-          if (Array.isArray(rawMsgs)) {
-            parsedMsgs = rawMsgs.map(m => ({
-              role: m.role,
-              content: m.content,
-              ts: new Date(m.created_at).getTime()
-            }))
+          try {
+            const rawMsgs = await fetchSessionMessagesDB(s.id, token)
+            if (Array.isArray(rawMsgs)) {
+              parsedMsgs = rawMsgs.map(m => ({
+                role: m.role,
+                content: m.content,
+                ts: new Date(m.created_at).getTime(),
+                pending_confirmation_token: m.pending_confirmation_token,
+                pending_action: m.pending_action
+              }))
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch messages for session ${s.id}:`, err)
           }
           
           return {
@@ -160,10 +181,11 @@ export default function App() {
             history: parsedMsgs.map(m => ({ role: m.role, content: m.content }))
           }
         }))
-        setSessions(formatted)
-        setActiveSessionId(formatted[0].id)
-      } else {
-        // Create initial default session in DB
+        if (isMounted) {
+          setSessions(formatted)
+        }
+      } else if (Array.isArray(dbSessions) && dbSessions.length === 0) {
+        // Create initial default session in DB only if DB is genuinely empty
         const defaultId = Date.now().toString()
         const initialSess = {
           id: defaultId,
@@ -173,14 +195,19 @@ export default function App() {
           isPinned: false,
           createdAt: Date.now()
         }
-        setSessions([initialSess])
-        setActiveSessionId(defaultId)
-        createSessionDB(defaultId, employeeId, token, 'New Chat', false)
+        if (isMounted) {
+          setSessions([initialSess])
+          setActiveSessionId(defaultId)
+          createSessionDB(defaultId, employeeId, token, 'New Chat', false)
+        }
       }
+      // If dbSessions is null (network error / temporary glitch), preserve current session state
     }
 
     loadDBSessions()
-  }, [configured, employeeId])
+
+    return () => { isMounted = false }
+  }, [configured, employeeId, token])
 
   // Fire the proactive briefing once per login (not per chat switch)
   useEffect(() => {
@@ -317,10 +344,20 @@ export default function App() {
     if (!file) return
 
     setAttachError('')
+    let text = ''
+    try {
+      if (file.name.endsWith('.csv') || file.name.endsWith('.tsv') || file.name.endsWith('.txt')) {
+        text = await file.text()
+      }
+    } catch (err) {
+      console.warn('Failed to read file text:', err)
+    }
+
     setPendingAttachment({
       filename: file.name,
       content_type: file.type,
-      file: file
+      file: file,
+      text: text
     })
   }
 
@@ -350,9 +387,13 @@ export default function App() {
     // Update current session title & user message
     setSessions(prev => prev.map(s => {
       if (s.id === currentId) {
-        const title = s.title === 'New Chat' ? (msg.length > 28 ? msg.slice(0, 28) + '...' : msg) : s.title
+        let title = s.title;
+        if (s.title === 'New Chat') {
+          title = msg.length > 28 ? msg.slice(0, 28) + '...' : msg;
+          renameSessionDB(currentId, title, token).catch(console.error);
+        }
         const displayMsg = attachmentForDisplay ? `${msg}\n\n📎 ${attachmentForDisplay.filename}` : msg
-        const updatedMsgs = [...s.messages, { role: 'user', content: displayMsg, ts: Date.now() }]
+        const updatedMsgs = [...s.messages, { role: 'user', content: displayMsg, ts: Date.now(), attachment: attachmentForDisplay }]
         return { ...s, title, messages: updatedMsgs }
       }
       return s
@@ -730,6 +771,10 @@ export default function App() {
                       pendingToken={m.pending_confirmation_token}
                       isLast={isLast}
                       onConfirmBtn={handleConfirmBtn}
+                      isLoading={isLast && Boolean(loadingMap[activeSessionId])}
+                      thoughts={isLast ? thoughtsMap[activeSessionId] : null}
+                      onOpenFile={setPreviewFile}
+                      attachment={m.attachment}
                     />
                   </React.Fragment>
                 )
@@ -747,14 +792,25 @@ export default function App() {
             {attachError && <p className="text-xs text-agent-red px-1 font-medium">⚠ {attachError}</p>}
 
             {pendingAttachment && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl panel-inset w-fit">
-                {pendingAttachment.content_type === 'application/pdf'
-                  ? <FileText size={13} className="text-agent-accent" />
-                  : <ImageIcon size={13} className="text-agent-accent" />}
-                <span className="text-xs text-slate-700 font-agent-mono max-w-[220px] truncate">{pendingAttachment.filename}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl panel-inset w-fit bg-slate-50 border border-slate-200">
+                <div 
+                  onClick={() => setPreviewFile(pendingAttachment)}
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+                  title="Click to preview file before sending"
+                >
+                  {['csv', 'xlsx', 'xls'].includes(pendingAttachment.filename?.split('.').pop()?.toLowerCase()) ? (
+                    <FileText size={13} className="text-emerald-500" />
+                  ) : pendingAttachment.content_type === 'application/pdf' ? (
+                    <FileText size={13} className="text-rose-500" />
+                  ) : (
+                    <ImageIcon size={13} className="text-agent-accent" />
+                  )}
+                  <span className="text-xs text-slate-700 font-agent-mono max-w-[220px] truncate underline decoration-dotted">{pendingAttachment.filename}</span>
+                  <span className="text-[10px] text-agent-accent font-semibold ml-1">(Click to preview)</span>
+                </div>
                 <button
                   onClick={() => setPendingAttachment(null)}
-                  className="text-slate-500 hover:text-agent-red transition-colors"
+                  className="text-slate-500 hover:text-agent-red transition-colors ml-1 p-0.5"
                   title="Remove attachment"
                 >
                   <X size={13} />
@@ -766,7 +822,7 @@ export default function App() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.webp,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/jpeg,image/png,image/webp"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -810,6 +866,13 @@ export default function App() {
             </p>
           </div>
         </div>
+
+        {/* ── File Preview / Inspection Modal ── */}
+        <FilePreviewModal
+          isOpen={Boolean(previewFile)}
+          fileData={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
 
       </div>
     </div>

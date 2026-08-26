@@ -59,7 +59,6 @@ export default function EnterpriseCapabilityGrid({ onSelectPrompt }) {
             Autonomous HRMS Capabilities
           </h3>
         </div>
-        <span className="chip chip-safe">Live API Integration</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

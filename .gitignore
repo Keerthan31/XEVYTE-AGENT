@@ -11,3 +11,10 @@ certs/*.pem
 .DS_Store
 chroma_db/
 *.db
+downloads/*
+!downloads/.gitkeep
+frontend/node_modules/
+frontend/dist/
+dist/
+node_modules/
+.agents/

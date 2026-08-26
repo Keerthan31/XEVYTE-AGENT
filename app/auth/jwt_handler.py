@@ -29,7 +29,7 @@ def validate_and_extract_token(token: str) -> Optional[Dict[str, Any]]:
         
         # Extract required claims
         user_data = {
-            "employeeId": payload.get("employeeId"),
+            "employeeId": str(payload.get("employeeId")) if payload.get("employeeId") is not None else None,
             "tenant": payload.get("tenant"),
             "role": payload.get("role", "USER"),
             "name": payload.get("name", "User"),

@@ -89,7 +89,7 @@ class Settings(BaseSettings):
 
     # ---- Postgres ----
     DATABASE_URL: str = Field(
-        default="postgresql+psycopg2://xevyte_agent:123%40Ab@localhost:5432/xevyte_agent",
+        default="postgresql+asyncpg://xevyte_agent:123%40Ab@localhost:5432/xevyte_agent",
     )
 
     # ---- Chroma (RAG store) ----
@@ -147,6 +147,22 @@ class Settings(BaseSettings):
 
     # ---- CORS ----
     CORS_ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+
+    # ---- Email Service (Central Company SMTP) ----
+    SMTP_HOST: str = Field(default="smtp.gmail.com")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(default="")
+    SMTP_PASSWORD: str = Field(default="")
+    SMTP_FROM_EMAIL: str = Field(default="notifications@xevyte.com")
+    SMTP_FROM_NAME: str = Field(default="Xevyte HRMS Assistant")
+    SMTP_TLS: bool = Field(default=True)
+    SMTP_ENABLED: bool = Field(default=False)
+
+    # ---- Automated Reminders Schedule (Times in IST) ----
+    ENABLE_AUTOMATED_REMINDERS: bool = Field(default=True)
+    CHECKIN_REMINDER_TIME_IST: str = Field(default="09:30")  # 09:30 AM IST (Mon-Fri)
+    CHECKOUT_REMINDER_TIME_IST: str = Field(default="18:30") # 06:30 PM IST (Mon-Fri)
+    APPROVALS_DIGEST_TIME_IST: str = Field(default="18:00")  # 06:00 PM IST (Mon-Fri)
 
 
 @lru_cache

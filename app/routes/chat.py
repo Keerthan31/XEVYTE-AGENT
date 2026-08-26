@@ -1,5 +1,6 @@
 import logging
 import json
+import os
 from typing import Dict, Any, List
 import uuid
 import httpx
@@ -53,7 +54,14 @@ async def chat_upload_endpoint(
     if not user_context:
         raise HTTPException(status_code=401, detail="Invalid token")
         
-    if employee_id != user_context["employeeId"]:
+    # Security check: Ensure employee_id matches token (or its fallback 'sub')
+    sub = user_context.get("sub", "")
+    valid_ids = [str(user_context["employeeId"]).strip().lower(), sub.strip().lower(), sub.split("@")[0].strip().lower() if "@" in sub else ""]
+    req_id = employee_id.strip().lower()
+    
+    if req_id not in valid_ids:
+        import logging
+        logging.getLogger("xeva").error(f"Employee ID mismatch! Request: {repr(employee_id)}, Token: {repr(user_context['employeeId'])}, Sub: {repr(sub)}")
         raise HTTPException(status_code=403, detail="Employee ID mismatch")
 
     if not check_input_safety(message):
@@ -66,21 +74,42 @@ async def chat_upload_endpoint(
     sid = session_id or conversation_id or str(uuid.uuid4())
     
     import os
+    from pathlib import Path
     # Process the file and save to temp directory
     content = await files.read()
     file_context = parse_file_for_agent(files.filename, content, files.content_type)
     
-    os.makedirs("/tmp/xevyte_uploads", exist_ok=True)
-    temp_file_path = f"/tmp/xevyte_uploads/{uuid.uuid4()}_{files.filename}"
+    downloads_dir = Path(__file__).resolve().parent.parent.parent / "downloads"
+    downloads_dir.mkdir(parents=True, exist_ok=True)
+    
+    temp_dir = Path("D:/tmp/xevyte_uploads") if os.name == "nt" else Path("/tmp/xevyte_uploads")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    temp_file_path = str(temp_dir / f"{uuid.uuid4()}_{files.filename}")
     with open(temp_file_path, "wb") as temp_file:
         temp_file.write(content)
+        
+    # Also save to static downloads for frontend preview / inspection
+    download_file_path = downloads_dir / files.filename
+    with open(download_file_path, "wb") as dl_file:
+        dl_file.write(content)
     
-    # Save the user message to DB
+    # Ensure session exists in DB to prevent foreign key violation
+    stmt = select(ChatSession).where(ChatSession.id == sid)
+    res = await db.execute(stmt)
+    if not res.scalar_one_or_none():
+        db.add(ChatSession(id=sid, employee_id=user_context["employeeId"], title="New Chat"))
+        await db.commit()
+
+    # Save the user message to DB cleanly without duplicate attachment tags
+    clean_user_msg = message
+    if f"[Attached file: {files.filename}]" not in clean_user_msg and f"📎 {files.filename}" not in clean_user_msg:
+        clean_user_msg = f"{clean_user_msg}\n\n[Attached file: {files.filename}]"
+
     user_msg_db = ChatMessage(
         id=str(uuid.uuid4()),
         session_id=sid,
         role="user",
-        content=f"{message}\n\n[Attached file: {files.filename}]"
+        content=clean_user_msg
     )
     db.add(user_msg_db)
     await db.commit()
@@ -88,11 +117,11 @@ async def chat_upload_endpoint(
     # Pass everything to the agent engine
     history_obj = AsyncPostgresChatMessageHistory(session_id=sid, async_session=db)
     history_messages = await history_obj.aget_messages()
-    history_dicts = [{"role": m.type, "content": m.content} for m in history_messages if m.type in ["human", "ai"]]
+    history_dicts = [{"role": "user" if m.type == "human" else "assistant", "content": m.content} for m in history_messages if m.type in ["human", "ai"]]
 
     result = await run_agent(message, history_dicts, user_context, authorization, file_context, temp_file_path)
 
-    ai_content = result.get("output", "")
+    ai_content = result.get("content", "")
     assistant_msg_db = ChatMessage(
         id=str(uuid.uuid4()),
         session_id=sid,
@@ -107,7 +136,8 @@ async def chat_upload_endpoint(
     return {
         "status": "success",
         "reply": ai_content,
-        "data": result.get("data")
+        "data": result.get("data"),
+        "pending_confirmation_token": result.get("pending_confirmation_token")
     }
 
 @router.post("/chat")
@@ -125,8 +155,14 @@ async def chat_endpoint(
     if not user_context:
         raise HTTPException(status_code=401, detail="Invalid token")
         
-    # Security check: Ensure employee_id matches token
-    if request.employee_id != user_context["employeeId"]:
+    # Security check: Ensure employee_id matches token (or its fallback 'sub')
+    sub = user_context.get("sub", "")
+    valid_ids = [str(user_context["employeeId"]).strip().lower(), sub.strip().lower(), sub.split("@")[0].strip().lower() if "@" in sub else ""]
+    req_id = request.employee_id.strip().lower()
+    
+    if req_id not in valid_ids:
+        import logging
+        logging.getLogger("xeva").error(f"Employee ID mismatch! Request: {repr(request.employee_id)}, Token: {repr(user_context['employeeId'])}, Sub: {repr(sub)}")
         raise HTTPException(status_code=403, detail="Employee ID mismatch")
 
     # 2. Guardrails check
@@ -140,6 +176,13 @@ async def chat_endpoint(
     # 3. Load conversation history via LangChain Memory
     history = []
     if request.session_id:
+        # Ensure session exists in DB before creating messages
+        stmt = select(ChatSession).where(ChatSession.id == request.session_id)
+        res = await db.execute(stmt)
+        if not res.scalar_one_or_none():
+            db.add(ChatSession(id=request.session_id, employee_id=user_context["employeeId"], title="New Chat"))
+            await db.commit()
+
         # Initialize LangChain message history wrapper
         chat_memory = AsyncPostgresChatMessageHistory(session_id=request.session_id, db_session=db)
         
@@ -179,6 +222,332 @@ async def chat_endpoint(
         "pending_confirmation_token": pending_token
     }
 
+async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, headers: dict, user_context: dict, settings) -> tuple[bool, Any]:
+    path = action_data.get("path", "")
+    url = f"{settings.JAVA_BACKEND_URL}{path}"
+    method = action_data.get("method", "GET")
+    
+    if action_data.get("endpoint_id") == "updateProfile":
+        core_fields = ["contactNo", "emergencyContactNumber", "personalMail", "address", "presentAddress", "profilePic"]
+        personal_fields = ["about", "whatILoveAboutMyJob", "interestsAndHobbies"]
+        
+        body = action_data.get("body", {})
+        core_body = {k: v for k, v in body.items() if k in core_fields or k == "employeeId"}
+        personal_body = {k: v for k, v in body.items() if k in personal_fields or k == "employeeId"}
+        
+        headers_copy = dict(headers)
+        headers_copy["Content-Type"] = "application/json"
+        responses = []
+        
+        emp_id = user_context.get("employeeId")
+        
+        if any(k in core_fields for k in core_body.keys()):
+            core_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}"
+            core_resp = await client.put(core_url, headers=headers_copy, json=core_body)
+            responses.append(core_resp)
+        
+        if any(k in personal_fields for k in personal_body.keys()):
+            personal_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}/personal-details"
+            personal_resp = await client.put(personal_url, headers=headers_copy, json=personal_body)
+            responses.append(personal_resp)
+            
+        is_success = all(r.is_success for r in responses) if responses else True
+        resp_data = []
+        for r in responses:
+            try:
+                resp_data.append(r.json())
+            except Exception:
+                resp_data.append(r.text)
+        return is_success, resp_data
+
+    if action_data.get("endpoint_id") == "createAsset" or (path == "/api/assets" and method == "POST"):
+        q_params = dict(action_data.get("query_params") or {})
+        if "userId" not in q_params:
+            q_params["userId"] = user_context.get("employeeId", "scaloz_admin")
+            
+        body = action_data.get("body")
+        items = body if isinstance(body, list) else (body.get("assets") if isinstance(body, dict) and isinstance(body.get("assets"), list) else [body] if isinstance(body, dict) else [])
+        
+        headers_copy = dict(headers)
+        headers_copy["Content-Type"] = "application/json"
+        
+        responses = []
+        import time
+        import random
+        
+        # Fetch current categories
+        current_cats = []
+        try:
+            r_c = await client.get(f"{settings.JAVA_BACKEND_URL}/api/assets/categories", headers=headers_copy)
+            if r_c.status_code == 200:
+                current_cats = r_c.json()
+        except Exception:
+            pass
+
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            clean_it = dict(it)
+            cat_name = ""
+            subcat_name = ""
+            
+            raw_cat = clean_it.pop("category", None)
+            raw_subcat = clean_it.pop("subCategory", None)
+            
+            if clean_it.get("dynamicValues") and isinstance(clean_it["dynamicValues"], dict):
+                if clean_it["dynamicValues"].get("Category"):
+                    cat_name = clean_it["dynamicValues"]["Category"]
+                if clean_it["dynamicValues"].get("Sub-category"):
+                    subcat_name = clean_it["dynamicValues"]["Sub-category"]
+                    
+            cat_str = str(raw_cat or cat_name or clean_it.get("categoryId") or "").strip()
+            
+            matched_cat = None
+            if isinstance(clean_it.get("categoryId"), int) or (isinstance(clean_it.get("categoryId"), str) and clean_it["categoryId"].isdigit()):
+                c_id = int(clean_it["categoryId"])
+                for c in current_cats:
+                    if c.get("id") == c_id:
+                        matched_cat = c
+                        break
+            
+            if not matched_cat and cat_str:
+                for c in current_cats:
+                    if c.get("name", "").lower() == cat_str.lower() or c.get("name", "").lower() in cat_str.lower() or cat_str.lower() in c.get("name", "").lower():
+                        matched_cat = c
+                        break
+                    
+            if not matched_cat and cat_str and not cat_str.isdigit():
+                try:
+                    r_nc = await client.post(f"{settings.JAVA_BACKEND_URL}/api/assets/categories", headers=headers_copy, json={"name": cat_str.title(), "active": True})
+                    if r_nc.status_code in (200, 201):
+                        matched_cat = r_nc.json()
+                        matched_cat["subCategories"] = []
+                        current_cats.append(matched_cat)
+                except Exception:
+                    pass
+                    
+            if matched_cat:
+                clean_it["categoryId"] = matched_cat["id"]
+                cat_name = matched_cat.get("name", cat_str).title()
+                
+                sub_list = matched_cat.get("subCategories") or []
+                sub_target = str(raw_subcat or subcat_name or (cat_name + "s" if not cat_name.endswith("s") else cat_name)).strip()
+                matched_sub = None
+                
+                if isinstance(clean_it.get("subCategoryId"), int) or (isinstance(clean_it.get("subCategoryId"), str) and clean_it["subCategoryId"].isdigit()):
+                    s_id = int(clean_it["subCategoryId"])
+                    for s in sub_list:
+                        if s.get("id") == s_id:
+                            matched_sub = s
+                            break
+                            
+                if not matched_sub and sub_target:
+                    for s in sub_list:
+                        if s.get("name", "").lower() == sub_target.lower() or s.get("name", "").lower() in sub_target.lower():
+                            matched_sub = s
+                            break
+                        
+                if matched_sub:
+                    clean_it["subCategoryId"] = matched_sub["id"]
+                    subcat_name = matched_sub.get("name", sub_target).title()
+                elif sub_list and not (raw_subcat or subcat_name):
+                    clean_it["subCategoryId"] = sub_list[0]["id"]
+                    subcat_name = sub_list[0].get("name", sub_target).title()
+                else:
+                    try:
+                        r_new_sub = await client.post(
+                            f"{settings.JAVA_BACKEND_URL}/api/assets/categories",
+                            headers=headers_copy,
+                            json={"name": sub_target.title(), "active": True, "fieldConfigs": [], "parentCategory": {"id": matched_cat["id"]}}
+                        )
+                        if r_new_sub.status_code in (200, 201):
+                            new_sub_obj = r_new_sub.json()
+                            clean_it["subCategoryId"] = new_sub_obj.get("id")
+                            subcat_name = new_sub_obj.get("name", sub_target).title()
+                    except Exception:
+                        pass
+                
+            ts = int(time.time() * 1000)
+            rnd = random.randint(100, 999)
+            raw_tag = clean_it.get("assetTag")
+            if not raw_tag:
+                clean_it["assetTag"] = f"AST-{ts}-{rnd}"
+            elif not raw_tag.startswith("AST-"):
+                clean_it["assetTag"] = f"AST-{raw_tag}-{rnd}"
+                
+            if "status" not in clean_it:
+                clean_it["status"] = "IN_STOCK"
+            if "conditionAtStock" not in clean_it:
+                clean_it["conditionAtStock"] = "NEW"
+                
+            clean_it["dynamicValues"] = {
+                "Category": cat_name.title() if cat_name else "Asset",
+                "Sub-category": subcat_name.title() if subcat_name else "General",
+                "Asset Tag": clean_it["assetTag"]
+            }
+
+            r = await client.post(url, headers=headers_copy, params=q_params, json=clean_it)
+            responses.append(r)
+            
+        is_success = all(r.is_success for r in responses) if responses else True
+        resp_data = []
+        for r in responses:
+            try:
+                resp_data.append(r.json())
+            except Exception:
+                resp_data.append(r.text)
+        return is_success, (resp_data[0] if len(resp_data) == 1 else resp_data)
+
+    q_params = dict(action_data.get("query_params") or {})
+    if path.startswith("/api/assets"):
+        if "userId" not in q_params:
+            q_params["userId"] = user_context.get("employeeId", "scaloz_admin")
+
+    if path.startswith("/api/claims/approve/") or path.startswith("/api/claims/reject/"):
+        cur_role = str(q_params.get("role", "")).lower()
+        q_params["role"] = "Finance" if "finance" in cur_role else "Manager"
+        if "approverId" not in q_params:
+            q_params["approverId"] = user_context.get("employeeId", "")
+
+    if path.startswith("/api/tickets/manager/reject/"):
+        if isinstance(action_data.get("body"), dict) and action_data["body"].get("reason"):
+            q_params["reason"] = action_data["body"]["reason"]
+
+    req_headers = dict(headers)
+    if path == "/api/tickets/team-tickets":
+        req_headers["employeeId"] = user_context.get("employeeId", "scaloz_admin")
+
+    if path.startswith("/api/v1/exit-management/") or path.startswith("/api/v1/exit-forms"):
+        emp_id = user_context.get("employeeId", "")
+        emp_name = user_context.get("name") or user_context.get("employeeName") or emp_id
+        mgr_id = user_context.get("reportingManager") or user_context.get("managerId") or emp_id
+        mgr_name = user_context.get("managerName") or emp_name
+        dept = user_context.get("department") or "Admin"
+        
+        req_headers["employeeId"] = emp_id
+        req_headers["employeeName"] = emp_name
+        req_headers["managerId"] = mgr_id
+        req_headers["managerName"] = mgr_name
+        req_headers["department"] = dept
+
+    request_kwargs = {
+        "url": url,
+        "headers": req_headers,
+        "params": q_params or None,
+    }
+    if path.startswith("/api/travel/admin/upload-pdfs/"):
+        import mimetypes
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            request_kwargs["files"] = {"files": (orig_name, open(temp_path, "rb"), mime or "application/pdf")}
+    elif path == "/api/employees/bulk-onboard":
+        import mimetypes
+        temp_path = action_data.get("temp_file_path")
+        if not temp_path or not os.path.exists(temp_path):
+            # Fallback to search /tmp/xevyte_uploads if path not explicitly in action_data
+            upload_dir = "/tmp/xevyte_uploads"
+            if os.path.exists(upload_dir):
+                files_in_dir = [os.path.join(upload_dir, f) for f in os.listdir(upload_dir) if f.endswith(".csv") or f.endswith(".xlsx")]
+                if files_in_dir:
+                    files_in_dir.sort(key=os.path.getmtime, reverse=True)
+                    temp_path = files_in_dir[0]
+        if temp_path and os.path.exists(temp_path):
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            request_kwargs["files"] = {"file": (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")}
+    elif path in ("/api/tickets/submit", "/api/tickets/change-request/submit", "/api/tickets/draft", "/api/tickets/change-request/draft"):
+        form_payload = dict(action_data.get("body") or {})
+        if "employeeId" not in form_payload:
+            form_payload["employeeId"] = user_context.get("employeeId", "scaloz_admin")
+        if "ccToManager" in form_payload:
+            form_payload["ccToManager"] = str(form_payload["ccToManager"]).lower()
+        request_kwargs["data"] = form_payload
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            import mimetypes
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            request_kwargs["files"] = {"file": (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")}
+    elif path == "/api/grievances/anonymous":
+        parts = {k: (None, str(v)) for k, v in (action_data.get("body") or {}).items() if v is not None}
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            import mimetypes
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            parts["attachment"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+        request_kwargs["files"] = parts
+    elif path == "/api/customers" or (path.startswith("/api/customers/") and action_data.get("method") == "PUT"):
+        parts = {}
+        for k, v in (action_data.get("body") or {}).items():
+            if k not in ("msaDoc", "file", "attachment") and v is not None:
+                parts[k] = (None, str(v))
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            import mimetypes
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            parts["msaDoc"] = (orig_name, open(temp_path, "rb"), mime or "application/pdf")
+        request_kwargs["files"] = parts
+    elif path == "/api/leaves/apply":
+        import json
+        request_kwargs["files"] = {"dto": (None, json.dumps(action_data.get("body") or {}), "application/json")}
+    elif path == "/api/claims/submit":
+        import json
+        import mimetypes
+        request_kwargs["files"] = {"claim": (None, json.dumps(action_data.get("body") or {}), "application/json")}
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            request_kwargs["files"]["receiptFile"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+    elif path == "/api/claims/draft":
+        import json
+        import mimetypes
+        request_kwargs["files"] = {"claimDraft": (None, json.dumps(action_data.get("body") or {}), "application/json")}
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            temp_path = action_data["temp_file_path"]
+            orig_name = os.path.basename(temp_path).split("_", 1)[-1]
+            mime, _ = mimetypes.guess_type(orig_name)
+            request_kwargs["files"]["receiptFile"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+    elif path.startswith("/api/profile/update/"):
+        b = action_data.get("body") or {}
+        request_kwargs["data"] = {
+            "firstName": b.get("firstName", "User"),
+            "lastName": b.get("lastName", "")
+        }
+        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+            request_kwargs["files"] = {"profilePic": open(action_data["temp_file_path"], "rb")}
+    elif action_data.get("body"):
+        req_headers["Content-Type"] = "application/json"
+        request_kwargs["json"] = action_data["body"]
+        
+    if "files" in request_kwargs and "Content-Type" in req_headers:
+        # httpx needs to automatically set the multipart/form-data boundary
+        del req_headers["Content-Type"]
+        
+    # Also clean up lowercase variants just in case
+    if "files" in request_kwargs and "content-type" in req_headers:
+        del req_headers["content-type"]
+        
+    response = await client.request(method, **request_kwargs)
+    is_success = response.is_success
+    try:
+        resp_data = response.json()
+    except Exception:
+        resp_data = response.text
+    
+    # Cleanup temp file
+    if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
+        try:
+            os.remove(action_data["temp_file_path"])
+        except Exception as e:
+            print(f"Failed to clean up temp file: {e}")
+            
+    return is_success, resp_data
+
 @router.post("/confirm")
 async def confirm_endpoint(
     request: ConfirmRequest,
@@ -215,12 +584,6 @@ async def confirm_endpoint(
 
     # 3. Execute the action
     settings = get_settings()
-    
-    path = action_data['path']
-        
-    url = f"{settings.JAVA_BACKEND_URL}{path}"
-    method = action_data["method"]
-    
     token_str = authorization[7:] if authorization.startswith("Bearer ") else authorization
     headers = {
         "Authorization": f"Bearer {token_str}"
@@ -228,92 +591,77 @@ async def confirm_endpoint(
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            
-            if action_data.get("endpoint_id") == "updateProfile":
-                core_fields = ["contactNo", "emergencyContactNumber", "personalMail", "address", "presentAddress", "profilePic"]
-                personal_fields = ["about", "whatILoveAboutMyJob", "interestsAndHobbies"]
-                
-                body = action_data.get("body", {})
-                core_body = {k: v for k, v in body.items() if k in core_fields or k == "employeeId"}
-                personal_body = {k: v for k, v in body.items() if k in personal_fields or k == "employeeId"}
-                
-                headers["Content-Type"] = "application/json"
-                responses = []
-                
-                # Ensure employeeId is dynamically set just in case
-                emp_id = user_context.get("employeeId")
-                
-                if any(k in core_fields for k in core_body.keys()):
-                    core_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}"
-                    core_resp = await client.put(core_url, headers=headers, json=core_body)
-                    responses.append(core_resp)
-                
-                if any(k in personal_fields for k in personal_body.keys()):
-                    personal_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}/personal-details"
-                    personal_resp = await client.put(personal_url, headers=headers, json=personal_body)
-                    responses.append(personal_resp)
-                    
-                is_success = all(r.is_success for r in responses) if responses else True
-                resp_data = []
-                for r in responses:
-                    try:
-                        resp_data.append(r.json())
-                    except:
-                        resp_data.append(r.text)
+            if action_data.get("is_batch"):
+                actions = action_data.get("actions", [])
+                all_success = True
+                all_resps = []
+                for act in actions:
+                    succ, res = await _execute_single_action(client, act, headers, user_context, settings)
+                    if not succ:
+                        all_success = False
+                    all_resps.append(res)
+                is_success = all_success
+                resp_data = all_resps
             else:
-                request_kwargs = {
-                    "url": url,
-                    "headers": headers,
-                    "params": action_data.get("query_params"),
-                }
-                if action_data.get("body"):
-                    if path == "/api/leaves/apply":
-                        import json
-                        request_kwargs["files"] = {"dto": (None, json.dumps(action_data["body"]), "application/json")}
-                    elif path == "/api/claims/submit":
-                        import json
-                        request_kwargs["files"] = {"claim": (None, json.dumps(action_data["body"]), "application/json")}
-                        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
-                            request_kwargs["files"]["receiptFile"] = open(action_data["temp_file_path"], "rb")
-                    elif path == "/api/claims/draft":
-                        import json
-                        request_kwargs["files"] = {"claimDraft": (None, json.dumps(action_data["body"]), "application/json")}
-                        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
-                            request_kwargs["files"]["receiptFile"] = open(action_data["temp_file_path"], "rb")
-                    elif path.startswith("/api/profile/update/"):
-                        # Profile picture uses form-data instead of JSON string part
-                        request_kwargs["data"] = {
-                            "firstName": action_data["body"].get("firstName", "User"),
-                            "lastName": action_data["body"].get("lastName", "")
-                        }
-                        if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
-                            request_kwargs["files"] = {"profilePic": open(action_data["temp_file_path"], "rb")}
-                    else:
-                        headers["Content-Type"] = "application/json"
-                        request_kwargs["json"] = action_data["body"]
-                    
-                response = await client.request(method, **request_kwargs)
-                is_success = response.is_success
-                try:
-                    resp_data = response.json()
-                except:
-                    resp_data = response.text
-                
-                # Cleanup temp file
-                if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
-                    try:
-                        os.remove(action_data["temp_file_path"])
-                    except Exception as e:
-                        print(f"Failed to clean up temp file: {e}")
+                is_success, resp_data = await _execute_single_action(client, action_data, headers, user_context, settings)
                 
             if is_success:
-                success_msg = "Action completed successfully!"
+                if isinstance(resp_data, dict) and "totalRecords" in resp_data and "successCount" in resp_data:
+                    total = resp_data.get("totalRecords", 0)
+                    succ_cnt = resp_data.get("successCount", 0)
+                    failures = resp_data.get("failureDetails", [])
+                    if succ_cnt == total and total > 0:
+                        success_msg = f"Bulk onboarding completed successfully! All {succ_cnt} employees were added."
+                    elif succ_cnt > 0:
+                        err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
+                        success_msg = f"Bulk onboarding partially completed: {succ_cnt}/{total} succeeded, {len(failures)} failed.\nFailures:\n" + "\n".join(err_reasons)
+                    else:
+                        err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
+                        success_msg = f"Bulk onboarding failed: 0/{total} employees onboarded.\nReason(s):\n" + ("\n".join(err_reasons) if err_reasons else "Unknown validation error")
+                elif action_data.get("endpoint_id") == "generatePayslips" or action_data.get("path") == "/api/payroll/generate-payslips":
+                    b = action_data.get("body") or {}
+                    target_month = b.get("month", "the selected month")
+                    target_year = b.get("year", "the selected year")
+                    count = 0
+                    if isinstance(resp_data, list):
+                        count = len(resp_data)
+                    elif isinstance(resp_data, dict):
+                        if "count" in resp_data:
+                            try:
+                                count = int(resp_data["count"])
+                            except Exception:
+                                count = 0
+                        elif "payslips" in resp_data and isinstance(resp_data["payslips"], list):
+                            count = len(resp_data["payslips"])
+                        elif "id" in resp_data or "employeeId" in resp_data:
+                            count = 1
+                    
+                    if count == 0:
+                        success_msg = f"⚠️ 0 payslips were generated for {target_month} {target_year}.\n\nReason: No salary configuration Excel exists for {target_month} {target_year} in the HRMS (or all employees for this period already have payslips generated). Please upload the salary configuration for {target_month} {target_year} before generating."
+                    else:
+                        success_msg = f"✅ Successfully generated {count} payslip(s) for {target_month} {target_year}!"
+                else:
+                    success_msg = "Action completed successfully!"
             else:
-                if isinstance(resp_data, dict):
-                    err_msg = resp_data.get("message") or resp_data.get("error") or "Unknown error occurred"
-                    success_msg = f"Action failed: {err_msg}"
-                elif isinstance(resp_data, list) and len(resp_data) > 0 and isinstance(resp_data[0], dict):
-                    err_msg = resp_data[0].get("message") or resp_data[0].get("error") or "Unknown error occurred"
+                if action_data.get("is_batch"):
+                    failed_items = []
+                    success_count = 0
+                    for r in resp_data:
+                        if isinstance(r, dict) and (r.get("error") or r.get("message") or r.get("status") in (400, 404, 500)):
+                            err_text = r.get("message") or r.get("error") or str(r)
+                            failed_items.append(err_text)
+                        elif isinstance(r, str) and ("error" in r.lower() or "not found" in r.lower() or "only" in r.lower() or "cannot" in r.lower()):
+                            failed_items.append(r)
+                        elif isinstance(r, dict) and ("id" in r or "status" in r or "ticketId" in r or "leaveId" in r):
+                            success_count += 1
+                        else:
+                            failed_items.append(str(r))
+                    if success_count > 0:
+                        success_msg = f"Completed with updates: {success_count} succeeded, {len(failed_items)} skipped ({', '.join(failed_items)})."
+                    else:
+                        success_msg = f"Action failed: {', '.join(failed_items) if failed_items else 'Unable to process request'}"
+                elif isinstance(resp_data, dict):
+                    err_msg = resp_data.get("message") or resp_data.get("error") or resp_data.get("detail") or str(resp_data)
                     success_msg = f"Action failed: {err_msg}"
                 else:
                     success_msg = f"Action failed: {resp_data}"

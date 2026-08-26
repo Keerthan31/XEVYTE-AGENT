@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import logoUrl from '../../assests/image.png'
+import logoUrl from '../../assets/image.png'
 import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff, Users, Layers, Shield, ArrowLeft, CheckCircle } from 'lucide-react'
 
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || ""
@@ -21,6 +21,10 @@ async function getEncryptionKey(passphrase = ENCRYPTION_KEY) {
 async function encryptPayload(data) {
   if (!data) return data
   try {
+    if (!window.crypto || !window.crypto.subtle) {
+      console.warn('Web Crypto API not available. Cannot encrypt payload.')
+      return null
+    }
     const key = await getEncryptionKey(ENCRYPTION_KEY)
     const iv = window.crypto.getRandomValues(new Uint8Array(12))
     const encoder = new TextEncoder()
@@ -36,7 +40,7 @@ async function encryptPayload(data) {
     return { payload: btoa(binary) }
   } catch (err) {
     console.error('Payload encryption failed:', err)
-    return data
+    return null
   }
 }
 
@@ -44,6 +48,9 @@ async function encryptPayload(data) {
 async function decryptPayload(data) {
   if (!data?.payload) return data
   try {
+    if (!window.crypto || !window.crypto.subtle) {
+      throw new Error('Web Crypto API is not available (you must use http://localhost:5173)')
+    }
     const key = await getEncryptionKey(ENCRYPTION_KEY)
     const binaryString = atob(data.payload)
     const len = binaryString.length
@@ -51,7 +58,7 @@ async function decryptPayload(data) {
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i)
     }
-    if (bytes.length <= 12) return data
+    if (bytes.length <= 12) throw new Error('Payload too short for IV')
     const iv = bytes.slice(0, 12)
     const ciphertext = bytes.slice(12)
     const decryptedBuffer = await window.crypto.subtle.decrypt(
@@ -63,7 +70,7 @@ async function decryptPayload(data) {
     return JSON.parse(decoder.decode(decryptedBuffer))
   } catch (err) {
     console.error('Payload decryption failed:', err)
-    return data
+    return { ...data, _decryptionError: err.message }
   }
 }
 
@@ -101,18 +108,16 @@ export default function Login({ onLoginSuccess }) {
 
       let token = ''
       let authErrorMessage = ''
+      let lastErrorMsg = ''
 
       try {
         const rawPayload = { email: rawInput, password }
         const encryptedBody = await encryptPayload(rawPayload)
 
-        // Try Scaloz IAM endpoints (8080, 8085, 8082) with both encrypted and raw payloads
+        // Try proxied endpoint with both encrypted and raw payloads
         const endpoints = [
-          { url: 'http://localhost:8080/api/auth/login', body: rawPayload },
-          { url: 'http://localhost:8080/api/auth/login', body: encryptedBody },
-          { url: 'http://localhost:8085/api/auth/login', body: encryptedBody },
-          { url: 'http://localhost:8082/api/auth/login', body: encryptedBody },
-          { url: 'http://localhost:8082/api/auth/login', body: rawPayload },
+          { url: '/api/auth/login', body: encryptedBody },
+          { url: '/api/auth/login', body: rawPayload }
         ]
 
         for (const ep of endpoints) {
@@ -121,42 +126,51 @@ export default function Login({ onLoginSuccess }) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(ep.body)
-            }).catch(() => null)
-
+            })
+            
             if (res) {
-              let resData = await res.json().catch(() => null)
-              if (resData && resData.payload) {
-                resData = await decryptPayload(resData)
-              }
-
-              if (res.ok && resData && (resData.token || resData.accessToken)) {
-                token = resData.token || resData.accessToken
-                if (resData.employeeId || resData.user?.employeeId) {
-                  empId = resData.employeeId || resData.user?.employeeId
+              const resData = await res.json().catch(() => null)
+              
+              if (res.ok) {
+                // If it succeeds, clear any previous errors
+                lastErrorMsg = ''
+                
+                // Handle encrypted payload response
+                if (resData && resData.payload) {
+                  const decrypted = await decryptPayload(resData)
+                  if (decrypted && (decrypted.token || decrypted.accessToken || decrypted.jwt || decrypted.data?.token)) {
+                    token = decrypted.token || decrypted.accessToken || decrypted.jwt || decrypted.data?.token
+                    break
+                  } else if (decrypted?._decryptionError) {
+                    lastErrorMsg = `Payload received, but decryption failed: ${decrypted._decryptionError}`
+                  } else {
+                    lastErrorMsg = `Decryption succeeded, but token not found! Decrypted content: ${JSON.stringify(decrypted)}`
+                  }
                 }
-
-                // Extract real employee name
-                const empName = resData.employeeName || resData.name || resData.user?.name || resData.user?.employeeName
-                if (empName) {
-                  localStorage.setItem('xeva_standalone_emp_name', empName)
+                // Handle raw payload response if not already caught
+                if (!token && resData && (resData.token || resData.accessToken || resData.jwt || resData.data?.token)) {
+                  token = resData.token || resData.accessToken || resData.jwt || resData.data?.token
+                  break
                 }
-
-                break
-              } else if (resData && (resData.message || resData.error)) {
-                authErrorMessage = resData.message || resData.error
+                if (!token && !lastErrorMsg) {
+                  lastErrorMsg = `Login succeeded at ${ep.url} but couldn't find token. Response: ` + JSON.stringify(resData)
+                }
+              } else {
+                lastErrorMsg = `Login failed at ${ep.url} (${res.status}). Response: ` + JSON.stringify(resData)
               }
             }
           } catch (e) {
-            // continue next endpoint
+            lastErrorMsg = `Connection failed to ${ep.url}: ${e.message}`
           }
         }
+
       } catch (err) {
         console.warn('Backend login request error:', err)
+        lastErrorMsg = err.message
       }
 
-      // If token not received from remote backend, throw an error
       if (!token) {
-        setError(authErrorMessage || 'Backend server did not return a valid token. Ensure Java backend is running and credentials are correct.')
+        setError(`Backend failed. Details: ${lastErrorMsg}`)
         setLoading(false)
         return
       }
@@ -168,7 +182,7 @@ export default function Login({ onLoginSuccess }) {
 
       onLoginSuccess({ token, employeeId: empId, email: rawInput })
     } catch (err) {
-      setError('Authentication failed. Please check your credentials.')
+      setError('Login encountered an unexpected error: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -311,24 +325,62 @@ export default function Login({ onLoginSuccess }) {
               </div>
             )}
 
-            {/* SSO Login Button */}
-            <div className="space-y-4">
-              <div className="p-4 bg-teal-50 border border-teal-100 rounded-xl mb-4">
-                <p className="text-sm text-teal-800 text-center font-medium">
-                  Authentication is now centrally managed by Scaloz IAM.
-                </p>
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Employee ID or Work Email
+                </label>
+                <input
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter employee ID or email"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white transition-all placeholder-slate-400"
+                  required
+                />
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white transition-all placeholder-slate-400"
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-1">
+                <button
+                  type="button"
+                  onClick={() => setView('forgot')}
+                  className="text-[11px] text-teal-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
               <button
-                type="button"
-                onClick={() => {
-                  window.location.href = `http://localhost:3001/?redirect_to=${encodeURIComponent(window.location.href)}`;
-                }}
-                className="w-full py-3.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer text-sm"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer text-sm disabled:opacity-70 mt-2"
               >
-                <span>Login via Scaloz IAM (SSO)</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                {loading ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <span>Log In</span>}
               </button>
-            </div>
+            </form>
 
           </div>
         )}

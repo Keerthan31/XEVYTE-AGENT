@@ -25,7 +25,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.agent.tools import APIECatalog
 from app.config import get_settings
 from app.db.database import Base, engine
-from app.routes import chat, sessions
+from app.routes import chat, sessions, reminders
+from app.scheduler.runner import scheduler_instance
 
 # from app.startup_checks import check_readiness
 
@@ -55,8 +56,63 @@ app.add_middleware(
 from app.middleware.conversation import ConversationLoggingMiddleware
 app.add_middleware(ConversationLoggingMiddleware)
 
+import os
+import glob
+import shutil
+from pathlib import Path
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DOWNLOADS_DIR = BASE_DIR / "downloads"
+DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+@app.get("/downloads/{filename:path}")
+@app.get("/api/agent/files/{filename:path}")
+async def serve_download_file(filename: str):
+    """Serve downloaded or uploaded files with smart fallback search across storage locations."""
+    import urllib.parse
+    import re
+
+    decoded = urllib.parse.unquote(filename)
+    safe_name = os.path.basename(decoded)
+    clean_name = re.sub(r"\s*\(\d+\)", "", safe_name)
+
+    # 1. Check direct file in downloads
+    for candidate in [safe_name, clean_name]:
+        fp = DOWNLOADS_DIR / candidate
+        if fp.exists() and fp.is_file():
+            return FileResponse(path=str(fp), filename=safe_name)
+
+    # 2. Search known upload temp directories & user Downloads
+    search_dirs = [
+        DOWNLOADS_DIR,
+        Path("D:/tmp/xevyte_uploads"),
+        Path("C:/tmp/xevyte_uploads"),
+        Path("/tmp/xevyte_uploads"),
+        Path.home() / "Downloads",
+    ]
+    for s_dir in search_dirs:
+        if s_dir.exists():
+            for cand in [safe_name, clean_name]:
+                matches = list(s_dir.glob(f"*{cand}*"))
+                for found in matches:
+                    if found.is_file():
+                        dest = DOWNLOADS_DIR / safe_name
+                        try:
+                            shutil.copy2(str(found), str(dest))
+                            return FileResponse(path=str(dest), filename=safe_name)
+                        except Exception:
+                            return FileResponse(path=str(found), filename=safe_name)
+
+    raise HTTPException(status_code=404, detail=f"File '{safe_name}' not found")
+
+app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
+
 app.include_router(chat.router, prefix="/api/agent")
 app.include_router(sessions.router, prefix="/api/agent")
+app.include_router(reminders.router, prefix="/api/agent")
 
 
 @app.on_event("startup")
@@ -114,6 +170,12 @@ async def on_startup():
 
     logger.info("Agent ready: endpoints loaded.")
 
+    # Start automated reminder scheduler
+    try:
+        scheduler_instance.start()
+    except Exception as e:
+        logger.error(f"Failed to start automated reminder scheduler: {e}")
+
     if settings.AUTO_WATCH_JAVA_SOURCE:
         if not settings.JAVA_SOURCE_DIR:
             logger.warning("AUTO_WATCH_JAVA_SOURCE=true but JAVA_SOURCE_DIR is not set — skipping live watch.")
@@ -128,6 +190,7 @@ async def on_startup():
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    scheduler_instance.stop()
     watcher = getattr(app.state, "java_watcher", None)
     if watcher is not None:
         watcher.stop()

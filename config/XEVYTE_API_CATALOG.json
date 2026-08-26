@@ -10,21 +10,39 @@
                     "endpoint_id": "submitEntry",
                     "method": "POST",
                     "path": "/api/daily-entry/submit/{employeeId}",
-                    "description": "Check-In / Punch In | UI Name: DailyEntry Module | User Intent: Submit Entry | Java Controller: DailyEntryController",
+                    "description": "Check-In / Punch In daily attendance | Java Controller: DailyEntryController.submitEntry",
                     "required_fields": [
-                        "checkInTime",
-                        "checkInType"
+                        "workLocation"
                     ],
                     "optional_fields": [
-                        "location",
-                        "remarks"
+                        "date",
+                        "loginTime",
+                        "loginWorkLocation",
+                        "remarks",
+                        "status",
+                        "clientId",
+                        "clientName",
+                        "projectId",
+                        "projectName",
+                        "attachment"
                     ],
                     "response_example": {
-                        "id": "GENERIC_STRING",
-                        "employeeId": "GENERIC_STRING",
-                        "checkInTime": "GENERIC_STRING",
-                        "checkInType": "GENERIC_STRING",
-                        "status": "GENERIC_STRING"
+                        "id": 1,
+                        "employeeId": "EMP001",
+                        "date": "2026-08-26",
+                        "loginTime": "09:30:00",
+                        "logoutTime": null,
+                        "workLocation": "Office",
+                        "loginWorkLocation": "Office",
+                        "logoutWorkLocation": null,
+                        "status": "CHECKED_IN",
+                        "totalHours": 0.0,
+                        "remarks": "",
+                        "clientId": null,
+                        "clientName": null,
+                        "projectId": null,
+                        "projectName": null,
+                        "frozen": false
                     },
                     "roles": [
                         "EMPLOYEE"
@@ -522,6 +540,265 @@
                 }
             ]
         },
+        "preOnboarding": {
+            "module_name": "Pre-Onboarding & Applicants",
+            "endpoints": [
+                {
+                    "endpoint_id": "getApplicants",
+                    "method": "GET",
+                    "path": "/api/v1/applicants",
+                    "description": "Fetch all applicant profiles under pre-onboarding / validation. UI Name: Pre-Onboarding Module | User Intent: View Applicants | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "View Pre-Onboarding Applicants",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getApplicants"
+                },
+                {
+                    "endpoint_id": "getApplicantById",
+                    "method": "GET",
+                    "path": "/api/v1/applicants/{applicantId}",
+                    "description": "Get detailed applicant profile by applicant ID. UI Name: Pre-Onboarding Module | User Intent: Get Applicant Details | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "applicantId"
+                    ],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Get Applicant Details",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getApplicantById"
+                },
+                {
+                    "endpoint_id": "getPreOnboardingClients",
+                    "method": "GET",
+                    "path": "/api/v1/applicants/clients",
+                    "description": "Fetch active client list for pre-onboarding dropdown. UI Name: Pre-Onboarding Module | User Intent: Get Clients | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Get Pre-Onboarding Clients",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getClients"
+                },
+                {
+                    "endpoint_id": "getPreOnboardingPositions",
+                    "method": "GET",
+                    "path": "/api/v1/applicants/positions",
+                    "description": "Fetch available job positions for pre-onboarding dropdown. UI Name: Pre-Onboarding Module | User Intent: Get Positions | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Get Pre-Onboarding Positions",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getPositions"
+                },
+                {
+                    "endpoint_id": "getApplicantStatuses",
+                    "method": "GET",
+                    "path": "/api/v1/applicants/statuses",
+                    "description": "Fetch all applicant status categories. UI Name: Pre-Onboarding Module | User Intent: Get Applicant Statuses | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Get Applicant Statuses",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getApplicantStatuses"
+                },
+                {
+                    "endpoint_id": "getAcceptedApplicants",
+                    "method": "GET",
+                    "path": "/api/v1/applicants/accepted",
+                    "description": "Fetch confirmed / accepted applicant list for confirmation tab (CTC, Date of Joining / DOJ, details). UI Name: Pre-Onboarding Module | User Intent: Get Accepted Applicants | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "requires_confirmation": false,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Get Accepted Applicants",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "getAcceptedApplicants"
+                },
+                {
+                    "endpoint_id": "createApplicant",
+                    "method": "POST",
+                    "path": "/api/v1/applicants",
+                    "description": "Create a new candidate pre-onboarding applicant profile. Required fields: firstName, lastName, email, phone, position, client. UI Name: Pre-Onboarding Module | User Intent: Create Applicant Profile | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "firstName",
+                        "lastName",
+                        "email",
+                        "phone",
+                        "position",
+                        "client"
+                    ],
+                    "optional_fields": [
+                        "resumeName"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Create Applicant Profile",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "createApplicant"
+                },
+                {
+                    "endpoint_id": "sendOnboardingEmail",
+                    "method": "POST",
+                    "path": "/api/v1/emails/send-onboarding-link",
+                    "description": "Send pre-onboarding invite link/email to an applicant. Required fields: applicantId, firstName, lastName, email. UI Name: Pre-Onboarding Module | User Intent: Send Onboarding Link | Java Controller: EmailController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "applicantId",
+                        "firstName",
+                        "lastName",
+                        "email"
+                    ],
+                    "optional_fields": [],
+                    "requires_confirmation": true,
+                    "ui_name": "Pre-Onboarding Module",
+                    "user_intent": "Send Onboarding Email Link",
+                    "capability": "PreOnboarding",
+                    "java_controller_name": "EmailController",
+                    "api_name": "sendOnboardingEmail"
+                }
+            ]
+        },
+        "employeeOnboarding": {
+            "module_name": "Employee Onboarding",
+            "endpoints": [
+                {
+                    "endpoint_id": "onboardSingleEmployee",
+                    "method": "POST",
+                    "path": "/api/employees",
+                    "description": "Onboard a new employee with single entry form details. Mandatory fields: firstName, lastName, designation, joiningDate, workLocation, employeeId, email (work email), gender, bloodGroup, dateOfBirth, aadhaarNo, panNo. Optional: personalMail, contactNo, emergencyContactNumber, address (permanent address), presentAddress, applicantId. UI Name: Employee Onboarding | User Intent: Onboard Employee | Java Controller: EmployeeController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "firstName",
+                        "lastName",
+                        "designation",
+                        "joiningDate",
+                        "workLocation",
+                        "employeeId",
+                        "email",
+                        "gender",
+                        "bloodGroup",
+                        "dateOfBirth",
+                        "aadhaarNo",
+                        "panNo"
+                    ],
+                    "optional_fields": [
+                        "applicantId",
+                        "personalMail",
+                        "contactNo",
+                        "emergencyContactNumber",
+                        "address",
+                        "presentAddress"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Employee Onboarding",
+                    "user_intent": "Single Employee Onboarding",
+                    "capability": "EmployeeOnboarding",
+                    "java_controller_name": "EmployeeController",
+                    "api_name": "createEmployee"
+                },
+                {
+                    "endpoint_id": "bulkOnboardEmployees",
+                    "method": "POST",
+                    "path": "/api/employees/bulk-onboard",
+                    "description": "Bulk onboard multiple employees by uploading an XLSX or CSV spreadsheet file. UI Name: Employee Onboarding | User Intent: Bulk Onboard Employees | Java Controller: EmployeeController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "file"
+                    ],
+                    "optional_fields": [],
+                    "requires_confirmation": true,
+                    "ui_name": "Employee Onboarding",
+                    "user_intent": "Bulk Employee Onboarding",
+                    "capability": "EmployeeOnboarding",
+                    "java_controller_name": "EmployeeController",
+                    "api_name": "bulkOnboard"
+                },
+                {
+                    "endpoint_id": "onboardApplicant",
+                    "method": "POST",
+                    "path": "/api/v1/applicants/{applicantId}/onboarding",
+                    "description": "Complete employee onboarding directly for a selected pre-onboarding applicant. UI Name: Employee Onboarding | User Intent: Onboard Applicant | Java Controller: ApplicantController",
+                    "roles": [
+                        "HR",
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "required_fields": [
+                        "applicantId"
+                    ],
+                    "optional_fields": [],
+                    "requires_confirmation": true,
+                    "ui_name": "Employee Onboarding",
+                    "user_intent": "Onboard Applicant Directly",
+                    "capability": "EmployeeOnboarding",
+                    "java_controller_name": "ApplicantController",
+                    "api_name": "onboardApplicant"
+                }
+            ]
+        },
         "claims": {
             "module_name": "Claims & Reimbursements",
             "endpoints": [
@@ -545,7 +822,31 @@
                     "api_name": "saveDraft",
                     "capability": "Claim",
                     "ui_name": "Claim Module",
-                    "user_intent": "Save Draft"
+                    "user_intent": "Save Draft",
+                    "optional_fields": [
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "projectCode",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "startLocation",
+                        "endLocation",
+                        "distanceKm",
+                        "ratePerKm",
+                        "subCategory",
+                        "justification",
+                        "comments"
+                    ]
                 }
             ]
         },
@@ -613,12 +914,18 @@
                     "description": "Submit IT/HR helpdesk ticket | UI Name: Ticket Module | User Intent: Submit Ticket | Java Controller: TicketController",
                     "required_fields": [
                         "category",
-                        "title",
-                        "description"
+                        "issueSummary",
+                        "detailedDescription"
                     ],
                     "optional_fields": [
-                        "priority",
-                        "attachments"
+                        "subcategory",
+                        "subCategory",
+                        "ccToManager",
+                        "attachments",
+                        "attachment",
+                        "title",
+                        "description",
+                        "priority"
                     ],
                     "response_example": {
                         "ticketId": "GENERIC_STRING",
@@ -869,8 +1176,9 @@
                     "path": "/api/tickets/change-request/submit",
                     "description": "Submit change request requiring manager approval | UI Name: Ticket Module | User Intent: Submit Change Request | Java Controller: TicketController",
                     "required_fields": [
-                        "changeDescription",
-                        "justification"
+                        "category",
+                        "issueSummary",
+                        "detailedDescription"
                     ],
                     "roles": [
                         "EMPLOYEE"
@@ -880,7 +1188,18 @@
                     "api_name": "submitChangeRequest",
                     "capability": "Ticket",
                     "ui_name": "Ticket Module",
-                    "user_intent": "Submit Change Request"
+                    "user_intent": "Submit Change Request",
+                    "optional_fields": [
+                        "subcategory",
+                        "subCategory",
+                        "ccToManager",
+                        "attachments",
+                        "attachment",
+                        "changeDescription",
+                        "justification",
+                        "title",
+                        "description"
+                    ]
                 },
                 {
                     "endpoint_id": "managerApproveTicket",
@@ -921,6 +1240,82 @@
                     "capability": "Ticket",
                     "ui_name": "Ticket Module",
                     "user_intent": "Reject By Manager"
+                },
+                {
+                    "endpoint_id": "getStatusDetails",
+                    "method": "GET",
+                    "path": "/api/tickets/status-details/{ticketId}",
+                    "description": "Get detailed status and history of a specific ticket",
+                    "required_fields": [],
+                    "path_params": [
+                        "ticketId"
+                    ],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "ADMIN",
+                        "HR"
+                    ],
+                    "requires_confirmation": false,
+                    "java_controller_name": "TicketController",
+                    "api_name": "getTicketStatusDetails",
+                    "capability": "Ticket",
+                    "ui_name": "HelpDesk Module"
+                },
+                {
+                    "endpoint_id": "getTicketsForManager",
+                    "method": "GET",
+                    "path": "/api/tickets/manager/{managerId}",
+                    "description": "Get change requests and tickets pending manager approval",
+                    "required_fields": [],
+                    "path_params": [
+                        "managerId"
+                    ],
+                    "roles": [
+                        "MANAGER",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "java_controller_name": "TicketController",
+                    "api_name": "getTicketsForManager",
+                    "capability": "Ticket",
+                    "ui_name": "HelpDesk Module"
+                },
+                {
+                    "endpoint_id": "getDrafts",
+                    "method": "GET",
+                    "path": "/api/tickets/drafts/{employeeId}",
+                    "description": "Get saved ticket drafts for an employee",
+                    "required_fields": [],
+                    "path_params": [
+                        "employeeId"
+                    ],
+                    "roles": [
+                        "EMPLOYEE"
+                    ],
+                    "requires_confirmation": false,
+                    "java_controller_name": "TicketController",
+                    "api_name": "getDrafts",
+                    "capability": "Ticket",
+                    "ui_name": "HelpDesk Module"
+                },
+                {
+                    "endpoint_id": "deleteDraft",
+                    "method": "DELETE",
+                    "path": "/api/tickets/draft/{draftId}",
+                    "description": "Delete a saved ticket draft",
+                    "required_fields": [],
+                    "path_params": [
+                        "draftId"
+                    ],
+                    "roles": [
+                        "EMPLOYEE"
+                    ],
+                    "requires_confirmation": true,
+                    "java_controller_name": "TicketController",
+                    "api_name": "deleteDraft",
+                    "capability": "Ticket",
+                    "ui_name": "HelpDesk Module"
                 }
             ]
         },
@@ -1385,82 +1780,70 @@
             ]
         },
         "notifications": {
-            "module_name": "Notifications & Task Counts",
             "endpoints": [
                 {
-                    "endpoint_id": "getTaskCounts",
-                    "method": "GET",
-                    "path": "/api/task-counts/{employeeId}",
-                    "description": "Get pending task counts across modules | UI Name: TaskCount Module | User Intent: Get Task Counts | Java Controller: TaskCountController",
-                    "response_example": {
-                        "claims": 0,
-                        "leaves": 0,
-                        "travel": 0,
-                        "helpdesk": 0,
-                        "exit": 0,
-                        "total": 0
-                    },
-                    "roles": [
-                        "EMPLOYEE",
-                        "MANAGER"
-                    ],
-                    "requires_confirmation": false,
-                    "required_fields": [],
-                    "java_controller_name": "TaskCountController",
-                    "api_name": "getTaskCounts",
-                    "capability": "TaskCount",
-                    "ui_name": "TaskCount Module",
-                    "user_intent": "Get Task Counts"
-                },
-                {
-                    "endpoint_id": "getNotifications",
+                    "endpoint_id": "getMyNotifications",
                     "method": "GET",
                     "path": "/api/notifications/{employeeId}",
-                    "description": "Fetch all notifications | UI Name: Notification Module | User Intent: Get Notifications | Java Controller: NotificationController",
+                    "description": "Fetch all system notifications, alerts, claim updates, leave approvals, and travel notices for an employee. UI Name: Notifications | User Intent: View My Notifications / Check Alerts | Java Controller: NotificationController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE"
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": [],
+                    "ui_name": "Notifications",
+                    "user_intent": "View Notifications",
+                    "capability": "Notifications",
                     "java_controller_name": "NotificationController",
-                    "api_name": "getNotifications",
-                    "capability": "Notification",
-                    "ui_name": "Notification Module",
-                    "user_intent": "Get Notifications"
+                    "api_name": "getMyNotifications"
                 },
                 {
-                    "endpoint_id": "markNotificationRead",
+                    "endpoint_id": "markNotificationAsRead",
                     "method": "POST",
                     "path": "/api/notifications/read/{id}",
-                    "description": "Mark notification as read",
-                    "roles": [
-                        "EMPLOYEE"
-                    ],
-                    "requires_confirmation": false,
+                    "description": "Mark a specific notification as read by its ID. UI Name: Notifications | User Intent: Mark Notification Read | Java Controller: NotificationController",
                     "required_fields": [
                         "id"
                     ],
-                    "java_controller_name": "NotificationController",
-                    "api_name": "markAsRead",
-                    "capability": "Notification",
-                    "ui_name": "Notification Module",
-                    "user_intent": "Mark As Read"
-                },
-                {
-                    "endpoint_id": "markAllNotificationsRead",
-                    "method": "POST",
-                    "path": "/api/notifications/read-all/{employeeId}",
-                    "description": "Mark all notifications as read",
+                    "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE"
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "required_fields": [],
+                    "ui_name": "Notifications",
+                    "user_intent": "Mark Notification Read",
+                    "capability": "Notifications",
                     "java_controller_name": "NotificationController",
-                    "api_name": "markAllAsRead",
-                    "capability": "Notification",
-                    "ui_name": "Notification Module",
-                    "user_intent": "Mark All As Read"
+                    "api_name": "markAsRead"
+                },
+                {
+                    "endpoint_id": "markAllNotificationsAsRead",
+                    "method": "POST",
+                    "path": "/api/notifications/mark-all-read",
+                    "description": "Mark all unread notifications as read. UI Name: Notifications | User Intent: Mark All Notifications Read / Clear Unread Alerts | Java Controller: NotificationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Notifications",
+                    "user_intent": "Mark All Notifications Read",
+                    "capability": "Notifications",
+                    "java_controller_name": "NotificationController",
+                    "api_name": "markAllAsRead"
                 }
             ]
         },
@@ -1670,7 +2053,7 @@
                     "endpoint_id": "getSowsByCustomer",
                     "method": "GET",
                     "path": "/api/sows/customer/{customerId}",
-                    "description": "Auto-generated OpenAPI description for Get Sows By Customer | UI Name: Sow Module | User Intent: Get Sows By Customer | Java Controller: SowController",
+                    "description": "Get all Statements of Work under a customer including budget, effort, and validity dates | UI Name: SOW Module | Java Controller: SowController",
                     "required_fields": [
                         "customerId"
                     ],
@@ -1678,11 +2061,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "Sow Module",
-                    "user_intent": "Get Sows By Customer",
+                    "ui_name": "SOW Module",
+                    "user_intent": "List SOWs By Customer / Show SOWs For Client / Contract Work Orders",
                     "capability": "Sow",
                     "java_controller_name": "SowController",
                     "api_name": "getSowsByCustomer"
@@ -1691,7 +2075,7 @@
                     "endpoint_id": "downloadSowDocument",
                     "method": "GET",
                     "path": "/api/sows/{id}/download",
-                    "description": "Auto-generated OpenAPI description for Download Sow Document | UI Name: Sow Module | User Intent: Download Sow Document | Java Controller: SowController",
+                    "description": "Download the SOW agreement PDF document | UI Name: SOW Module | Java Controller: SowController",
                     "required_fields": [
                         "id"
                     ],
@@ -1699,11 +2083,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "Sow Module",
-                    "user_intent": "Download Sow Document",
+                    "ui_name": "SOW Module",
+                    "user_intent": "Download SOW Document / Get SOW PDF",
                     "capability": "Sow",
                     "java_controller_name": "SowController",
                     "api_name": "downloadSowDocument"
@@ -1728,6 +2113,29 @@
                     "capability": "Sow",
                     "java_controller_name": "SowController",
                     "api_name": "updateSow"
+                },
+                {
+                    "endpoint_id": "createSow",
+                    "method": "POST",
+                    "path": "/api/sows",
+                    "description": "Create a new Statement of Work with contract details and PDF document | UI Name: SOW Module | Java Controller: SowController",
+                    "required_fields": [
+                        "sowName",
+                        "customerId",
+                        "sowStartDate",
+                        "sowEndDate",
+                        "totalEffort",
+                        "totalCost"
+                    ],
+                    "user_intent": "Create SOW / New Statement Of Work / Add Purchase Order",
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "SOW Module",
+                    "capability": "Sow"
                 }
             ]
         },
@@ -1793,7 +2201,7 @@
                     "api_name": "getPayslipByEmployee"
                 },
                 {
-                    "endpoint_id": "generatePayslips",
+                    "endpoint_id": "generatePayslips_V1_DEPRECATED",
                     "method": "POST",
                     "path": "/api/v1/payslips/generate",
                     "description": "Auto-generated OpenAPI description | UI Name: Payslip Module | User Intent: API Endpoint | Java Controller: PayslipController",
@@ -2051,7 +2459,30 @@
                     "path": "/api/tickets/draft",
                     "description": "Auto-generated OpenAPI description for Save Draft | UI Name: Ticket Module | User Intent: Save Draft | Java Controller: TicketController",
                     "required_fields": [],
-                    "optional_fields": [],
+                    "optional_fields": [
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "projectCode",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "startLocation",
+                        "endLocation",
+                        "distanceKm",
+                        "ratePerKm",
+                        "subCategory",
+                        "justification",
+                        "comments"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
@@ -2831,88 +3262,141 @@
         "Customer": {
             "endpoints": [
                 {
-                    "endpoint_id": "downloadMSA",
+                    "endpoint_id": "getAllCustomers",
                     "method": "GET",
-                    "path": "/api/customers/{id}/download",
-                    "description": "Auto-generated OpenAPI description for Download Msa | UI Name: Customer Module | User Intent: Download Msa | Java Controller: CustomerController",
-                    "required_fields": [
-                        "id"
-                    ],
-                    "optional_fields": [],
+                    "path": "/api/customers",
+                    "description": "List all registered customers and clients | UI Name: Customer Module | User Intent: View Customers List All Clients | Java Controller: CustomerController",
+                    "required_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
+                        "ADMIN",
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "Customer Module",
-                    "user_intent": "Download Msa",
-                    "capability": "Customer",
                     "java_controller_name": "CustomerController",
-                    "api_name": "downloadMSA"
+                    "api_name": "getAllCustomers",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module",
+                    "user_intent": "View Customers / List All Clients / Search Customers / Customer List"
+                },
+                {
+                    "endpoint_id": "createCustomer",
+                    "method": "POST",
+                    "path": "/api/customers",
+                    "description": "Register a new customer/client with MSA contract document | UI Name: Customer Module | User Intent: Register Customer | Java Controller: CustomerController",
+                    "required_fields": [
+                        "customerName",
+                        "startDate",
+                        "endDate"
+                    ],
+                    "optional_fields": [
+                        "msaDoc",
+                        "file",
+                        "attachment"
+                    ],
+                    "roles": [
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "requires_confirmation": true,
+                    "java_controller_name": "CustomerController",
+                    "api_name": "createCustomer",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module",
+                    "user_intent": "Register Customer"
                 },
                 {
                     "endpoint_id": "getCustomerById",
                     "method": "GET",
                     "path": "/api/customers/{id}",
-                    "description": "Auto-generated OpenAPI description for Get Customer By Id | UI Name: Customer Module | User Intent: Get Customer By Id | Java Controller: CustomerController",
-                    "required_fields": [
+                    "description": "Get single customer details by ID | UI Name: Customer Module | User Intent: Get Customer Details | Java Controller: CustomerController",
+                    "required_fields": [],
+                    "path_params": [
                         "id"
                     ],
-                    "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
+                        "ADMIN",
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "Customer Module",
-                    "user_intent": "Get Customer By Id",
-                    "capability": "Customer",
                     "java_controller_name": "CustomerController",
-                    "api_name": "getCustomerById"
+                    "api_name": "getCustomerById",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module"
                 },
                 {
                     "endpoint_id": "getCustomersForEmployee",
                     "method": "GET",
                     "path": "/api/customers/employee/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Get Customers For Employee | UI Name: Customer Module | User Intent: Get Customers For Employee | Java Controller: CustomerController",
-                    "required_fields": [
+                    "description": "Get client accounts and customer accounts assigned to an employee | UI Name: Customer Module | User Intent: Get Assigned Customers Client Accounts | Java Controller: CustomerController",
+                    "required_fields": [],
+                    "path_params": [
                         "employeeId"
                     ],
-                    "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
+                        "ADMIN",
                         "HR"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "Customer Module",
-                    "user_intent": "Get Customers For Employee",
-                    "capability": "Customer",
                     "java_controller_name": "CustomerController",
-                    "api_name": "getCustomersForEmployee"
+                    "api_name": "getCustomersForEmployee",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module",
+                    "user_intent": "Get Assigned Customers / Assigned Client Accounts / Which Clients Am I Assigned To"
                 },
                 {
                     "endpoint_id": "updateCustomer",
                     "method": "PUT",
                     "path": "/api/customers/{id}",
-                    "description": "Auto-generated OpenAPI description for Update Customer | UI Name: Customer Module | User Intent: Update Customer | Java Controller: CustomerController",
+                    "description": "Update customer contract dates or replace MSA contract file | UI Name: Customer Module | User Intent: Update Customer | Java Controller: CustomerController",
                     "required_fields": [
+                        "customerName",
+                        "startDate",
+                        "endDate"
+                    ],
+                    "optional_fields": [
+                        "msaDoc",
+                        "file",
+                        "attachment"
+                    ],
+                    "path_params": [
                         "id"
                     ],
-                    "optional_fields": [],
+                    "roles": [
+                        "ADMIN",
+                        "MANAGER"
+                    ],
+                    "requires_confirmation": true,
+                    "java_controller_name": "CustomerController",
+                    "api_name": "updateCustomer",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module"
+                },
+                {
+                    "endpoint_id": "downloadMSA",
+                    "method": "GET",
+                    "path": "/api/customers/{id}/download",
+                    "description": "Download customer MSA contract document | UI Name: Customer Module | User Intent: Download MSA Document | Java Controller: CustomerController",
+                    "required_fields": [],
+                    "path_params": [
+                        "id"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
+                        "ADMIN",
                         "HR"
                     ],
-                    "requires_confirmation": true,
-                    "ui_name": "Customer Module",
-                    "user_intent": "Update Customer",
-                    "capability": "Customer",
+                    "requires_confirmation": false,
                     "java_controller_name": "CustomerController",
-                    "api_name": "updateCustomer"
+                    "api_name": "downloadMSA",
+                    "capability": "Customer",
+                    "ui_name": "Customer Module"
                 }
             ]
         },
@@ -4504,8 +4988,15 @@
                     "method": "POST",
                     "path": "/api/grievances/anonymous",
                     "description": "Auto-generated OpenAPI description for Submit Grievance | UI Name: Grievance Module | User Intent: Submit Grievance | Java Controller: GrievanceController",
-                    "required_fields": [],
-                    "optional_fields": [],
+                    "required_fields": [
+                        "category",
+                        "subject",
+                        "description"
+                    ],
+                    "optional_fields": [
+                        "attachment",
+                        "attachments"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
@@ -5280,10 +5771,10 @@
                     "api_name": "save"
                 },
                 {
-                    "endpoint_id": "get",
+                    "endpoint_id": "getPreOnboardingProgress",
                     "method": "GET",
                     "path": "/api/v1/preonboarding/{applicantId}",
-                    "description": "Auto-generated OpenAPI description for Get | UI Name: PreOnboarding Module | User Intent: Get | Java Controller: PreOnboardingController",
+                    "description": "Check Onboarding Progress for a specific applicant | UI Name: PreOnboarding Module | User Intent: Check Onboarding Progress | Java Controller: PreOnboardingController",
                     "required_fields": [
                         "applicantId"
                     ],
@@ -6761,7 +7252,7 @@
                     "endpoint_id": "getProjectsBySowId",
                     "method": "GET",
                     "path": "/api/projects/sow/{sowId}",
-                    "description": "Auto-generated OpenAPI description for Get Projects By Sow Id | UI Name: Project Module | User Intent: Get Projects By Sow Id | Java Controller: ProjectController",
+                    "description": "Get all projects under a specific SOW showing project name, timeline, billing model, and assigned PM | UI Name: Project Module | Java Controller: ProjectController",
                     "required_fields": [
                         "sowId"
                     ],
@@ -6769,11 +7260,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Project Module",
-                    "user_intent": "Get Projects By Sow Id",
+                    "user_intent": "List Projects Under SOW / Show Projects For Statement Of Work",
                     "capability": "Project",
                     "java_controller_name": "ProjectController",
                     "api_name": "getProjectsBySowId"
@@ -6782,7 +7274,7 @@
                     "endpoint_id": "getAllProjectsByCustomer",
                     "method": "GET",
                     "path": "/api/projects/customer/{customerId}/all-projects",
-                    "description": "Auto-generated OpenAPI description for Get All Projects By Customer | UI Name: Project Module | User Intent: Get All Projects By Customer | Java Controller: ProjectController",
+                    "description": "Get all projects across the organization | UI Name: Project Module | Java Controller: ProjectController",
                     "required_fields": [
                         "customerId"
                     ],
@@ -6790,11 +7282,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Project Module",
-                    "user_intent": "Get All Projects By Customer",
+                    "user_intent": "List All Projects / Show All Projects",
                     "capability": "Project",
                     "java_controller_name": "ProjectController",
                     "api_name": "getAllProjectsByCustomer"
@@ -6803,7 +7296,7 @@
                     "endpoint_id": "getProjectsForEmployeeByCustomer",
                     "method": "GET",
                     "path": "/api/projects/employee/{employeeId}/customer/{customerId}",
-                    "description": "Auto-generated OpenAPI description for Get Projects For Employee By Customer | UI Name: Project Module | User Intent: Get Projects For Employee By Customer | Java Controller: ProjectController",
+                    "description": "Get all projects across the organization | UI Name: Project Module | Java Controller: ProjectController",
                     "required_fields": [
                         "employeeId",
                         "customerId"
@@ -6812,11 +7305,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Project Module",
-                    "user_intent": "Get Projects For Employee By Customer",
+                    "user_intent": "List All Projects / Show All Projects",
                     "capability": "Project",
                     "java_controller_name": "ProjectController",
                     "api_name": "getProjectsForEmployeeByCustomer"
@@ -6825,19 +7319,19 @@
                     "endpoint_id": "updateProject",
                     "method": "PUT",
                     "path": "/api/projects/{projectId}",
-                    "description": "Auto-generated OpenAPI description for Update Project | UI Name: Project Module | User Intent: Update Project | Java Controller: ProjectController",
+                    "description": "Update project details including dates, billing type, or PM | UI Name: Project Module | Java Controller: ProjectController",
                     "required_fields": [
                         "projectId"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
                     "ui_name": "Project Module",
-                    "user_intent": "Update Project",
+                    "user_intent": "Update Project / Edit Project Details",
                     "capability": "Project",
                     "java_controller_name": "ProjectController",
                     "api_name": "updateProject"
@@ -8044,7 +8538,7 @@
                     "endpoint_id": "getClients",
                     "method": "GET",
                     "path": "/api/v1/applicants/clients",
-                    "description": "Auto-generated OpenAPI description for Get Clients | UI Name: Applicant Module | User Intent: Get Clients | Java Controller: ApplicantController",
+                    "description": "Fetch dropdown list of company clients for pre-onboarding applicant form only",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -8054,7 +8548,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Applicant Module",
-                    "user_intent": "Get Clients",
+                    "user_intent": "Get Pre-Onboarding Applicant Clients Dropdown",
                     "capability": "Applicant",
                     "java_controller_name": "ApplicantController",
                     "api_name": "getClients"
@@ -8169,10 +8663,10 @@
                 {
                     "endpoint_id": "getPendingClaimsForUser",
                     "method": "GET",
-                    "path": "/api/claims/pending/{userId}",
-                    "description": "Auto-generated OpenAPI description for Get Pending Claims For User | UI Name: Claim Module | User Intent: Get Pending Claims For User | Java Controller: ClaimController",
+                    "path": "/api/claims/manager/{managerId}",
+                    "description": "Fetch pending claims awaiting approval for a manager. UI Name: Claim Module | User Intent: Get Pending Claims For User | Java Controller: ClaimController",
                     "required_fields": [
-                        "userId"
+                        "managerId"
                     ],
                     "optional_fields": [],
                     "roles": [
@@ -8224,25 +8718,6 @@
                     "capability": "Claim",
                     "java_controller_name": "ClaimController",
                     "api_name": "rejectClaimsBulk"
-                },
-                {
-                    "endpoint_id": "takeAction",
-                    "method": "POST",
-                    "path": "/api/claims/action",
-                    "description": "Auto-generated OpenAPI description for Take Action | UI Name: Claim Module | User Intent: Take Action | Java Controller: ClaimController",
-                    "required_fields": [],
-                    "optional_fields": [],
-                    "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
-                    ],
-                    "requires_confirmation": true,
-                    "ui_name": "Claim Module",
-                    "user_intent": "Take Action",
-                    "capability": "Claim",
-                    "java_controller_name": "ClaimController",
-                    "api_name": "takeAction"
                 },
                 {
                     "endpoint_id": "cancelClaim",
@@ -8376,7 +8851,30 @@
                     "path": "/api/claims/draft",
                     "description": "Auto-generated OpenAPI description for Save Draft | UI Name: Claim Module | User Intent: Save Draft | Java Controller: ClaimController",
                     "required_fields": [],
-                    "optional_fields": [],
+                    "optional_fields": [
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "projectCode",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "startLocation",
+                        "endLocation",
+                        "distanceKm",
+                        "ratePerKm",
+                        "subCategory",
+                        "justification",
+                        "comments"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
@@ -8786,7 +9284,7 @@
                     "endpoint_id": "getAttributeReport",
                     "method": "GET",
                     "path": "/api/attributes/fetch-reports",
-                    "description": "Auto-generated OpenAPI description for Get Attribute Report | UI Name: PerformanceAttribute Module | User Intent: Get Attribute Report | Java Controller: PerformanceAttributeController",
+                    "description": "Fetch organization-wide attribute/competency performance reports | UI Name: Performance Module | Java Controller: PerformanceAttributeController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -8796,7 +9294,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceAttribute Module",
-                    "user_intent": "Get Attribute Report",
+                    "user_intent": "Competency Report / Attribute Performance Report",
                     "capability": "PerformanceAttribute",
                     "java_controller_name": "PerformanceAttributeController",
                     "api_name": "getAttributeReport"
@@ -8883,7 +9381,7 @@
                     "endpoint_id": "getAttributesForEmployee",
                     "method": "GET",
                     "path": "/api/attributes/employee/{empId}",
-                    "description": "Auto-generated OpenAPI description for Get Attributes For Employee | UI Name: PerformanceAttribute Module | User Intent: Get Attributes For Employee | Java Controller: PerformanceAttributeController",
+                    "description": "Get all performance attributes/competencies assigned to an employee | UI Name: Performance Module | Java Controller: PerformanceAttributeController",
                     "required_fields": [
                         "empId"
                     ],
@@ -8895,7 +9393,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceAttribute Module",
-                    "user_intent": "Get Attributes For Employee",
+                    "user_intent": "Show My Competencies / My Performance Attributes / What Attributes Are Assigned",
                     "capability": "PerformanceAttribute",
                     "java_controller_name": "PerformanceAttributeController",
                     "api_name": "getAttributesForEmployee"
@@ -8925,7 +9423,7 @@
                     "endpoint_id": "getAttributesForManager",
                     "method": "GET",
                     "path": "/api/attributes/manager/{managerId}",
-                    "description": "Auto-generated OpenAPI description for Get Attributes For Manager | UI Name: PerformanceAttribute Module | User Intent: Get Attributes For Manager | Java Controller: PerformanceAttributeController",
+                    "description": "Get all employee attributes under a manager for review | UI Name: Performance Module | Java Controller: PerformanceAttributeController",
                     "required_fields": [
                         "managerId"
                     ],
@@ -8937,7 +9435,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceAttribute Module",
-                    "user_intent": "Get Attributes For Manager",
+                    "user_intent": "View Team Competencies / Team Attributes For Review",
                     "capability": "PerformanceAttribute",
                     "java_controller_name": "PerformanceAttributeController",
                     "api_name": "getAttributesForManager"
@@ -9639,7 +10137,7 @@
                     "endpoint_id": "uploadMultipleFiles",
                     "method": "POST",
                     "path": "/api/travel/admin/upload-pdfs/{requestId}",
-                    "description": "Auto-generated OpenAPI description for Upload Multiple Files | UI Name: TravelRequest Module | User Intent: Upload Multiple Files | Java Controller: TravelRequestController",
+                    "description": "Upload booking documents / tickets (PDF) to complete and finalize a travel request as Travel Admin (Upload & Complete). This completes the booking and marks the travel ticket as 'Booked'. UI Name: Travel Module | User Intent: Upload Booking Documents and Complete Travel Ticket | Java Controller: TravelRequestController",
                     "required_fields": [
                         "requestId"
                     ],
@@ -9647,11 +10145,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
-                    "ui_name": "TravelRequest Module",
-                    "user_intent": "Upload Multiple Files",
+                    "ui_name": "Travel Module",
+                    "user_intent": "Upload Booking Documents and Complete Travel Request",
                     "capability": "TravelRequest",
                     "java_controller_name": "TravelRequestController",
                     "api_name": "uploadMultipleFiles"
@@ -9702,17 +10201,28 @@
                     "endpoint_id": "createRequest",
                     "method": "POST",
                     "path": "/api/travel/create",
-                    "description": "Auto-generated OpenAPI description for Create Request | UI Name: TravelRequest Module | User Intent: Create Request | Java Controller: TravelRequestController",
-                    "required_fields": [],
-                    "optional_fields": [],
+                    "description": "Create and submit a new travel ticket/request. Form fields: category (Domestic/International), modeOfTravel (Flight/Train/Bus/Cab), departureDate (YYYY-MM-DD or DD-MM-YYYY), returnDate (YYYY-MM-DD or DD-MM-YYYY), fromLocation (Source City), toLocation (Destination City), advanceRequired (boolean, default false), accommodationRequired (boolean, default false), purposeOfTravel (text). NOTE: Travel tickets do NOT require receipts or expense amounts! UI Name: Travel Module | User Intent: Submit Travel Ticket | Java Controller: TravelRequestController",
+                    "required_fields": [
+                        "category",
+                        "modeOfTravel",
+                        "departureDate",
+                        "fromLocation",
+                        "toLocation",
+                        "purposeOfTravel"
+                    ],
+                    "optional_fields": [
+                        "returnDate",
+                        "advanceRequired",
+                        "accommodationRequired"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
                         "HR"
                     ],
                     "requires_confirmation": true,
-                    "ui_name": "TravelRequest Module",
-                    "user_intent": "Create Request",
+                    "ui_name": "Travel Module",
+                    "user_intent": "Submit Travel Ticket",
                     "capability": "TravelRequest",
                     "java_controller_name": "TravelRequestController",
                     "api_name": "createRequest"
@@ -10326,19 +10836,19 @@
                     "endpoint_id": "getAllocationsByProject",
                     "method": "GET",
                     "path": "/api/allocations/project/{projectId}",
-                    "description": "Auto-generated OpenAPI description for Get Allocations By Project | UI Name: Allocation Module | User Intent: Get Allocations By Project | Java Controller: AllocationController",
+                    "description": "Get all employees allocated to a specific project | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [
                         "projectId"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Get Allocations By Project",
+                    "user_intent": "View Project Team / Who Is On This Project / Project Staffing",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "getAllocationsByProject"
@@ -10347,17 +10857,17 @@
                     "endpoint_id": "createBulkAllocations",
                     "method": "POST",
                     "path": "/api/allocations/bulk",
-                    "description": "Auto-generated OpenAPI description for Create Bulk Allocations | UI Name: Allocation Module | User Intent: Create Bulk Allocations | Java Controller: AllocationController",
+                    "description": "Bulk allocate multiple employees to a project at once | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Create Bulk Allocations",
+                    "user_intent": "Bulk Allocate Employees / Staff Multiple Engineers / Batch Allocation",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "createBulkAllocations"
@@ -10366,7 +10876,7 @@
                     "endpoint_id": "getAllocationsForEmployee",
                     "method": "GET",
                     "path": "/api/allocations/employee/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Get Allocations For Employee | UI Name: Allocation Module | User Intent: Get Allocations For Employee | Java Controller: AllocationController",
+                    "description": "Get employee's current project allocations showing Project Name, Client, Allocation %, Dates, Manager, Reviewer, and Status (BILLABLE/NON_BILLABLE/SHADOW) | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [
                         "employeeId"
                     ],
@@ -10374,11 +10884,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Get Allocations For Employee",
+                    "user_intent": "Check My Project Allocation / What Project Am I On / Am I Billable / My Allocation Status",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "getAllocationsForEmployee"
@@ -10387,19 +10898,19 @@
                     "endpoint_id": "getAllocationsForManager",
                     "method": "GET",
                     "path": "/api/allocations/manager/{managerId}",
-                    "description": "Auto-generated OpenAPI description for Get Allocations For Manager | UI Name: Allocation Module | User Intent: Get Allocations For Manager | Java Controller: AllocationController",
+                    "description": "Get allocations for a manager's direct reports | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [
                         "managerId"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Get Allocations For Manager",
+                    "user_intent": "View Team Allocation / Who Is Staffed On My Projects / Direct Reports Allocation",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "getAllocationsForManager"
@@ -10408,7 +10919,7 @@
                     "endpoint_id": "getAllocationsByEmployeeAndDate",
                     "method": "GET",
                     "path": "/api/allocations/employee/{employeeId}/date/{date}",
-                    "description": "Auto-generated OpenAPI description for Get Allocations By Employee And Date | UI Name: Allocation Module | User Intent: Get Allocations By Employee And Date | Java Controller: AllocationController",
+                    "description": "Check employee's project allocation on a specific date | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [
                         "employeeId",
                         "date"
@@ -10417,11 +10928,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Get Allocations By Employee And Date",
+                    "user_intent": "Check My Allocation On A Specific Date / Am I Allocated On This Date",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "getAllocationsByEmployeeAndDate"
@@ -10430,19 +10942,19 @@
                     "endpoint_id": "updateAllocation",
                     "method": "PUT",
                     "path": "/api/allocations/{allocationId}",
-                    "description": "Auto-generated OpenAPI description for Update Allocation | UI Name: Allocation Module | User Intent: Update Allocation | Java Controller: AllocationController",
+                    "description": "Update employee allocation (dates, percentage, status) or roll-off from project | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [
                         "allocationId"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Update Allocation",
+                    "user_intent": "Update Allocation / Roll Off Employee / Change Allocation Percentage / End Assignment",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "updateAllocation"
@@ -10451,17 +10963,17 @@
                     "endpoint_id": "getContractManagementReport",
                     "method": "GET",
                     "path": "/api/allocations/contract-report",
-                    "description": "Auto-generated OpenAPI description for Get Contract Management Report | UI Name: Allocation Module | User Intent: Get Contract Management Report | Java Controller: AllocationController",
+                    "description": "Get contract management and resource utilization report | UI Name: Allocation Module | Java Controller: AllocationController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Allocation Module",
-                    "user_intent": "Get Contract Management Report",
+                    "user_intent": "Contract Utilization Report / Resource Utilization",
                     "capability": "Allocation",
                     "java_controller_name": "AllocationController",
                     "api_name": "getContractManagementReport"
@@ -10522,7 +11034,7 @@
                     "endpoint_id": "getPerformanceReport",
                     "method": "GET",
                     "path": "/api/goals/fetch-reports",
-                    "description": "Auto-generated OpenAPI description for Get Performance Report | UI Name: PerformanceGoal Module | User Intent: Get Performance Report | Java Controller: PerformanceGoalController",
+                    "description": "Fetch organization-wide performance reports filtered by employee, status, date range | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -10532,7 +11044,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Performance Report",
+                    "user_intent": "Performance Report / All Approved Ratings / Organization Performance Summary",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getPerformanceReport"
@@ -10560,7 +11072,7 @@
                     "endpoint_id": "submitBulkSelfAssessment",
                     "method": "PUT",
                     "path": "/api/goals/employee/self-assessments",
-                    "description": "Auto-generated OpenAPI description for Submit Bulk Self Assessment | UI Name: PerformanceGoal Module | User Intent: Submit Bulk Self Assessment | Java Controller: PerformanceGoalController",
+                    "description": "Submit self-assessment ratings (1-5) and feedback for all goals in bulk | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -10570,7 +11082,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Submit Bulk Self Assessment",
+                    "user_intent": "Submit Self Assessment / Rate My Goals / Self Appraisal",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "submitBulkSelfAssessment"
@@ -10579,7 +11091,7 @@
                     "endpoint_id": "updateEmployeeFeedback",
                     "method": "PUT",
                     "path": "/api/goals/{goalId}/employee-feedback",
-                    "description": "Auto-generated OpenAPI description for Update Employee Feedback | UI Name: PerformanceGoal Module | User Intent: Update Employee Feedback | Java Controller: PerformanceGoalController",
+                    "description": "Submit self-assessment rating and feedback for a single goal | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "goalId"
                     ],
@@ -10591,7 +11103,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Update Employee Feedback",
+                    "user_intent": "Rate My Performance On Goal / Submit Self Rating For Goal",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "updateEmployeeFeedback"
@@ -10600,7 +11112,7 @@
                     "endpoint_id": "getGoalsForEmployee",
                     "method": "GET",
                     "path": "/api/goals/employee/{empId}",
-                    "description": "Auto-generated OpenAPI description for Get Goals For Employee | UI Name: PerformanceGoal Module | User Intent: Get Goals For Employee | Java Controller: PerformanceGoalController",
+                    "description": "Get all performance goals assigned to an employee showing Title, Weightage, Target Date, Status, Self-Rating, and Manager Rating | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "empId"
                     ],
@@ -10612,7 +11124,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Goals For Employee",
+                    "user_intent": "Show My Performance Goals / My KPIs / What Goals Are Assigned To Me",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getGoalsForEmployee"
@@ -10684,7 +11196,7 @@
                     "endpoint_id": "reassignGoal",
                     "method": "PUT",
                     "path": "/api/goals/reassign/{goalId}",
-                    "description": "Auto-generated OpenAPI description for Reassign Goal | UI Name: PerformanceGoal Module | User Intent: Reassign Goal | Java Controller: PerformanceGoalController",
+                    "description": "Reassign a rejected goal back to an employee | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "goalId"
                     ],
@@ -10696,7 +11208,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Reassign Goal",
+                    "user_intent": "Reassign Rejected Goal / Reassign Goal To Employee",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "reassignGoal"
@@ -10726,7 +11238,7 @@
                     "endpoint_id": "getSubmittedGoalsForManager",
                     "method": "GET",
                     "path": "/api/goals/submitted/{managerId}",
-                    "description": "Auto-generated OpenAPI description for Get Submitted Goals For Manager | UI Name: PerformanceGoal Module | User Intent: Get Submitted Goals For Manager | Java Controller: PerformanceGoalController",
+                    "description": "Get goals submitted by employees for manager review | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "managerId"
                     ],
@@ -10738,7 +11250,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Submitted Goals For Manager",
+                    "user_intent": "Who Has Submitted Self Assessment / Pending Team Appraisals",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getSubmittedGoalsForManager"
@@ -10747,7 +11259,7 @@
                     "endpoint_id": "getGoalsUnderManager",
                     "method": "GET",
                     "path": "/api/goals/manager/{managerId}/employee-goals",
-                    "description": "Auto-generated OpenAPI description for Get Goals Under Manager | UI Name: PerformanceGoal Module | User Intent: Get Goals Under Manager | Java Controller: PerformanceGoalController",
+                    "description": "Get all employee goals under a manager for review | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "managerId"
                     ],
@@ -10759,7 +11271,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Goals Under Manager",
+                    "user_intent": "Show My Team Performance Reviews / Team Goals / Submitted Appraisals",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getGoalsUnderManager"
@@ -10832,7 +11344,7 @@
                     "endpoint_id": "reviewGoals",
                     "method": "PATCH",
                     "path": "/api/goals/review",
-                    "description": "Auto-generated OpenAPI description for Review Goals | UI Name: PerformanceGoal Module | User Intent: Review Goals | Java Controller: PerformanceGoalController",
+                    "description": "Approve or reject employee goals with status update | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -10842,7 +11354,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Review Goals",
+                    "user_intent": "Approve Goals / Reject Goals / Final Goal Review",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "reviewGoals"
@@ -10851,7 +11363,7 @@
                     "endpoint_id": "getFeedback",
                     "method": "GET",
                     "path": "/api/goals/{goalId}/feedback",
-                    "description": "Auto-generated OpenAPI description for Get Feedback | UI Name: PerformanceGoal Module | User Intent: Get Feedback | Java Controller: PerformanceGoalController",
+                    "description": "Get feedback details (self-assessment + manager rating) for a specific goal | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "goalId"
                     ],
@@ -10863,7 +11375,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Feedback",
+                    "user_intent": "Check Appraisal Feedback / View Manager Rating / Did Manager Review My Goals",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getFeedback"
@@ -10872,7 +11384,7 @@
                     "endpoint_id": "updateManagerFeedback",
                     "method": "PUT",
                     "path": "/api/goals/{goalId}/manager-feedback",
-                    "description": "Auto-generated OpenAPI description for Update Manager Feedback | UI Name: PerformanceGoal Module | User Intent: Update Manager Feedback | Java Controller: PerformanceGoalController",
+                    "description": "Submit manager rating (1-5) and comments for a goal | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "goalId"
                     ],
@@ -10884,7 +11396,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Update Manager Feedback",
+                    "user_intent": "Rate Employee Goal / Manager Feedback / Submit Manager Rating",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "updateManagerFeedback"
@@ -10893,7 +11405,7 @@
                     "endpoint_id": "submitBulkFeedback",
                     "method": "PUT",
                     "path": "/api/goals/manager-feedback",
-                    "description": "Auto-generated OpenAPI description for Submit Bulk Feedback | UI Name: PerformanceGoal Module | User Intent: Submit Bulk Feedback | Java Controller: PerformanceGoalController",
+                    "description": "Submit manager ratings and comments for multiple goals at once | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
@@ -10903,7 +11415,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Submit Bulk Feedback",
+                    "user_intent": "Submit Manager Ratings In Bulk / Batch Manager Feedback",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "submitBulkFeedback"
@@ -10912,7 +11424,7 @@
                     "endpoint_id": "updateReviewerComments",
                     "method": "PUT",
                     "path": "/api/goals/{goalId}/reviewer-comments",
-                    "description": "Auto-generated OpenAPI description for Update Reviewer Comments | UI Name: PerformanceGoal Module | User Intent: Update Reviewer Comments | Java Controller: PerformanceGoalController",
+                    "description": "Add or update reviewer comments for a goal | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "goalId"
                     ],
@@ -10924,7 +11436,7 @@
                     ],
                     "requires_confirmation": true,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Update Reviewer Comments",
+                    "user_intent": "Reviewer Final Comments / Add Reviewer Remarks",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "updateReviewerComments"
@@ -10997,7 +11509,7 @@
                     "endpoint_id": "getGoalHistory",
                     "method": "GET",
                     "path": "/api/goals/history/employee/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Get Goal History | UI Name: PerformanceGoal Module | User Intent: Get Goal History | Java Controller: PerformanceGoalController",
+                    "description": "Get historical performance goals for an employee across past cycles | UI Name: Performance Module | Java Controller: PerformanceGoalController",
                     "required_fields": [
                         "employeeId"
                     ],
@@ -11009,7 +11521,7 @@
                     ],
                     "requires_confirmation": false,
                     "ui_name": "PerformanceGoal Module",
-                    "user_intent": "Get Goal History",
+                    "user_intent": "Performance Goal History / Past Appraisal Cycles",
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getGoalHistory"
@@ -11034,6 +11546,29 @@
                     "capability": "PerformanceGoal",
                     "java_controller_name": "PerformanceGoalController",
                     "api_name": "getAvailableYears"
+                },
+                {
+                    "endpoint_id": "assignGoal",
+                    "method": "POST",
+                    "path": "/api/goals/assign",
+                    "description": "Assign a performance goal/KPI to an employee | UI Name: Performance Module | Java Controller: PerformanceGoalController",
+                    "required_fields": [
+                        "employeeId",
+                        "goalTitle",
+                        "description",
+                        "weightage",
+                        "startDate",
+                        "targetDate"
+                    ],
+                    "user_intent": "Assign Goal To Employee / Set KPI / Create Performance Goal",
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Performance Module",
+                    "capability": "PerformanceGoal"
                 }
             ]
         },
@@ -11606,6 +12141,77 @@
                     "capability": "CompensationDetails",
                     "java_controller_name": "CompensationDetailsController",
                     "api_name": "saveBulk"
+                },
+                {
+                    "endpoint_id": "getPendingCompensationApprovals",
+                    "method": "GET",
+                    "path": "/api/compensation/approver/{approverId}",
+                    "description": "View pending compensation/hike proposals for approval | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [
+                        "approverId"
+                    ],
+                    "user_intent": "View Pending Hike Approvals / Pending Compensation Revisions",
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Compensation Module",
+                    "capability": "CompensationDetails"
+                },
+                {
+                    "endpoint_id": "approveCompensation",
+                    "method": "POST",
+                    "path": "/api/compensation/approve",
+                    "description": "Approve a compensation/hike proposal | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "user_intent": "Approve Hike / Approve Compensation Revision",
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Compensation Module",
+                    "capability": "CompensationDetails"
+                },
+                {
+                    "endpoint_id": "rejectCompensation",
+                    "method": "POST",
+                    "path": "/api/compensation/reject",
+                    "description": "Reject a compensation/hike proposal | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "user_intent": "Reject Hike / Reject Compensation Revision",
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Compensation Module",
+                    "capability": "CompensationDetails"
+                },
+                {
+                    "endpoint_id": "getYTDReport",
+                    "method": "GET",
+                    "path": "/api/compensation/ytd-report",
+                    "description": "Fetch 12-month April-March YTD summary: cumulative earnings (Basic, HRA, Gross), deductions (PF, PT, TDS), and net salary paid | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [],
+                    "user_intent": "YTD Report / Year To Date Earnings / Cumulative Tax Paid / FY Summary",
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Compensation Module",
+                    "capability": "CompensationDetails"
                 }
             ]
         },
@@ -12263,7 +12869,7 @@
                     "endpoint_id": "getPayslipsByEmployee",
                     "method": "GET",
                     "path": "/api/payroll/payslips/employee/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Get Payslips By Employee | UI Name: Payroll Module | User Intent: Get Payslips By Employee | Java Controller: PayrollController",
+                    "description": "Fetch all payslips for an employee showing Earnings (Basic, HRA, Conveyance, Food, Special, Variable), Deductions (PF, PT, TDS, Insurance), Gross, Total Deductions, and Net Take-Home | UI Name: Payroll Module | Java Controller: PayrollController",
                     "required_fields": [
                         "employeeId"
                     ],
@@ -12271,11 +12877,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Payroll Module",
-                    "user_intent": "Get Payslips By Employee",
+                    "user_intent": "Show My Payslips / Recent Payslips / Take Home Salary / Monthly Salary",
                     "capability": "Payroll",
                     "java_controller_name": "PayrollController",
                     "api_name": "getPayslipsByEmployee"
@@ -12306,7 +12913,7 @@
                     "endpoint_id": "downloadPayslipPdf",
                     "method": "GET",
                     "path": "/api/payroll/payslip/{id}/pdf",
-                    "description": "Auto-generated OpenAPI description for If | UI Name: Payroll Module | User Intent: If | Java Controller: PayrollController",
+                    "description": "Download payslip as PDF file. Returns binary PDF with download link | UI Name: Payroll Module | Java Controller: PayrollController",
                     "required_fields": [
                         "id"
                     ],
@@ -12314,11 +12921,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
                     "ui_name": "Payroll Module",
-                    "user_intent": "If",
+                    "user_intent": "Download Payslip PDF / Salary Slip File / Get Payslip Document",
                     "capability": "Payroll",
                     "java_controller_name": "PayrollController",
                     "api_name": "downloadPayslipPdf"
@@ -12367,17 +12975,18 @@
                     "endpoint_id": "releasePayslips",
                     "method": "POST",
                     "path": "/api/payroll/release-payslips",
-                    "description": "Auto-generated OpenAPI description for Release Payslips | UI Name: Payroll Module | User Intent: Release Payslips | Java Controller: PayrollController",
-                    "required_fields": [],
+                    "description": "Release payslips via email to employees | UI Name: Payroll Module | Java Controller: PayrollController",
+                    "required_fields": [
+                        "payslipIds"
+                    ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
                     "ui_name": "Payroll Module",
-                    "user_intent": "Release Payslips",
+                    "user_intent": "Release Payslips / Email Payslips To Employees",
                     "capability": "Payroll",
                     "java_controller_name": "PayrollController",
                     "api_name": "releasePayslips"
@@ -12459,6 +13068,24 @@
                     "capability": "Payroll",
                     "java_controller_name": "PayrollController",
                     "api_name": "doPayslipsExist"
+                },
+                {
+                    "endpoint_id": "generatePayslips",
+                    "method": "POST",
+                    "path": "/api/payroll/generate-payslips",
+                    "description": "Batch generate payslips for a month/year | UI Name: Payroll Module | Java Controller: PayrollController",
+                    "required_fields": [
+                        "month",
+                        "year"
+                    ],
+                    "user_intent": "Generate Payslips / Create Monthly Payslips",
+                    "roles": [
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Payroll Module",
+                    "capability": "Payroll"
                 }
             ]
         },
@@ -12655,19 +13282,21 @@
                     "endpoint_id": "saveOrUpdate",
                     "method": "POST",
                     "path": "/api/it-declarations/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Save Or Update | UI Name: ITDeclaration Module | User Intent: Save Or Update | Java Controller: ITDeclarationController",
+                    "description": "Submit or update IT declaration with deduction amounts for a financial year | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
-                        "employeeId"
+                        "employeeId",
+                        "financialYear",
+                        "taxRegime",
+                        "status",
+                        "dynamicValues"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
+                        "EMPLOYEE"
                     ],
                     "requires_confirmation": true,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Save Or Update",
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "Submit IT Declaration / Save Tax Declaration / Update Tax Deductions",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "saveOrUpdate"
@@ -12697,20 +13326,22 @@
                     "endpoint_id": "getByEmployeeAndYear",
                     "method": "GET",
                     "path": "/api/it-declarations/{employeeId}/{financialYear}",
-                    "description": "Auto-generated OpenAPI description for Get By Employee And Year | UI Name: ITDeclaration Module | User Intent: Get By Employee And Year | Java Controller: ITDeclarationController",
+                    "description": "View IT declaration for a financial year showing tax regime (Old/New), Section 80C/80D deductions, HRA, Home Loan, and status (DRAFT/SUBMITTED/VERIFIED/REJECTED) | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
                         "employeeId",
-                        "financialYear"
+                        "financialYear",
+                        "requesterId"
                     ],
                     "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Get By Employee And Year",
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "Show My IT Declaration / Tax Declaration For FY / What Tax Regime Am I On / What Deductions Did I Declare",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "getByEmployeeAndYear"
@@ -12738,19 +13369,18 @@
                     "endpoint_id": "getByStatus",
                     "method": "GET",
                     "path": "/api/it-declarations/status/{status}",
-                    "description": "Auto-generated OpenAPI description for Get By Status | UI Name: ITDeclaration Module | User Intent: Get By Status | Java Controller: ITDeclarationController",
+                    "description": "Finance role: Update IT declaration verification status (VERIFIED/REJECTED) | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
                         "status"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
-                    "requires_confirmation": false,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Get By Status",
+                    "requires_confirmation": true,
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "Verify IT Declaration / Update Declaration Status",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "getByStatus"
@@ -12759,19 +13389,18 @@
                     "endpoint_id": "updateStatus",
                     "method": "PUT",
                     "path": "/api/it-declarations/{id}/status",
-                    "description": "Auto-generated OpenAPI description for Update Status | UI Name: ITDeclaration Module | User Intent: Update Status | Java Controller: ITDeclarationController",
+                    "description": "Finance role: Update IT declaration verification status (VERIFIED/REJECTED) | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
                         "id"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": true,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Update Status",
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "Verify IT Declaration / Update Declaration Status",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "updateStatus"
@@ -12801,19 +13430,18 @@
                     "endpoint_id": "getFinanceDeclarations",
                     "method": "GET",
                     "path": "/api/it-declarations/finance/{financeId}",
-                    "description": "Auto-generated OpenAPI description for Get Finance Declarations | UI Name: ITDeclaration Module | User Intent: Get Finance Declarations | Java Controller: ITDeclarationController",
+                    "description": "Finance role: View employee IT declarations pending verification | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
                         "financeId"
                     ],
                     "optional_fields": [],
                     "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Get Finance Declarations",
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "View Pending Employee IT Declarations For Finance Verification",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "getFinanceDeclarations"
@@ -12822,7 +13450,7 @@
                     "endpoint_id": "getFinanceDeclarationView",
                     "method": "GET",
                     "path": "/api/it-declarations/finance/view/{employeeId}/{financialYear}",
-                    "description": "Auto-generated OpenAPI description for Get Finance Declaration View | UI Name: ITDeclaration Module | User Intent: Get Finance Declaration View | Java Controller: ITDeclarationController",
+                    "description": "View IT declaration for a financial year showing tax regime (Old/New), Section 80C/80D deductions, HRA, Home Loan, and status (DRAFT/SUBMITTED/VERIFIED/REJECTED) | UI Name: IT Declaration Module | Java Controller: ITDeclarationController",
                     "required_fields": [
                         "employeeId",
                         "financialYear"
@@ -12831,11 +13459,12 @@
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "ITDeclaration Module",
-                    "user_intent": "Get Finance Declaration View",
+                    "ui_name": "IT Declaration Module",
+                    "user_intent": "Show My IT Declaration / Tax Declaration For FY / What Tax Regime Am I On / What Deductions Did I Declare",
                     "capability": "ITDeclaration",
                     "java_controller_name": "ITDeclarationController",
                     "api_name": "getFinanceDeclarationView"
@@ -12939,27 +13568,6 @@
                     "capability": "Payslip",
                     "java_controller_name": "PayslipController",
                     "api_name": "list"
-                },
-                {
-                    "endpoint_id": "saveDraft",
-                    "method": "GET",
-                    "path": "/api/tickets/status-details/{ticketId}",
-                    "description": "Auto-generated OpenAPI description for Save Draft | UI Name: Ticket Module | User Intent: Save Draft | Java Controller: TicketController",
-                    "required_fields": [
-                        "ticketId"
-                    ],
-                    "optional_fields": [],
-                    "roles": [
-                        "EMPLOYEE",
-                        "MANAGER",
-                        "HR"
-                    ],
-                    "requires_confirmation": false,
-                    "ui_name": "Ticket Module",
-                    "user_intent": "Save Draft",
-                    "capability": "Ticket",
-                    "java_controller_name": "TicketController",
-                    "api_name": "saveDraft"
                 },
                 {
                     "endpoint_id": "allocateAsset",
@@ -13328,7 +13936,30 @@
                     "path": "/api/travel/drafts",
                     "description": "Auto-generated OpenAPI description for Save Draft | UI Name: TravelRequestDraft Module | User Intent: Save Draft | Java Controller: TravelRequestDraftController",
                     "required_fields": [],
-                    "optional_fields": [],
+                    "optional_fields": [
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "projectCode",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "startLocation",
+                        "endLocation",
+                        "distanceKm",
+                        "ratePerKm",
+                        "subCategory",
+                        "justification",
+                        "comments"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
@@ -13728,10 +14359,10 @@
                     "api_name": "updateProfile"
                 },
                 {
-                    "endpoint_id": "getSummary",
+                    "endpoint_id": "getClaimHistory",
                     "method": "GET",
                     "path": "/api/claims/history/{employeeId}",
-                    "description": "Auto-generated OpenAPI description for Get Summary | UI Name: Claim Module | User Intent: Get Summary | Java Controller: ClaimController",
+                    "description": "Fetch historical expenses claims | UI Name: Claim Module | User Intent: Get Claim History | Java Controller: ClaimController",
                     "required_fields": [
                         "employeeId"
                     ],
@@ -13781,13 +14412,36 @@
                         "expenseDate",
                         "expenseDescription"
                     ],
-                    "optional_fields": [],
+                    "optional_fields": [
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "projectCode",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "startLocation",
+                        "endLocation",
+                        "distanceKm",
+                        "ratePerKm",
+                        "subCategory",
+                        "justification",
+                        "comments"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
                         "HR"
                     ],
-                    "requires_confirmation": false,
+                    "requires_confirmation": true,
                     "ui_name": "Claim Module",
                     "user_intent": "Submit Claim",
                     "capability": "Claim",
@@ -13798,17 +14452,26 @@
                     "endpoint_id": "approveClaim",
                     "method": "POST",
                     "path": "/api/claims/approve/{id}",
-                    "description": "Auto-generated OpenAPI description for Approve Claim | UI Name: Claim Module | User Intent: Approve Claim | Java Controller: ClaimController",
+                    "description": "Approve a pending expense claim. The claim ID goes into path as {id}. The 'role' (e.g. ADMIN or MANAGER) and 'approverId' MUST be sent as query parameters. UI Name: Claim Module | User Intent: Approve Claim | Java Controller: ClaimController",
                     "required_fields": [
-                        "id"
+                        "id",
+                        "role",
+                        "approverId"
                     ],
-                    "optional_fields": [],
+                    "query_params": [
+                        "role",
+                        "approverId"
+                    ],
+                    "optional_fields": [
+                        "comment"
+                    ],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
-                    "requires_confirmation": false,
+                    "requires_confirmation": true,
                     "ui_name": "Claim Module",
                     "user_intent": "Approve Claim",
                     "capability": "Claim",
@@ -13819,17 +14482,25 @@
                     "endpoint_id": "rejectClaim",
                     "method": "POST",
                     "path": "/api/claims/reject/{id}",
-                    "description": "Auto-generated OpenAPI description for Reject Claim | UI Name: Claim Module | User Intent: Reject Claim | Java Controller: ClaimController",
+                    "description": "Reject a pending expense claim. The claim ID goes into path as {id}. The 'role' (e.g. ADMIN or MANAGER) and 'approverId' MUST be sent as query parameters. A 'comment' (reason) is required. UI Name: Claim Module | User Intent: Reject Claim | Java Controller: ClaimController",
                     "required_fields": [
-                        "id"
+                        "id",
+                        "role",
+                        "approverId",
+                        "comment"
+                    ],
+                    "query_params": [
+                        "role",
+                        "approverId"
                     ],
                     "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
-                    "requires_confirmation": false,
+                    "requires_confirmation": true,
                     "ui_name": "Claim Module",
                     "user_intent": "Reject Claim",
                     "capability": "Claim",
@@ -14219,58 +14890,757 @@
                     "endpoint_id": "getAllAssets",
                     "method": "GET",
                     "path": "/api/assets",
-                    "description": "Auto-generated OpenAPI description for Get All Assets | UI Name: AssetMaster Module | User Intent: Get All Assets | Java Controller: AssetMasterController",
+                    "description": "Fetch all assets, laptops, devices, asset allocations, assigned devices to employees, serial numbers, asset tags, categories, and allocation statuses in inventory. UI Name: Asset Management | User Intent: Check Asset Allocations / View All Assets / Assigned Laptops / My Devices / Inventory | Java Controller: AssetMasterController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "AssetMaster Module",
-                    "user_intent": "Get All Assets",
+                    "ui_name": "Asset Management Module",
+                    "user_intent": "Check Asset Allocations and View Assigned Assets",
                     "capability": "AssetMaster",
                     "java_controller_name": "AssetMasterController",
                     "api_name": "getAllAssets"
                 },
                 {
-                    "endpoint_id": "getDashboardData",
+                    "endpoint_id": "getAvailableAssets",
                     "method": "GET",
-                    "path": "/api/assets/summary",
-                    "description": "Auto-generated OpenAPI description for Get Dashboard Data | UI Name: AssetMaster Module | User Intent: Get Dashboard Data | Java Controller: AssetMasterController",
+                    "path": "/api/assets/available",
+                    "description": "Fetch all currently available and unallocated assets / laptops in inventory. UI Name: Asset Management | User Intent: View Available Assets / Available Laptops | Java Controller: AssetMasterController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
                     "requires_confirmation": false,
-                    "ui_name": "AssetMaster Module",
-                    "user_intent": "Get Dashboard Data",
+                    "ui_name": "Asset Management Module",
+                    "user_intent": "Get Available Assets",
                     "capability": "AssetMaster",
                     "java_controller_name": "AssetMasterController",
-                    "api_name": "getDashboardData"
+                    "api_name": "getAvailableAssets"
+                },
+                {
+                    "endpoint_id": "getAssetCategories",
+                    "method": "GET",
+                    "path": "/api/assets/categories",
+                    "description": "Fetch all asset categories and subcategories (Laptops, Desktops, Monitors, etc.). UI Name: Asset Management | User Intent: View Asset Categories / Device Types | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management Module",
+                    "user_intent": "Get Asset Categories",
+                    "capability": "AssetMaster",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getAssetCategories"
+                },
+                {
+                    "endpoint_id": "getAssetById",
+                    "method": "GET",
+                    "path": "/api/assets/{id}",
+                    "description": "Fetch specific asset details by numeric asset ID. UI Name: Asset Management | User Intent: View Asset By ID | Java Controller: AssetMasterController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management Module",
+                    "user_intent": "Get Asset Details",
+                    "capability": "AssetMaster",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getAssetById"
                 },
                 {
                     "endpoint_id": "createAsset",
                     "method": "POST",
                     "path": "/api/assets",
-                    "description": "Auto-generated OpenAPI description for Create Asset | UI Name: AssetMaster Module | User Intent: Create Asset | Java Controller: AssetMasterController",
+                    "description": "Register and add a new asset to inventory. UI Name: Asset Management | User Intent: Create / Add New Asset | Java Controller: AssetMasterController",
                     "required_fields": [],
                     "optional_fields": [],
                     "roles": [
                         "EMPLOYEE",
                         "MANAGER",
-                        "HR"
+                        "HR",
+                        "ADMIN"
                     ],
-                    "requires_confirmation": false,
-                    "ui_name": "AssetMaster Module",
+                    "requires_confirmation": true,
+                    "ui_name": "Asset Management Module",
                     "user_intent": "Create Asset",
                     "capability": "AssetMaster",
                     "java_controller_name": "AssetMasterController",
                     "api_name": "createAsset"
+                }
+            ]
+        },
+        "compensationAndPayroll": {
+            "endpoints": [
+                {
+                    "endpoint_id": "getCompensationDetails",
+                    "method": "GET",
+                    "path": "/api/compensation/{employeeId}",
+                    "description": "Get current salary structure including Fixed CTC, Variable Pay, Total CTC, Designation, Department, Effective Date, and Hike Percentage | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Compensation Module",
+                    "user_intent": "View My CTC / Salary Structure / Fixed vs Variable Pay / What Is My Current CTC",
+                    "capability": "Compensation",
+                    "java_controller_name": "CompensationDetailsController",
+                    "api_name": "getCompensationDetails"
+                },
+                {
+                    "endpoint_id": "getCompensationHistory",
+                    "method": "GET",
+                    "path": "/api/compensation/history/{employeeId}",
+                    "description": "Get past CTC numbers, hike percentages, effective dates, and revision comments for an employee | UI Name: Compensation Module | Java Controller: CompensationDetailsController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Compensation Module",
+                    "user_intent": "Salary Hike History / Past Appraisal Increases / Compensation Revision History",
+                    "capability": "Compensation",
+                    "java_controller_name": "CompensationDetailsController",
+                    "api_name": "getCompensationHistory"
+                },
+                {
+                    "endpoint_id": "getPayslipsByEmployee",
+                    "method": "GET",
+                    "path": "/api/payroll/payslips/employee/{employeeId}",
+                    "description": "Fetch monthly payslips, gross earnings, deductions, and net take-home salary for an employee. UI Name: Payroll | User Intent: View Payslips | Java Controller: PayrollController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Payroll Module",
+                    "user_intent": "View Payslips By Employee",
+                    "capability": "Payroll",
+                    "java_controller_name": "PayrollController",
+                    "api_name": "getPayslipsByEmployee"
+                },
+                {
+                    "endpoint_id": "getPayslipByMonthAndYear",
+                    "method": "GET",
+                    "path": "/api/payroll/payslips/month/{month}/year/{year}",
+                    "description": "Fetch payslip for a specific month and year | UI Name: Payroll Module | Java Controller: PayrollController",
+                    "required_fields": [
+                        "month",
+                        "year"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Payroll Module",
+                    "user_intent": "Show Payslip For August 2026 / Specific Month Payslip / What Was My Take Home Last Month",
+                    "capability": "Payroll",
+                    "java_controller_name": "PayrollController",
+                    "api_name": "getPayslipByMonthAndYear"
+                },
+                {
+                    "endpoint_id": "downloadPayslipPdf",
+                    "method": "GET",
+                    "path": "/api/payroll/payslip/{id}/pdf",
+                    "description": "Download official payslip PDF by payslip ID. UI Name: Payroll | User Intent: Download Payslip PDF | Java Controller: PayrollController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Payroll Module",
+                    "user_intent": "Download Payslip PDF",
+                    "capability": "Payroll",
+                    "java_controller_name": "PayrollController",
+                    "api_name": "downloadPayslipPdf"
+                }
+            ]
+        },
+        "claimsAndReimbursements": {
+            "endpoints": [
+                {
+                    "endpoint_id": "getActiveCategories",
+                    "method": "GET",
+                    "path": "/api/claims/categories",
+                    "description": "Fetch all active expense claim categories (Travel, Accommodation, Food, Fuel, Others) and their IDs. UI Name: Claims Module | User Intent: Get Active Categories / Fetch Claim Categories | Java Controller: ClaimController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Get Active Claim Categories",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "getActiveCategories"
+                },
+                {
+                    "endpoint_id": "submitClaim",
+                    "method": "POST",
+                    "path": "/api/claims/submit",
+                    "description": "Submit a new expense reimbursement claim with category ID, amount, expense date, description, receipt file, and category-specific fields. UI Name: Claims Module | User Intent: Submit New Expense Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "amount",
+                        "expenseDate",
+                        "expenseDescription"
+                    ],
+                    "optional_fields": [
+                        "category",
+                        "subCategory",
+                        "justification",
+                        "receiptFile",
+                        "mode",
+                        "tripCategory",
+                        "fromLocation",
+                        "toLocation",
+                        "purpose",
+                        "city",
+                        "hotelName",
+                        "checkInDate",
+                        "checkOutDate",
+                        "nights",
+                        "mealType",
+                        "numberOfPeople",
+                        "vehicle",
+                        "vehicleType",
+                        "distanceKm"
+                    ],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Submit Expense Claim",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "submitClaim"
+                },
+                {
+                    "endpoint_id": "saveDraftClaim",
+                    "method": "POST",
+                    "path": "/api/claims/draft",
+                    "description": "Save an expense claim as draft. UI Name: Claims Module | User Intent: Save Claim Draft | Java Controller: ClaimController",
+                    "required_fields": [
+                        "amount",
+                        "expenseDate",
+                        "expenseDescription"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Save Claim Draft",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "saveDraftClaim"
+                },
+                {
+                    "endpoint_id": "getMyClaims",
+                    "method": "GET",
+                    "path": "/api/claims/employee/{employeeId}",
+                    "description": "Fetch all submitted expense claims and their approval status for an employee. UI Name: Claims Module | User Intent: View My Claims / Check Expense Claims | Java Controller: ClaimController",
+                    "required_fields": [
+                        "employeeId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claims Module",
+                    "user_intent": "View My Expense Claims",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "getMyClaims"
+                },
+                {
+                    "endpoint_id": "getPendingClaimsForManager",
+                    "method": "GET",
+                    "path": "/api/claims/manager/{managerId}",
+                    "description": "Fetch all pending expense claims waiting for manager approval. UI Name: Claims Module | User Intent: View Pending Manager Claims | Java Controller: ClaimController",
+                    "required_fields": [
+                        "managerId"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Get Pending Claims For Manager",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "getPendingClaimsForManager"
+                },
+                {
+                    "endpoint_id": "approveClaim",
+                    "method": "POST",
+                    "path": "/api/claims/approve/{id}",
+                    "description": "Approve a submitted expense claim as Manager. UI Name: Claims Module | User Intent: Approve Expense Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Approve Claim",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "approveClaim"
+                },
+                {
+                    "endpoint_id": "rejectClaim",
+                    "method": "POST",
+                    "path": "/api/claims/reject/{id}",
+                    "description": "Reject a submitted expense claim as Manager with mandatory reason. UI Name: Claims Module | User Intent: Reject Expense Claim | Java Controller: ClaimController",
+                    "required_fields": [
+                        "id",
+                        "reason"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Claims Module",
+                    "user_intent": "Reject Claim",
+                    "capability": "Claims",
+                    "java_controller_name": "ClaimController",
+                    "api_name": "rejectClaim"
+                }
+            ]
+        },
+        "exitManagement": {
+            "endpoints": [
+                {
+                    "endpoint_id": "getExitReasons",
+                    "method": "GET",
+                    "path": "/api/v1/exit-management/exit-reasons",
+                    "description": "Fetch all predefined resignation/exit reasons (Better opportunity, Higher studies, Personal reasons, etc.). UI Name: Exit Module | User Intent: Get Exit Reasons | Java Controller: ResignationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Exit Management",
+                    "user_intent": "View Exit Reasons",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "getExitReasons"
+                },
+                {
+                    "endpoint_id": "getMyResignation",
+                    "method": "GET",
+                    "path": "/api/v1/exit-management/resignations",
+                    "description": "View employee's submitted resignation details, current status, and notice period dates. UI Name: Exit Module | User Intent: Check Resignation Status / View Exit Status | Java Controller: ResignationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Exit Management",
+                    "user_intent": "View Resignation Status",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "getMyResignation"
+                },
+                {
+                    "endpoint_id": "getPendingResignationsForManager",
+                    "method": "GET",
+                    "path": "/api/v1/exit-management/manager/pending-resignations",
+                    "description": "Fetch all pending resignation approval requests waiting for manager review. UI Name: Exit Module | User Intent: View Pending Exit Requests | Java Controller: ResignationController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Exit Management",
+                    "user_intent": "Get Pending Resignations",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "getPendingResignationsForManager"
+                },
+                {
+                    "endpoint_id": "submitResignation",
+                    "method": "POST",
+                    "path": "/api/v1/exit-management/resignations",
+                    "description": "Submit a formal resignation request with reason, last working day, and comments. UI Name: Exit Module | User Intent: Apply Resignation / Submit Exit | Java Controller: ResignationController",
+                    "required_fields": [
+                        "reasonForExit",
+                        "lastWorkingDay"
+                    ],
+                    "optional_fields": [
+                        "comments",
+                        "resignationDate"
+                    ],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Exit Management",
+                    "user_intent": "Submit Resignation",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "submitResignation"
+                },
+                {
+                    "endpoint_id": "approveResignationByManager",
+                    "method": "PUT",
+                    "path": "/api/v1/exit-management/manager/resignations/{id}/approve",
+                    "description": "Approve an employee's resignation request as Manager. UI Name: Exit Module | User Intent: Approve Resignation | Java Controller: ResignationController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [
+                        "approvedLastWorkingDay",
+                        "comments"
+                    ],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Exit Management",
+                    "user_intent": "Approve Resignation",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "approveResignationByManager"
+                },
+                {
+                    "endpoint_id": "rejectResignationByManager",
+                    "method": "PUT",
+                    "path": "/api/v1/exit-management/manager/resignations/{id}/reject",
+                    "description": "Reject an employee's resignation request as Manager with mandatory remarks. UI Name: Exit Module | User Intent: Reject Resignation | Java Controller: ResignationController",
+                    "required_fields": [
+                        "id",
+                        "comments"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Exit Management",
+                    "user_intent": "Reject Resignation",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ResignationController",
+                    "api_name": "rejectResignationByManager"
+                },
+                {
+                    "endpoint_id": "getExitForms",
+                    "method": "GET",
+                    "path": "/api/v1/exit-forms",
+                    "description": "Fetch exit interview questionnaires and feedback forms. UI Name: Exit Module | User Intent: View Exit Forms | Java Controller: ExitFormController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Exit Management",
+                    "user_intent": "View Exit Forms",
+                    "capability": "Exit Management",
+                    "java_controller_name": "ExitFormController",
+                    "api_name": "getExitForms"
+                }
+            ]
+        },
+        "assetManagement": {
+            "endpoints": [
+                {
+                    "endpoint_id": "getAllAssets",
+                    "method": "GET",
+                    "path": "/api/assets",
+                    "description": "Fetch all inventory assets with tags, categories, serial numbers, allocation status, and locations. UI Name: Asset Management | User Intent: View All Assets / Asset Inventory | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "View Assets",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getAllAssets"
+                },
+                {
+                    "endpoint_id": "getAvailableAssets",
+                    "method": "GET",
+                    "path": "/api/assets/available",
+                    "description": "Fetch all currently available, in-stock, and unallocated assets. UI Name: Asset Management | User Intent: View Available Laptops / Available Assets | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "View Available Assets",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getAvailableAssets"
+                },
+                {
+                    "endpoint_id": "getAssetSummary",
+                    "method": "GET",
+                    "path": "/api/assets/summary",
+                    "description": "Fetch asset inventory counts, allocated vs in-stock statistics, and summary breakdown. UI Name: Asset Management | User Intent: View Asset Statistics / Asset Summary | Java Controller: AssetMasterController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "View Asset Summary",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "getSummary"
+                },
+                {
+                    "endpoint_id": "createAsset",
+                    "method": "POST",
+                    "path": "/api/assets",
+                    "description": "Add a new asset (laptop, monitor, equipment) to inventory with assetTag, categoryId, subCategoryId, status, conditionAtStock, price, and location. UI Name: Asset Management | User Intent: Add Asset / Create Laptop / Register New Asset | Java Controller: AssetMasterController",
+                    "required_fields": [
+                        "assetTag",
+                        "categoryId"
+                    ],
+                    "optional_fields": [
+                        "subCategoryId",
+                        "serialNumber",
+                        "status",
+                        "conditionAtStock",
+                        "price",
+                        "location",
+                        "notes"
+                    ],
+                    "roles": [
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Asset Management",
+                    "user_intent": "Add Asset",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetMasterController",
+                    "api_name": "createAsset"
+                },
+                {
+                    "endpoint_id": "allocateAsset",
+                    "method": "POST",
+                    "path": "/api/assets/allocations",
+                    "description": "Allocate an asset to an employee with asset ID, employee ID, condition at issue, accessories, and expected return date. UI Name: Asset Management | User Intent: Allocate Asset / Assign Laptop to Employee | Java Controller: AssetAllocationController",
+                    "required_fields": [
+                        "asset",
+                        "employee"
+                    ],
+                    "optional_fields": [
+                        "conditionAtIssue",
+                        "accessoriesIssued",
+                        "expectedReturnDate"
+                    ],
+                    "roles": [
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Asset Management",
+                    "user_intent": "Allocate Asset",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetAllocationController",
+                    "api_name": "allocateAsset"
+                },
+                {
+                    "endpoint_id": "getAllAssetAllocations",
+                    "method": "GET",
+                    "path": "/api/assets/allocations",
+                    "description": "Fetch all asset allocation records and history for employees. UI Name: Asset Management | User Intent: View Asset Allocations / Who has what laptop | Java Controller: AssetAllocationController",
+                    "required_fields": [],
+                    "optional_fields": [
+                        "employeeId",
+                        "status"
+                    ],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "View Asset Allocations",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetAllocationController",
+                    "api_name": "getAllAllocations"
+                },
+                {
+                    "endpoint_id": "returnAssetAllocation",
+                    "method": "POST",
+                    "path": "/api/assets/allocations/{id}/return",
+                    "description": "Process return of an allocated asset. UI Name: Asset Management | User Intent: Return Asset / Check-in Returned Laptop | Java Controller: AssetAllocationController",
+                    "required_fields": [
+                        "id"
+                    ],
+                    "optional_fields": [
+                        "conditionAtReturn",
+                        "damageNotes"
+                    ],
+                    "roles": [
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": true,
+                    "ui_name": "Asset Management",
+                    "user_intent": "Return Asset",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetAllocationController",
+                    "api_name": "processReturn"
+                },
+                {
+                    "endpoint_id": "getAssetCategories",
+                    "method": "GET",
+                    "path": "/api/assets/categories",
+                    "description": "Fetch all asset categories and sub-categories (Laptops, Monitors, Mobile Devices, etc.). UI Name: Asset Management | User Intent: Get Asset Categories | Java Controller: AssetCategoryController",
+                    "required_fields": [],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "Get Asset Categories",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetCategoryController",
+                    "api_name": "getAllCategories"
+                },
+                {
+                    "endpoint_id": "getAssetDropdownOptions",
+                    "method": "GET",
+                    "path": "/api/assets/options/{type}",
+                    "description": "Fetch asset dropdown options by type (e.g. vendors, conditions, statuses). UI Name: Asset Management | User Intent: Get Asset Options | Java Controller: AssetDropdownOptionController",
+                    "required_fields": [
+                        "type"
+                    ],
+                    "optional_fields": [],
+                    "roles": [
+                        "EMPLOYEE",
+                        "MANAGER",
+                        "HR",
+                        "ADMIN"
+                    ],
+                    "requires_confirmation": false,
+                    "ui_name": "Asset Management",
+                    "user_intent": "Get Asset Options",
+                    "capability": "Asset Management",
+                    "java_controller_name": "AssetDropdownOptionController",
+                    "api_name": "getOptions"
                 }
             ]
         }

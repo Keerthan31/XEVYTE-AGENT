@@ -9,5 +9,22 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/api/auth/login': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+        headers: {
+          'Origin': 'http://scaloz.localhost:3004'
+        }
+      },
+      '/api/agent': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
+      },
+      '/downloads': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
+      }
+    }
   },
 })
