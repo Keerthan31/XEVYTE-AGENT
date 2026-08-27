@@ -23,11 +23,17 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # ---------------------------------------------------------------------------
-# Constants (mirror .env for testing – NO live secrets leak)
+# Constants (mirror .env for testing - NO live secrets leak)
 # ---------------------------------------------------------------------------
 TEST_JWT_SECRET = "G7vQ2mX9kL4pR8sT1wN6yH3cD5fJ0zAa"
 TEST_JAVA_BACKEND_URL = "http://localhost:8082"
 CATALOG_PATH = os.path.join(PROJECT_ROOT, "config", "XEVYTE_API_CATALOG.json")
+
+os.environ["JWT_SECRET"] = TEST_JWT_SECRET
+os.environ["OPENAI_API_KEY"] = "sk-test-fake-key"
+os.environ["JAVA_BACKEND_URL"] = TEST_JAVA_BACKEND_URL
+os.environ["HRMS_API_BASE_URL"] = TEST_JAVA_BACKEND_URL
+
 
 
 # ============================================================================
