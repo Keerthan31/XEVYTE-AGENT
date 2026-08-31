@@ -16,6 +16,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from typing import Dict, Any
 
 # ---------------------------------------------------------------------------
+# Set environment variables for testing BEFORE loading app configs
+# ---------------------------------------------------------------------------
+os.environ["JWT_SECRET"] = "G7vQ2mX9kL4pR8sT1wN6yH3cD5fJ0zAa"
+os.environ["JAVA_BACKEND_URL"] = "http://localhost:8082"
+os.environ["HRMS_API_BASE_URL"] = "http://localhost:8082"
+os.environ["CATALOG_PATH"] = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "XEVYTE_API_CATALOG.json"))
+os.environ["OPENAI_API_KEY"] = "sk-test-fake-key"
+
+# ---------------------------------------------------------------------------
 # Ensure the project root is importable
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
