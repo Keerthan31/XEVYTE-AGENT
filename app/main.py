@@ -58,6 +58,7 @@ app.add_middleware(ConversationLoggingMiddleware)
 
 import os
 import glob
+# Trigger backend reload for API Catalog update
 import shutil
 from pathlib import Path
 from fastapi import HTTPException

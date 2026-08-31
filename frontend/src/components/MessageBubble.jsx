@@ -186,6 +186,52 @@ export default function MessageBubble({
                   return <strong className="text-agent-accent font-semibold">{children}</strong>
                 },
                 a({ children, href }) {
+                  const isApiDownload = href && (href.includes('/api/customers/') || href.includes('/api/contracts/') || href.includes('/download'));
+                  
+                  const handleClick = async (e) => {
+                    if (isApiDownload) {
+                      e.preventDefault();
+                      try {
+                        const token = localStorage.getItem('xeva_standalone_token') || sessionStorage.getItem('token');
+                        let fetchUrl = href;
+                        if (href.startsWith('http://localhost:8082')) {
+                          fetchUrl = href.replace('http://localhost:8082', '');
+                        }
+                        const res = await fetch(fetchUrl, {
+                          headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!res.ok) throw new Error('Download failed');
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const disposition = res.headers.get('Content-Disposition');
+                        let filename = 'download.pdf';
+                        if (disposition && disposition.indexOf('filename=') !== -1) {
+                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            const matches = filenameRegex.exec(disposition);
+                            if (matches != null && matches[1]) { 
+                              filename = matches[1].replace(/['"]/g, '');
+                            }
+                        } else {
+                            filename = Array.isArray(children) ? children.join('') : (typeof children === 'string' ? children : 'download.pdf');
+                        }
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                      } catch (err) {
+                        console.error('Download error:', err);
+                        window.open(href, '_blank');
+                      }
+                    }
+                  };
+
+                  if (isApiDownload) {
+                    return <a href={href} onClick={handleClick} className="text-agent-accent underline underline-offset-2 decoration-agent-accent/40 hover:decoration-agent-accent cursor-pointer">{children}</a>
+                  }
+
                   return <a href={href} target="_blank" rel="noreferrer" className="text-agent-accent underline underline-offset-2 decoration-agent-accent/40 hover:decoration-agent-accent">{children}</a>
                 },
                 ul({ children }) {

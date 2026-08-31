@@ -227,13 +227,51 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
     url = f"{settings.JAVA_BACKEND_URL}{path}"
     method = action_data.get("method", "GET")
     
-    if action_data.get("endpoint_id") == "updateProfile":
+    if action_data.get("endpoint_id") in ["updateProfile", "updateEmployeeBankDetails", "updateEmployeePersonalDetails"]:
         core_fields = ["contactNo", "emergencyContactNumber", "personalMail", "address", "presentAddress", "profilePic"]
         personal_fields = ["about", "whatILoveAboutMyJob", "interestsAndHobbies"]
+        bank_fields_map = {
+            "bankname": "bankName",
+            "accountnumber": "bankAccountNumber",
+            "ifsccode": "bankIfscCode",
+            "uannumber": "uanNumber",
+            "pfmemberid": "pfMemberId",
+            "pfaccountnumber": "pfAccountNumber",
+            "esinumber": "esiNumber",
+            "esiinsurancenumber": "esiInsuranceNumber",
+            "esiclinicname": "esiClinicName"
+        }
         
         body = action_data.get("body", {})
-        core_body = {k: v for k, v in body.items() if k in core_fields or k == "employeeId"}
-        personal_body = {k: v for k, v in body.items() if k in personal_fields or k == "employeeId"}
+        
+        # Flatten body in case the LLM nested fields (e.g. under 'bankDetails' or 'pfDetails')
+        flat_body = {}
+        for k, v in body.items():
+            if isinstance(v, dict):
+                for sub_k, sub_v in v.items():
+                    flat_body[sub_k] = sub_v
+            else:
+                flat_body[k] = v
+        
+        # Normalize body keys to match expected camelCase
+        normalized_body = {}
+        for k, v in flat_body.items():
+            lk = k.lower()
+            if lk in bank_fields_map:
+                normalized_body[bank_fields_map[lk]] = v
+            else:
+                matched = False
+                for cf in core_fields + personal_fields + ["employeeId"]:
+                    if cf.lower() == lk:
+                        normalized_body[cf] = v
+                        matched = True
+                        break
+                if not matched:
+                    normalized_body[k] = v
+
+        core_body = {k: v for k, v in normalized_body.items() if k in core_fields or k == "employeeId"}
+        personal_body = {k: v for k, v in normalized_body.items() if k in personal_fields or k == "employeeId"}
+        bank_body = {k: v for k, v in normalized_body.items() if k in bank_fields_map.values() or k == "employeeId"}
         
         headers_copy = dict(headers)
         headers_copy["Content-Type"] = "application/json"
@@ -250,6 +288,11 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             personal_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}/personal-details"
             personal_resp = await client.put(personal_url, headers=headers_copy, json=personal_body)
             responses.append(personal_resp)
+            
+        if any(k in bank_fields_map.values() for k in bank_body.keys()):
+            bank_url = f"{settings.JAVA_BACKEND_URL}/api/employees/{emp_id}/bank-details"
+            bank_resp = await client.put(bank_url, headers=headers_copy, json=bank_body)
+            responses.append(bank_resp)
             
         is_success = all(r.is_success for r in responses) if responses else True
         resp_data = []
@@ -533,11 +576,24 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
         del req_headers["content-type"]
         
     response = await client.request(method, **request_kwargs)
-    is_success = response.is_success
     try:
         resp_data = response.json()
     except Exception:
         resp_data = response.text
+    
+    is_success = response.is_success
+    # Check for soft error messages inside 200 responses from Spring Boot
+    if is_success:
+        if isinstance(resp_data, dict):
+            status_in_body = resp_data.get("status")
+            if status_in_body in (400, 401, 403, 404, 500, "error", "failed") or resp_data.get("error"):
+                is_success = False
+            elif any(err_kw in str(resp_data.get("message", "")).lower() for err_kw in ("not authorized", "cannot", "failed", "error", "invalid")):
+                is_success = False
+        elif isinstance(resp_data, str):
+            lower_txt = resp_data.lower()
+            if any(err_kw in lower_txt for err_kw in ("not authorized", "cannot", "only the", "failed to", "error:")):
+                is_success = False
     
     # Cleanup temp file
     if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
@@ -547,6 +603,37 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             print(f"Failed to clean up temp file: {e}")
             
     return is_success, resp_data
+
+def _format_single_action_label(act: dict) -> str:
+    ep = act.get("endpoint_id", "")
+    body = act.get("body") or {}
+    path_params = act.get("path_params") or {}
+    
+    if ep == "rejectLeave":
+        req_id = body.get("leaveRequestId") or path_params.get("id") or ""
+        return f"Reject Leave Request #{req_id}" if req_id else "Reject Leave Request"
+    elif ep == "approveLeave":
+        req_id = body.get("leaveRequestId") or path_params.get("id") or ""
+        return f"Approve Leave Request #{req_id}" if req_id else "Approve Leave Request"
+    elif ep == "rejectClaim":
+        req_id = path_params.get("id") or body.get("id") or ""
+        return f"Reject Expense Claim #{req_id}" if req_id else "Reject Expense Claim"
+    elif ep == "approveClaim":
+        req_id = path_params.get("id") or body.get("id") or ""
+        return f"Approve Expense Claim #{req_id}" if req_id else "Approve Expense Claim"
+    elif ep == "rejectCompensation":
+        req_id = body.get("id") or path_params.get("id") or ""
+        return f"Reject Compensation Revision #{req_id}" if req_id else "Reject Compensation Revision"
+    elif ep == "approveCompensation":
+        req_id = body.get("id") or path_params.get("id") or ""
+        return f"Approve Compensation Revision #{req_id}" if req_id else "Approve Compensation Revision"
+    elif ep == "applyLeave":
+        return f"Apply Leave ({body.get('type', 'Leave')})"
+    elif ep == "submitClaim":
+        return f"Submit Claim ({body.get('category', 'Expense')})"
+    elif ep == "submitTicket":
+        return f"Submit Ticket ({body.get('issueSummary', 'Support')})"
+    return ep or act.get("path", "Action")
 
 @router.post("/confirm")
 async def confirm_endpoint(
@@ -593,78 +680,81 @@ async def confirm_endpoint(
         async with httpx.AsyncClient(timeout=30.0) as client:
             if action_data.get("is_batch"):
                 actions = action_data.get("actions", [])
-                all_success = True
-                all_resps = []
+                action_results = []
                 for act in actions:
                     succ, res = await _execute_single_action(client, act, headers, user_context, settings)
-                    if not succ:
-                        all_success = False
-                    all_resps.append(res)
-                is_success = all_success
-                resp_data = all_resps
+                    action_results.append((act, succ, res))
+
+                success_lines = []
+                failed_lines = []
+                
+                for act, succ, res in action_results:
+                    label = _format_single_action_label(act)
+                    if succ:
+                        success_lines.append(f"- ✅ **{label}**: Successfully executed.")
+                    else:
+                        err_text = "Unable to process request"
+                        if isinstance(res, dict):
+                            err_text = res.get("message") or res.get("error") or res.get("detail") or str(res)
+                        elif isinstance(res, str):
+                            err_text = res
+                        failed_lines.append(f"- ❌ **{label}**: Failed — {err_text}")
+
+                if success_lines and not failed_lines:
+                    success_msg = "✅ **All actions completed successfully:**\n\n" + "\n".join(success_lines)
+                elif success_lines and failed_lines:
+                    success_msg = "⚠️ **Action Results (Partial Completion):**\n\n" + "\n".join(success_lines) + "\n" + "\n".join(failed_lines)
+                else:
+                    success_msg = "❌ **Actions failed:**\n\n" + "\n".join(failed_lines)
+                    
+                resp_data = [res for _, _, res in action_results]
             else:
                 is_success, resp_data = await _execute_single_action(client, action_data, headers, user_context, settings)
+                label = _format_single_action_label(action_data)
                 
-            if is_success:
-                if isinstance(resp_data, dict) and "totalRecords" in resp_data and "successCount" in resp_data:
-                    total = resp_data.get("totalRecords", 0)
-                    succ_cnt = resp_data.get("successCount", 0)
-                    failures = resp_data.get("failureDetails", [])
-                    if succ_cnt == total and total > 0:
-                        success_msg = f"Bulk onboarding completed successfully! All {succ_cnt} employees were added."
-                    elif succ_cnt > 0:
-                        err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
-                        success_msg = f"Bulk onboarding partially completed: {succ_cnt}/{total} succeeded, {len(failures)} failed.\nFailures:\n" + "\n".join(err_reasons)
-                    else:
-                        err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
-                        success_msg = f"Bulk onboarding failed: 0/{total} employees onboarded.\nReason(s):\n" + ("\n".join(err_reasons) if err_reasons else "Unknown validation error")
-                elif action_data.get("endpoint_id") == "generatePayslips" or action_data.get("path") == "/api/payroll/generate-payslips":
-                    b = action_data.get("body") or {}
-                    target_month = b.get("month", "the selected month")
-                    target_year = b.get("year", "the selected year")
-                    count = 0
-                    if isinstance(resp_data, list):
-                        count = len(resp_data)
-                    elif isinstance(resp_data, dict):
-                        if "count" in resp_data:
-                            try:
-                                count = int(resp_data["count"])
-                            except Exception:
-                                count = 0
-                        elif "payslips" in resp_data and isinstance(resp_data["payslips"], list):
-                            count = len(resp_data["payslips"])
-                        elif "id" in resp_data or "employeeId" in resp_data:
-                            count = 1
-                    
-                    if count == 0:
-                        success_msg = f"⚠️ 0 payslips were generated for {target_month} {target_year}.\n\nReason: No salary configuration Excel exists for {target_month} {target_year} in the HRMS (or all employees for this period already have payslips generated). Please upload the salary configuration for {target_month} {target_year} before generating."
-                    else:
-                        success_msg = f"✅ Successfully generated {count} payslip(s) for {target_month} {target_year}!"
-                else:
-                    success_msg = "Action completed successfully!"
-            else:
-                if action_data.get("is_batch"):
-                    failed_items = []
-                    success_count = 0
-                    for r in resp_data:
-                        if isinstance(r, dict) and (r.get("error") or r.get("message") or r.get("status") in (400, 404, 500)):
-                            err_text = r.get("message") or r.get("error") or str(r)
-                            failed_items.append(err_text)
-                        elif isinstance(r, str) and ("error" in r.lower() or "not found" in r.lower() or "only" in r.lower() or "cannot" in r.lower()):
-                            failed_items.append(r)
-                        elif isinstance(r, dict) and ("id" in r or "status" in r or "ticketId" in r or "leaveId" in r):
-                            success_count += 1
+                if is_success:
+                    if isinstance(resp_data, dict) and "totalRecords" in resp_data and "successCount" in resp_data:
+                        total = resp_data.get("totalRecords", 0)
+                        succ_cnt = resp_data.get("successCount", 0)
+                        failures = resp_data.get("failureDetails", [])
+                        if succ_cnt == total and total > 0:
+                            success_msg = f"Bulk onboarding completed successfully! All {succ_cnt} employees were added."
+                        elif succ_cnt > 0:
+                            err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
+                            success_msg = f"Bulk onboarding partially completed: {succ_cnt}/{total} succeeded, {len(failures)} failed.\nFailures:\n" + "\n".join(err_reasons)
                         else:
-                            failed_items.append(str(r))
-                    if success_count > 0:
-                        success_msg = f"Completed with updates: {success_count} succeeded, {len(failed_items)} skipped ({', '.join(failed_items)})."
+                            err_reasons = [f"Row {f.get('rowNumber')}: {f.get('reason')}" for f in failures]
+                            success_msg = f"Bulk onboarding failed: 0/{total} employees onboarded.\nReason(s):\n" + ("\n".join(err_reasons) if err_reasons else "Unknown validation error")
+                    elif action_data.get("endpoint_id") == "generatePayslips" or action_data.get("path") == "/api/payroll/generate-payslips":
+                        b = action_data.get("body") or {}
+                        target_month = b.get("month", "the selected month")
+                        target_year = b.get("year", "the selected year")
+                        count = 0
+                        if isinstance(resp_data, list):
+                            count = len(resp_data)
+                        elif isinstance(resp_data, dict):
+                            if "count" in resp_data:
+                                try:
+                                    count = int(resp_data["count"])
+                                except Exception:
+                                    count = 0
+                            elif "payslips" in resp_data and isinstance(resp_data["payslips"], list):
+                                count = len(resp_data["payslips"])
+                            elif "id" in resp_data or "employeeId" in resp_data:
+                                count = 1
+                        
+                        if count == 0:
+                            success_msg = f"⚠️ 0 payslips were generated for {target_month} {target_year}.\n\nReason: No salary configuration Excel exists for {target_month} {target_year} in the HRMS (or all employees for this period already have payslips generated). Please upload the salary configuration for {target_month} {target_year} before generating."
+                        else:
+                            success_msg = f"✅ Successfully generated {count} payslip(s) for {target_month} {target_year}!"
                     else:
-                        success_msg = f"Action failed: {', '.join(failed_items) if failed_items else 'Unable to process request'}"
-                elif isinstance(resp_data, dict):
-                    err_msg = resp_data.get("message") or resp_data.get("error") or resp_data.get("detail") or str(resp_data)
-                    success_msg = f"Action failed: {err_msg}"
+                        success_msg = f"✅ **{label}**: Action completed successfully!"
                 else:
-                    success_msg = f"Action failed: {resp_data}"
+                    if isinstance(resp_data, dict):
+                        err_msg = resp_data.get("message") or resp_data.get("error") or resp_data.get("detail") or str(resp_data)
+                    else:
+                        err_msg = str(resp_data)
+                    success_msg = f"❌ **{label}** failed: {err_msg}"
                 
             # 4. Save to DB
             assistant_msg_db = ChatMessage(

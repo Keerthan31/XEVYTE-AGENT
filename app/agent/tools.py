@@ -38,21 +38,45 @@ class APIECatalog:
     
     @classmethod
     def get_endpoint(cls, endpoint_id: str) -> Optional[Dict]:
-        """Fetch endpoint details by ID"""
+        """Fetch endpoint details by ID. Resolves duplicate IDs by preferring custom endpoints."""
         catalog = cls.load()
+        matches = []
         for module_name, module_data in catalog.get("modules", {}).items():
             for endpoint in module_data.get("endpoints", []):
                 if endpoint.get("endpoint_id") == endpoint_id:
-                    return endpoint
-        return None
+                    matches.append(endpoint)
+        
+        if not matches:
+            return None
+        if len(matches) == 1:
+            return matches[0]
+            
+        # If duplicates exist (e.g. auto-generated vs handwritten), prioritize the one that requires confirmation (mutation)
+        for m in matches:
+            if m.get("requires_confirmation") is True:
+                return m
+                
+        # If no custom confirmation flag, prioritize POST/PUT over GET
+        for m in matches:
+            if m.get("method") in ("POST", "PUT", "DELETE", "PATCH"):
+                return m
+                
+        return matches[0]
     
     @classmethod
     def search_by_intent(cls, query: str) -> List[Dict]:
         """Search endpoints by natural language intent with comprehensive indexing and intent alignment"""
         catalog = cls.load()
-        query_lower = query.lower()
+        query_lower = query.lower().strip()
         query_words = [w for w in query_lower.split() if len(w) > 2]
         
+        # Priority detection for Unified Tasks & Approvals
+        is_approval_overview_query = any(phrase in query_lower for phrase in [
+            "approval", "approvals", "pending approval", "pending approvals", 
+            "my approval", "my approvals", "show approval", "show approvals",
+            "my task", "my tasks", "pending task", "pending tasks", "unified task", "unified tasks"
+        ]) and not any(spec in query_lower for spec in ["leave", "claim", "travel", "ticket", "resignation", "compensation", "hike"])
+
         # Synonym expansion
         expanded_words = list(query_words)
         for w in query_words:
@@ -64,6 +88,8 @@ class APIECatalog:
                 expanded_words.extend(["asset", "assets"])
             elif w in ("ticket", "tickets", "incident", "issue"):
                 expanded_words.extend(["helpdesk", "support"])
+            elif w in ("approval", "approvals"):
+                expanded_words.extend(["task", "tasks", "pending", "unified"])
 
         # Intent verb categories
         is_create_intent = any(w in query_lower for w in ["create", "add", "register", "new", "submit", "apply", "raise", "file"])
@@ -82,6 +108,10 @@ class APIECatalog:
                 user_intent = endpoint.get("user_intent", "").lower()
                 cap = endpoint.get("capability", "").lower()
                 mod_name = str(module_name).lower()
+                
+                # Immediate boost for My Unified Tasks on approval/task queries
+                if is_approval_overview_query and ep_id == "getmyunifiedtasks":
+                    score += 100
                 
                 searchable_text = f"{ep_id} {path} {desc} {ui_name} {user_intent} {cap} {mod_name}"
                 
@@ -143,13 +173,22 @@ class APIECatalog:
         path_vars = [v for v in re.findall(r'\{(.*?)\}', path) if v not in ['employeeId', 'managerId']]
         path_params_str = f"- Required Path Params (put in `path_params`): {', '.join(path_vars)}\n" if path_vars else ""
         
+        required_fields = ', '.join(endpoint.get('required_fields', [])) or 'None'
+        optional_fields = ', '.join(endpoint.get('optional_fields', [])) or 'None'
+        
         return f"""
 **Tool Name:** {endpoint.get('api_name', endpoint['endpoint_id'])} (ID: {endpoint['endpoint_id']})
 **Description:** {endpoint['description']}
 **HTTP Method:** {endpoint.get('method', 'GET')}
 **URL Path:** {path}
 **Input Schema:**
-{path_params_str}- Required Fields: {', '.join(endpoint.get('required_fields', [])) or 'None'}
+{path_params_str}- Required JSON Body Fields: {required_fields}
+- Optional JSON Body Fields: {optional_fields}
+
+🚨 **ANTI-HALLUCINATION DIRECTIVE**: 
+You MUST format your `body` JSON payload to match exactly the required and optional fields above. 
+NEVER guess, invent, or hallucinate values for these fields (especially IDs). If you do not have the exact value from the user or a previous tool call (like `getMyTickets`, `getApplicants`), you MUST stop and ask the user or call a GET tool first.
+
 **Optional Tags:**
 - Roles Allowed: {', '.join(endpoint.get('roles', [])) or 'All'}
 - Module: {endpoint.get('ui_name', 'System')}
@@ -186,6 +225,24 @@ def search_api_catalog(query: str) -> str:
 
 
 # ============================================================================
+# TOOL: ASK CLARIFICATION (FALLBACK / ANTI-HALLUCINATION TOOL)
+# ============================================================================
+
+def ask_clarification(question: str, reason: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Fallback tool: Explicitly halts automated execution to ask the user a clarifying question
+    when intent is ambiguous, mandatory information is missing, or no API tool fits the request.
+    Use this tool instead of guessing, making up data, or fabricating an API call.
+    """
+    logger.info(f"Fallback clarification invoked. Reason: {reason}, Question: {question}")
+    return {
+        "status": "clarification_requested",
+        "question": question,
+        "reason": reason or "User input is ambiguous or missing required parameters."
+    }
+
+
+# ============================================================================
 # TOOL: SEARCH HR KNOWLEDGE BASE (RAG)
 # ============================================================================
 
@@ -196,17 +253,35 @@ def search_hr_knowledge_base(query: str) -> str:
     """
     logger.info(f"Searching HR KB for: {query}")
     
-    # Read the local handbook file as a simple "RAG" substitute
     settings = get_settings()
     try:
-        import os
-        policy_path = os.path.join(settings.RAG_POLICIES_DIR, "handbook.md")
-        with open(policy_path, "r") as f:
-            content = f.read()
-        return f"Found relevant HR policy information:\n\n{content}"
+        import urllib.request
+        import json
+        
+        # 1. Get the latest handbook metadata from the Java backend
+        url = f"{settings.JAVA_BACKEND_URL}/api/handbook/latest"
+        req = urllib.request.Request(url)
+        
+        with urllib.request.urlopen(req) as response:
+            if response.status == 204:
+                return "No Employee Handbook has been uploaded by the HR department yet."
+            
+            data = json.loads(response.read().decode())
+            
+        download_url = f"http://localhost:8082{data.get('downloadUrl')}"
+        file_name = data.get('originalFileName', 'Employee_Handbook.pdf')
+        uploaded_at = data.get('uploadedAt', 'Unknown Date')
+        
+        return (
+            f"The HR Knowledge Base policy document is available!\n\n"
+            f"**File Name:** {file_name}\n"
+            f"**Last Updated:** {uploaded_at}\n\n"
+            f"Please inform the user they can download the full policy document here: [Download {file_name}]({download_url})\n\n"
+            f"(Note: You cannot read the PDF content directly right now, so just provide the link to the user)."
+        )
     except Exception as e:
-        logger.error(f"Failed to read HR policies: {e}")
-        return "Sorry, I could not access the HR knowledge base at this moment."
+        logger.error(f"Failed to read HR policies from Java backend: {e}")
+        return "Sorry, I could not access the HR knowledge base at this moment. The backend might be unreachable."
 
 
 async def analyze_document_from_url(
@@ -244,60 +319,114 @@ async def summarize_document_from_url(
 
 def resolve_relative_date(date_input: str, format_output: str = "yyyy-MM-dd") -> str:
     """
-    Convert relative dates (today, tomorrow, next monday) to absolute date.
+    Convert relative dates (today, tomorrow, friday, this friday, next monday, 28-08-2026, etc.) to absolute date.
     
     Args:
-        date_input: "today", "tomorrow", "next monday", or actual date
+        date_input: "today", "tomorrow", "friday", "this friday", "next monday", or actual date
         format_output: "dd-MM-yyyy" or "yyyy-MM-dd"
     
     Returns:
         Formatted date string
     """
-    date_input = date_input.lower().strip()
-    
-    try:
-        # Try parsing as actual date first
-        parsed = parser.parse(date_input)
-    except:
-        # Handle relative dates
-        today = datetime.now().date()
+    if not date_input or not str(date_input).strip():
+        date_input = "today"
         
-        if date_input == "today":
-            parsed = today
-        elif date_input == "tomorrow":
-            parsed = today + timedelta(days=1)
-        elif date_input.startswith("next "):
-            day_name = date_input.replace("next ", "").capitalize()
-            # Find next occurrence of day
-            days = {
-                "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
-                "Friday": 4, "Saturday": 5, "Sunday": 6
-            }
-            if day_name in days:
-                target_day = days[day_name]
-                current_day = today.weekday()
-                days_ahead = target_day - current_day
-                if days_ahead <= 0:
-                    days_ahead += 7
-                parsed = today + timedelta(days=days_ahead)
+    raw_input = str(date_input).strip()
+    lower_input = raw_input.lower()
+    
+    today = datetime.now().date()
+    days_map = {
+        "monday": 0, "mon": 0,
+        "tuesday": 1, "tue": 1, "tues": 1,
+        "wednesday": 2, "wed": 2,
+        "thursday": 3, "thu": 3, "thur": 3, "thurs": 3, "thrusday": 3, "thrus": 3,
+        "friday": 4, "fri": 4,
+        "saturday": 5, "sat": 5,
+        "sunday": 6, "sun": 6
+    }
+    
+    # Strip common prefixes
+    cleaned = lower_input
+    for prefix in ("for ", "on ", "this ", "the ", "coming ", "upcoming "):
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):].strip()
+            
+    parsed = None
+    
+    # 1. Standard relative day phrases
+    if lower_input in ("today", "this day") or cleaned in ("today", "this day"):
+        parsed = today
+    elif lower_input in ("tomorrow", "next day", "the next day", "following day") or cleaned in ("tomorrow", "next day", "the next day", "following day"):
+        parsed = today + timedelta(days=1)
+    elif lower_input in ("yesterday", "previous day", "the previous day", "day before", "day before day") or cleaned in ("yesterday", "previous day", "the previous day", "day before", "day before day"):
+        parsed = today - timedelta(days=1)
+    elif lower_input in ("day before yesterday", "the day before yesterday") or cleaned in ("day before yesterday", "the day before yesterday"):
+        parsed = today - timedelta(days=2)
+    elif lower_input in ("day after tomorrow", "the day after tomorrow") or cleaned in ("day after tomorrow", "the day after tomorrow"):
+        parsed = today + timedelta(days=2)
+    # 2. "next <day>" / "next <mon/tue/...>"
+    elif lower_input.startswith("next ") or cleaned.startswith("next "):
+        day_str = (cleaned if cleaned.startswith("next ") else lower_input).replace("next ", "").strip()
+        if day_str in days_map:
+            target_day = days_map[day_str]
+            current_day = today.weekday()
+            days_ahead = (target_day - current_day) % 7
+            if days_ahead == 0:
+                days_ahead = 7
             else:
-                raise ValueError(f"Unknown day: {day_name}")
-        elif " days" in date_input or " weeks" in date_input:
-            import re
-            match = re.search(r"(\d+)\s+(days|weeks)", date_input)
-            if match:
-                num = int(match.group(1))
-                unit = match.group(2)
-                delta_days = num if unit == "days" else num * 7
-                parsed = today + timedelta(days=delta_days)
-            else:
-                raise ValueError(f"Cannot parse: {date_input}")
+                days_ahead += 7
+            parsed = today + timedelta(days=days_ahead)
         else:
+            raise ValueError(f"Unknown day: {day_str}")
+    # 3. Direct weekday names or abbreviations (e.g., "fri", "friday", "this fri")
+    elif cleaned in days_map:
+        target_day = days_map[cleaned]
+        current_day = today.weekday()
+        days_ahead = (target_day - current_day) % 7
+        parsed = today + timedelta(days=days_ahead)
+    # 4. Offsets like "3 days", "in 2 weeks", "4 days later"
+    elif " days" in lower_input or " weeks" in lower_input or " day" in lower_input:
+        import re
+        match = re.search(r"(\d+)\s*(days?|weeks?)", lower_input)
+        if match:
+            num = int(match.group(1))
+            unit = match.group(2)
+            delta_days = num * 7 if "week" in unit else num
+            if "ago" in lower_input or "before" in lower_input:
+                parsed = today - timedelta(days=delta_days)
+            else:
+                parsed = today + timedelta(days=delta_days)
+        else:
+            raise ValueError(f"Cannot parse relative offset: {date_input}")
+    # 5. Explicit date formats
+    else:
+        import re
+        if not re.search(r"\d", raw_input):
+            raise ValueError(f"Unknown date format: {date_input}")
+        try:
+            # Check for mm/yyyy/dd format (e.g. 08/2026/28 or 8-2026-28)
+            mm_yyyy_dd_match = re.match(r"^(\d{1,2})[-/.](\d{4})[-/.](\d{1,2})$", raw_input)
+            if mm_yyyy_dd_match:
+                m_val = int(mm_yyyy_dd_match.group(1))
+                y_val = int(mm_yyyy_dd_match.group(2))
+                d_val = int(mm_yyyy_dd_match.group(3))
+                import datetime as dt_module
+                parsed = dt_module.date(y_val, m_val, d_val)
+            elif re.match(r"^\d{4}[-/.]", raw_input):
+                # ISO yyyy/mm/dd or yyyy-mm-dd
+                parsed = parser.parse(raw_input, dayfirst=False)
+            else:
+                # Standard dd/mm/yyyy or dd-mm-yyyy
+                parsed = parser.parse(raw_input, dayfirst=True)
+        except Exception:
             raise ValueError(f"Unknown date format: {date_input}")
     
-    # Convert to datetime if needed
+    # Convert to datetime / date if needed
     if isinstance(parsed, str):
-        parsed = parser.parse(parsed).date()
+        if re.match(r"^\d{4}[-/.]", parsed):
+            parsed = parser.parse(parsed, dayfirst=False).date()
+        else:
+            parsed = parser.parse(parsed, dayfirst=True).date()
     elif hasattr(parsed, 'date'):
         parsed = parsed.date()
     
@@ -343,7 +472,6 @@ async def call_xevyte_api(
         path_params: {employeeId}, {leaveId}, etc.
         query_params: date range, filters
         body: Payload for POST/PUT
-        token: JWT bearer token
     """
     
     # ========================================================================
@@ -470,6 +598,10 @@ async def call_xevyte_api(
         query_params["startDate"] = start.strftime("%Y-%m-%d")
         query_params["endDate"] = end.strftime("%Y-%m-%d")
 
+    # Initialize body for POST/PUT if it's None so required fields can be injected and checked
+    if method in ("POST", "PUT", "PATCH") and body is None:
+        body = {}
+
     # Auto-inject employeeId into body if it's missing but required by the endpoint
     if body is not None and "employeeId" in required_fields and "employeeId" not in body:
         emp_id = user_context.get("employeeId")
@@ -565,9 +697,10 @@ async def call_xevyte_api(
         if "approverId" not in body:
             body["approverId"] = user_context.get("employeeId", "")
         if "role" not in body:
-            body["role"] = "MANAGER"
-        if "action" not in body:
-            body["action"] = "Reject" if endpoint_id == "rejectLeave" else "Approve"
+            body["role"] = user_context.get("role") or "MANAGER"
+            
+        # Force exact Java enum/string values for action
+        body["action"] = "Reject" if endpoint_id == "rejectLeave" else "Approve"
         if endpoint_id == "rejectLeave" and "remarks" not in body:
             body["remarks"] = body.get("reason") or body.get("comment") or "Rejected by manager"
 
@@ -870,8 +1003,40 @@ async def call_xevyte_api(
             except Exception as e:
                 logger.warning(f"Could not auto-populate customer details: {e}")
 
-    if body and endpoint_id not in ("submitEntry", "updateEntry", "applyLeave"): # These fields will be auto-injected
-        missing = [f for f in required_fields if f not in body]
+    if endpoint_id == "submitResignation" and body is not None:
+        if "reason" in body and "reasonForExit" not in body:
+            body["reasonForExit"] = body.pop("reason")
+        if "exitReason" in body and "reasonForExit" not in body:
+            body["reasonForExit"] = body.pop("exitReason")
+        if "proposedLastWorkingDay" in body and "lastWorkingDay" not in body:
+            body["lastWorkingDay"] = body.pop("proposedLastWorkingDay")
+        if "lwd" in body and "lastWorkingDay" not in body:
+            body["lastWorkingDay"] = body.pop("lwd")
+        if "resignationDate" not in body:
+            from datetime import datetime
+            body["resignationDate"] = datetime.now().strftime("%d-%m-%Y")
+
+    if body is not None and endpoint_id not in ("submitEntry", "updateEntry", "applyLeave"): # These fields will be auto-injected
+        # Combine all parameter sources to prevent false validation blocks
+        all_params = {}
+        if isinstance(body, dict):
+            all_params.update(body)
+        if path_params:
+            all_params.update(path_params)
+        if query_params:
+            all_params.update(query_params)
+            
+        # Treat context-injectable parameters as present
+        if user_context.get("employeeId"):
+            all_params["employeeId"] = all_params.get("employeeId") or user_context["employeeId"]
+            all_params["approverId"] = all_params.get("approverId") or user_context["employeeId"]
+            all_params["managerId"] = all_params.get("managerId") or user_context["employeeId"]
+        if user_context.get("role"):
+            all_params["role"] = all_params.get("role") or user_context["role"]
+        else:
+            all_params["role"] = all_params.get("role") or "MANAGER"
+
+        missing = [f for f in required_fields if f not in all_params]
         if missing:
             return {
                 "status": "incomplete",
@@ -960,18 +1125,7 @@ async def call_xevyte_api(
             if bad_key in body and good_key not in body:
                 body[good_key] = body.pop(bad_key)
 
-    if endpoint_id == "submitResignation" and body:
-        if "reason" in body and "reasonForExit" not in body:
-            body["reasonForExit"] = body.pop("reason")
-        if "exitReason" in body and "reasonForExit" not in body:
-            body["reasonForExit"] = body.pop("exitReason")
-        if "proposedLastWorkingDay" in body and "lastWorkingDay" not in body:
-            body["lastWorkingDay"] = body.pop("proposedLastWorkingDay")
-        if "lwd" in body and "lastWorkingDay" not in body:
-            body["lastWorkingDay"] = body.pop("lwd")
-        if "resignationDate" not in body:
-            from datetime import datetime
-            body["resignationDate"] = datetime.now().strftime("%d-%m-%Y")
+
 
     if endpoint_id == "createAsset" and body:
         import time
@@ -1107,10 +1261,38 @@ async def call_xevyte_api(
                 await _prepare_single_asset(body)
 
     if endpoint_id == "allocateAsset" and body:
+        # Remap common field names to exact Java entity fields
+        if "startDate" in body: body["allocationDate"] = body.pop("startDate")
+        if "endDate" in body: body["expectedReturnDate"] = body.pop("endDate")
+        
+        # Remap 'condition' to 'conditionAtIssue'
+        if "condition" in body: 
+            body["conditionAtIssue"] = body.pop("condition")
+        elif isinstance(body.get("asset"), dict) and "condition" in body["asset"]:
+            body["conditionAtIssue"] = body["asset"].pop("condition")
+        
+        # Remove COMPLETELY hallucinated fields (like resource allocation percentages)
+        body.pop("allocationPercentage", None)
+        
+        missing = []
+        if "assetId" not in body and "asset" not in body:
+            missing.append("Asset ID")
+        if "employeeId" not in body and "employee" not in body:
+            missing.append("Employee ID")
+        if "conditionAtIssue" not in body:
+            missing.append("Condition at Issue (e.g. Good, New, Scratched)")
+            
+        if missing:
+            return {
+                "status": "error",
+                "error": f"Missing mandatory fields for asset allocation. You MUST ask the user for: {', '.join(missing)}"
+            }
+            
         if "assetId" in body and "asset" not in body:
             body["asset"] = {"id": body.pop("assetId")}
         elif isinstance(body.get("asset"), (int, str)):
             body["asset"] = {"id": body["asset"]}
+            
         if "employeeId" in body and "employee" not in body:
             body["employee"] = {"employeeId": body.pop("employeeId")}
         elif isinstance(body.get("employee"), str):
@@ -1223,15 +1405,147 @@ async def call_xevyte_api(
                         "error": f"Could not process check-out: {e}"
                     }
                     
+        # Special handling for Expense Claims (submitClaim/saveClaim)
+        if endpoint_id in ("submitClaim", "saveClaim", "saveDraftClaim") and method == "POST":
+            cat_id = str(body.get("category", ""))
+            missing_fields = []
+            
+            # Map of required fields per category ID
+            # 1: Travel, 2: Accommodation, 3: Food, 4: Fuel, 5: Others
+            if cat_id == "1":
+                for f in ["mode", "tripCategory", "fromLocation", "toLocation", "purpose"]:
+                    if not body.get(f): missing_fields.append(f)
+            elif cat_id == "2":
+                for f in ["city", "hotelName", "checkInDate", "checkOutDate", "nights", "purpose"]:
+                    if not body.get(f): missing_fields.append(f)
+            elif cat_id == "3":
+                for f in ["mealType", "numberOfPeople"]:
+                    if not body.get(f): missing_fields.append(f)
+            elif cat_id == "4":
+                for f in ["vehicle", "vehicleType", "purpose", "startLocation", "endLocation", "distanceKm", "ratePerKm"]:
+                    if not body.get(f): missing_fields.append(f)
+            elif cat_id == "5":
+                for f in ["subCategory", "justification"]:
+                    if not body.get(f): missing_fields.append(f)
+                    
+            if missing_fields:
+                return {
+                    "status": "error",
+                    "error": f"Missing category-specific fields. You MUST ask the user for these fields before proceeding: {', '.join(missing_fields)}"
+                }
+                
+        # Special handling for IT Declaration (saveOrUpdate)
+        if endpoint_id == "saveOrUpdate" and "it-declarations" in actual_path and method == "POST" and body:
+            emp_id = user_context.get("employeeId") or "scaloz_admin"
+            fy = body.get("financialYear")
+            new_regime = body.get("taxRegime")
+            
+            # Format tax regime correctly
+            if new_regime:
+                if new_regime.lower() == "new regime": body["taxRegime"] = "NEW_REGIME"
+                elif new_regime.lower() == "old regime": body["taxRegime"] = "OLD_REGIME"
+                
+            if emp_id and fy:
+                # Check if it exists to enforce tax regime rule
+                try:
+                    settings = get_settings()
+                    check_url = f"{settings.JAVA_BACKEND_URL}/api/it-declarations/{emp_id}/{fy}"
+                    headers = {}
+                    if token: headers["Authorization"] = f"Bearer {token}"
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        resp = await client.get(check_url, headers=headers)
+                        if resp.status_code == 200:
+                            existing = resp.json()
+                            if existing and isinstance(existing, dict):
+                                existing_regime = existing.get("taxRegime")
+                                if existing_regime and new_regime and existing_regime.lower() != new_regime.lower():
+                                    return {
+                                        "status": "error",
+                                        "error": f"RULE VIOLATION: Tax regime is allowed to select only once in a financial year. Employee already selected {existing_regime} for {fy}. You CANNOT change it to {new_regime}."
+                                    }
+                except Exception as e:
+                    logger.warning(f"Failed to check existing IT declaration: {e}")
+            
+            # Enforce status field explicitly
+            status = body.get("status")
+            if not status:
+                return {
+                    "status": "error",
+                    "error": "Missing 'status' field. You MUST explicitly ask the user if they want to save this as a 'Draft' or 'Submitted'."
+                }
+            elif status.lower() == "submit":
+                body["status"] = "Submitted"
+
+        # Special handling for Attendance (submitEntry / updateEntry)
+        if endpoint_id == "submitEntry" and method == "POST":
+            b = body or {}
+            loc = b.get("workLocation") or b.get("location")
+            if not loc or str(loc).strip().lower() in ("none", "null", ""):
+                return {
+                    "status": "user_input_required",
+                    "status_code": 200,
+                    "data": "Missing required field: workLocation.\nPlease ask the user: 'Where are you checking in from today? (e.g. Office, WFH, Client Site)'"
+                }
+                
+        if endpoint_id == "updateEntry" and method == "PUT":
+            b = body or {}
+            loc = b.get("logoutWorkLocation") or b.get("workLocation") or b.get("location")
+            if not loc or str(loc).strip().lower() in ("none", "null", ""):
+                return {
+                    "status": "user_input_required",
+                    "status_code": 200,
+                    "data": "Missing required field: logoutWorkLocation.\nPlease ask the user: 'Where are you checking out from? (e.g. Office, WFH, Client Site)'"
+                }
+                
         # Special handling for Leave Application (applyLeave)
-        if endpoint_id == "applyLeave" and method == "POST" and body:
+        if endpoint_id == "applyLeave" and method == "POST":
+            b = body or {}
+            start_val = b.get("startDate") or b.get("fromDate") or b.get("start_date") or b.get("from_date") or "today"
+            end_val = b.get("endDate") or b.get("toDate") or b.get("end_date") or b.get("to_date") or start_val
+            type_val = b.get("type") or b.get("leaveType") or b.get("leave_type") or b.get("leaveTypeId")
+            reason_val = b.get("reason") or b.get("comments") or b.get("remarks")
+            
+            type_missing = not type_val or str(type_val).strip().lower() in ("none", "null", "")
+            reason_missing = not reason_val or str(reason_val).strip().lower() in ("none", "null", "")
+            
+            # If leave type or reason is missing, do NOT default silently. Fetch balances and prompt user!
+            if type_missing or reason_missing:
+                bal_resp = await call_xevyte_api("getDetailedLeaveBalance", user_context=user_context, token=token)
+                balances_list = []
+                if bal_resp.get("status") == "success" and isinstance(bal_resp.get("data"), list):
+                    for bl in bal_resp["data"]:
+                        b_type = bl.get("type") or bl.get("leaveType")
+                        b_cnt = bl.get("balance", bl.get("available", 0))
+                        if b_type:
+                            balances_list.append(f"{b_type} (Balance: {b_cnt})")
+                balances_summary = ", ".join(balances_list) if balances_list else "Casual Leave, Sick Leave, Earned Leave"
+                
+                missing_fields = []
+                if type_missing:
+                    missing_fields.append("Leave Type")
+                if reason_missing:
+                    missing_fields.append("Reason")
+                
+                formatted_start = resolve_relative_date(start_val, "dd-MM-yyyy")
+                formatted_end = resolve_relative_date(end_val, "dd-MM-yyyy")
+                date_display = formatted_start if formatted_start == formatted_end else f"{formatted_start} to {formatted_end}"
+                
+                return {
+                    "status": "user_input_required",
+                    "status_code": 200,
+                    "data": (
+                        f"Missing required leave details ({', '.join(missing_fields)}) for {date_display}.\n"
+                        f"Please ask the user: Which leave type would you like to apply for? (Available: {balances_summary}) And what is the reason for the leave?"
+                    )
+                }
+
             try:
                 leave_result = await WorkflowHelpers.collect_leave_data(
                     user_context, token,
-                    body.get("startDate", ""),
-                    body.get("endDate", ""),
-                    body.get("type", body.get("leaveTypeId", "")),
-                    body.get("reason", "Personal reasons")
+                    start_val,
+                    end_val,
+                    type_val,
+                    reason_val
                 )
                 if leave_result.get("error"):
                     return {
@@ -1281,7 +1595,7 @@ async def call_xevyte_api(
             
             return {
                 "status": "pending_confirmation",
-                "message": "SYSTEM DIRECTIVE: The API call is prepared. STOP EXECUTION IMMEDIATELY. DO NOT call any other tools. DO NOT retry. Respond ONLY with a summary of the action and tell the user 'Please click the Approve button below to confirm.'",
+                "message": "Action prepared and queued for confirmation. If the user requested MULTIPLE actions (batch approve/reject), continue calling tools for the remaining actions NOW. Once ALL actions are queued, output a summary and tell the user to click the Approve button.",
                 "pending_confirmation_token": confirm_token,
                 "summary": f"Ready to execute {method} on {actual_path}",
                 "action_data": action_data,
@@ -1422,6 +1736,14 @@ async def call_xevyte_api(
                     elif "managerName" in resp_data:
                         resp_data["reportingManager"] = resp_data.get("managerName")
 
+                # Enrich leave lists when employeeName is missing/null
+                if isinstance(resp_data, list) and ("leaves" in actual_path or "Leave" in endpoint_id):
+                    for leave_item in resp_data:
+                        if isinstance(leave_item, dict):
+                            emp_n = leave_item.get("employeeName")
+                            if not emp_n or str(emp_n).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                leave_item["employeeName"] = leave_item.get("employeeId") or user_context.get("name") or "Employee"
+
                 # ----------------------------------------------------------
                 # Strip binary blob fields from Customer responses.
                 # The Java backend returns the full msaDocBlob (base64 LONGBLOB)
@@ -1433,10 +1755,22 @@ async def call_xevyte_api(
                     """Remove msaDocBlob and add downloadUrl."""
                     if not isinstance(cust_dict, dict):
                         return cust_dict
-                    cust_dict.pop("msaDocBlob", None)
+                    msa_doc_blob = cust_dict.pop("msaDocBlob", None)
                     cid = cust_dict.get("customerId") or cust_dict.get("id") or cust_dict.get("tenantCustomerId")
                     if cid:
-                        cust_dict["msaDownloadUrl"] = f"http://localhost:8082/api/customers/{cid}/download"
+                        if msa_doc_blob:
+                            import base64, uuid, os
+                            try:
+                                pdf_data = base64.b64decode(msa_doc_blob)
+                                os.makedirs("downloads", exist_ok=True)
+                                fn = f"msa_{cid}_{uuid.uuid4().hex[:6]}.pdf"
+                                with open(os.path.join("downloads", fn), "wb") as f:
+                                    f.write(pdf_data)
+                                cust_dict["msaDownloadUrl"] = f"/downloads/{fn}"
+                            except Exception:
+                                cust_dict["msaDownloadUrl"] = f"/api/customers/{cid}/download"
+                        else:
+                            cust_dict["msaDownloadUrl"] = f"/api/customers/{cid}/download"
                     return cust_dict
 
                 if endpoint_id in ("getAllCustomers", "getCustomerById", "getCustomersForEmployee"):
@@ -1453,11 +1787,23 @@ async def call_xevyte_api(
                     """Remove sowDocBlob and add downloadUrl."""
                     if not isinstance(sow_dict, dict):
                         return sow_dict
-                    sow_dict.pop("sowDocBlob", None)
+                    sow_doc_blob = sow_dict.pop("sowDocBlob", None)
                     sow_dict.pop("sowDoc", None)
                     sid = sow_dict.get("sowId") or sow_dict.get("id")
                     if sid:
-                        sow_dict["sowDownloadUrl"] = f"http://localhost:8082/api/sows/{sid}/download"
+                        if sow_doc_blob:
+                            import base64, uuid, os
+                            try:
+                                pdf_data = base64.b64decode(sow_doc_blob)
+                                os.makedirs("downloads", exist_ok=True)
+                                fn = f"sow_{sid}_{uuid.uuid4().hex[:6]}.pdf"
+                                with open(os.path.join("downloads", fn), "wb") as f:
+                                    f.write(pdf_data)
+                                sow_dict["sowDownloadUrl"] = f"/downloads/{fn}"
+                            except Exception:
+                                sow_dict["sowDownloadUrl"] = f"/api/sows/{sid}/download"
+                        else:
+                            sow_dict["sowDownloadUrl"] = f"/api/sows/{sid}/download"
                     return sow_dict
 
                 if endpoint_id in ("getSowsByCustomer", "getAllSows", "getSowById", "createSow"):
@@ -1495,7 +1841,73 @@ async def call_xevyte_api(
                         resp_data = [_sanitize_payslip(p) for p in resp_data]
                     elif isinstance(resp_data, dict):
                         resp_data = _sanitize_payslip(resp_data)
-                
+
+                if isinstance(resp_data, dict) and (resp_data.get("status") == "error" or str(resp_data.get("status")).lower() == "failed" or resp_data.get("success") is False):
+                    error_msg = resp_data.get("error") or resp_data.get("message") or resp_data.get("detail") or str(resp_data)
+                    return {
+                        "status": "error",
+                        "status_code": response.status_code,
+                        "error": error_msg,
+                        "suggestion": _get_error_suggestion(response.status_code, endpoint_id)
+                    }
+
+                # ============================================================
+                # UNIVERSAL SOFT-ERROR DETECTION FOR ALL MUTATIONS
+                # Java Spring Boot often returns 200 OK even when the action
+                # silently failed. This catches those cases for EVERY
+                # POST/PUT/DELETE endpoint, not just approvals.
+                # ============================================================
+                if method in ("POST", "PUT", "DELETE", "PATCH"):
+                    # 1. Empty/null response on a mutation is always suspicious
+                    if resp_data is None or resp_data == "" or resp_data == "null":
+                        return {
+                            "status": "error",
+                            "status_code": response.status_code,
+                            "error": f"The Java backend returned an empty response for '{endpoint_id}'. The action may not have been executed. Please verify the status manually.",
+                            "suggestion": f"Re-check the current status to confirm whether the action for '{endpoint_id}' was actually applied."
+                        }
+
+                    # 2. String response containing error keywords
+                    if isinstance(resp_data, str):
+                        lower_resp = resp_data.lower()
+                        ERROR_KEYWORDS = (
+                            "invalid action", "no action taken", "already approved",
+                            "already rejected", "not found", "not authorized",
+                            "access denied", "forbidden", "cannot process",
+                            "validation failed", "constraint violation",
+                            "duplicate entry", "already exists", "not allowed",
+                            "insufficient", "expired", "no records",
+                            "failed to", "unable to", "error occurred",
+                            "internal server error", "bad request"
+                        )
+                        if any(kw in lower_resp for kw in ERROR_KEYWORDS):
+                            return {
+                                "status": "error",
+                                "status_code": response.status_code,
+                                "error": f"Action '{endpoint_id}' failed: {resp_data}",
+                                "suggestion": "The Java backend indicated the action was not successful. Please check the exact error above."
+                            }
+
+                    # 3. Dict response with hidden error indicators
+                    if isinstance(resp_data, dict):
+                        msg_val = str(resp_data.get("message", "")).lower()
+                        detail_val = str(resp_data.get("detail", "")).lower()
+                        combined = msg_val + " " + detail_val
+                        DICT_ERROR_KEYWORDS = (
+                            "not authorized", "cannot", "failed", "invalid",
+                            "not found", "denied", "not allowed", "expired",
+                            "already exists", "duplicate", "constraint",
+                            "insufficient", "no records"
+                        )
+                        if any(kw in combined for kw in DICT_ERROR_KEYWORDS):
+                            err_text = resp_data.get("message") or resp_data.get("detail") or str(resp_data)
+                            return {
+                                "status": "error",
+                                "status_code": response.status_code,
+                                "error": f"Action '{endpoint_id}' failed: {err_text}",
+                                "suggestion": "The Java backend returned a success status code but the response body indicates a failure."
+                            }
+
                 return {
                     "status": "success",
                     "status_code": response.status_code,
@@ -1504,6 +1916,15 @@ async def call_xevyte_api(
             
             # Error response
             else:
+                # SPECIAL CASE: If getHolidaysByEmployeeLocation returns 400 (e.g. employee has no workLocation),
+                # just return an empty list so the Agent doesn't say "server error" and instead politely says "no holidays".
+                if endpoint_id == "getHolidaysByEmployeeLocation" and response.status_code == 400:
+                    return {
+                        "status": "success",
+                        "status_code": 200,
+                        "data": []
+                    }
+                    
                 if isinstance(resp_data, dict):
                     error_msg = resp_data.get("error") or resp_data.get("message") or resp_data.get("detail") or str(resp_data)
                 else:
@@ -1566,35 +1987,54 @@ class WorkflowHelpers:
         
         try:
             # 1. Leaves
-            r_leaves = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/manager/{emp_id}", headers=headers, timeout=5.0)
-            if r_leaves.status_code == 200:
-                data = r_leaves.json()
-                logger.info(f"LEAVES DATA: {data}")
-                for l in data:
-                    if "pending" in str(l.get("status", "")).lower():
-                        emp_name = l.get("employeeName")
-                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                            emp_name = l.get("employeeId") or "Unknown Employee"
+            seen_leave_ids = set()
+            
+            def _process_leave(l):
+                if l.get("id") in seen_leave_ids: return
+                seen_leave_ids.add(l.get("id"))
+                emp_name = l.get("employeeName")
+                if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                    emp_name = l.get("employeeId") or "Unknown Employee"
 
-                        leave_type = l.get("type") or l.get("leaveType")
-                        if not leave_type or str(leave_type).strip().lower() in ("none", "null", ""):
-                            leave_type = "Leave"
+                leave_type = l.get("type") or l.get("leaveType")
+                if not leave_type or str(leave_type).strip().lower() in ("none", "null", ""):
+                    leave_type = "Leave"
 
-                        ref_id = l.get("referenceId") or l.get("leaveReference") or "N/A"
-                        start_d = l.get("startDate") or "N/A"
-                        end_d = l.get("endDate") or "N/A"
-                        days = l.get("totalDays")
-                        days_str = f" ({days} day{'s' if days and days > 1 else ''})" if days else ""
+                ref_id = l.get("leaveReference") or l.get("referenceId")
+                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                    ref_id = f"LV-{l.get('id')}"
+                start_d = l.get("startDate") or "N/A"
+                end_d = l.get("endDate") or "N/A"
+                days = l.get("totalDays")
+                days_str = f" ({days} day{'s' if days and days > 1 else ''})" if days else ""
 
-                        tasks.append({
-                            "ID": l.get("id"),
-                            "Reference ID": ref_id,
-                            "Type": "Leave Approval",
-                            "Leave Type": leave_type,
-                            "Employee": emp_name,
-                            "Details": f"{leave_type}{days_str} from {start_d} to {end_d}",
-                            "Date": l.get("createdAt", "N/A")
-                        })
+                tasks.append({
+                    "ID": l.get("id"),
+                    "Reference ID": ref_id,
+                    "Type": "Leave Approval",
+                    "Leave Type": leave_type,
+                    "Employee": emp_name,
+                    "Details": f"{leave_type}{days_str} from {start_d} to {end_d}",
+                    "Date": l.get("createdAt", "N/A")
+                })
+
+            try:
+                r_leaves_mgr = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/manager/{emp_id}", headers=headers, timeout=5.0)
+                if r_leaves_mgr.status_code == 200:
+                    for l in r_leaves_mgr.json():
+                        status = str(l.get("status", "")).lower()
+                        if status == "pending level 1" or status == "pending":
+                            _process_leave(l)
+                            
+                r_leaves_hr = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/hr/{emp_id}", headers=headers, timeout=5.0)
+                if r_leaves_hr.status_code == 200:
+                    for l in r_leaves_hr.json():
+                        status = str(l.get("status", "")).lower()
+                        if status not in ("rejected", "cancelled", "pending level 1", "pending"):
+                            _process_leave(l)
+            except Exception as e:
+                logger.error(f"Error fetching leaves: {e}")
+
             
             # 2. Claims
             r_claims = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/claims/manager/{emp_id}", headers=headers, timeout=5.0)
@@ -1607,7 +2047,9 @@ class WorkflowHelpers:
 
                         exp_type = c.get("expenseType") or "Claim"
                         amt = c.get("amount") or "0"
-                        ref_id = c.get("claimGroupId") or c.get("referenceId") or "N/A"
+                        ref_id = c.get("claimGroupId") or c.get("referenceId")
+                        if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                            ref_id = f"CLM-{c.get('id')}"
 
                         tasks.append({
                             "ID": c.get("id"),
@@ -1616,7 +2058,7 @@ class WorkflowHelpers:
                             "Leave Type": exp_type,
                             "Employee": emp_name,
                             "Details": f"{exp_type} - {amt}",
-                            "Date": c.get("appliedOn", "N/A")
+                            "Date": c.get("expenseDate", c.get("appliedOn", c.get("createdAt", c.get("date", "N/A"))))
                         })
             
             # 3. Travel (Manager Pending + Admin Assigned)
@@ -1631,7 +2073,9 @@ class WorkflowHelpers:
                     from_loc = t.get("fromLocation") or "N/A"
                     to_loc = t.get("toLocation") or t.get("destination") or "N/A"
                     mode = t.get("modeOfTravel") or "Trip"
-                    ref_id = t.get("referenceId") or "N/A"
+                    ref_id = t.get("referenceId")
+                    if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                        ref_id = f"TRV-{t.get('id')}"
 
                     tasks.append({
                         "ID": t.get("id"),
@@ -1683,16 +2127,19 @@ class WorkflowHelpers:
                             if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
                                 emp_name = ex.get("employeeId") or "Unknown Employee"
 
-                            ref_id = ex.get("referenceId") or "N/A"
+                            ref_id = ex.get("referenceId")
+                            if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                ref_id = f"EXT-{ex.get('id')}"
 
+                            date_val = ex.get("submissionDate") or ex.get("createdDate") or ex.get("createdAt")
                             tasks.append({
                                 "ID": ex.get("id"),
                                 "Reference ID": ref_id,
                                 "Type": "Exit/Resignation Approval",
                                 "Leave Type": "Resignation",
                                 "Employee": emp_name,
-                                "Details": f"Resignation Date: {ex.get('resignationDate', 'N/A')}",
-                                "Date": ex.get("createdDate", "N/A")
+                                "Details": f"Resignation Date: {ex.get('resignationDate') or ex.get('lastWorkingDay') or 'N/A'}",
+                                "Date": date_val if date_val else "N/A"
                             })
             except Exception as e:
                 logger.warning(f"Could not fetch exit tasks: {e}")
@@ -1707,7 +2154,9 @@ class WorkflowHelpers:
                             emp_name = tk.get("employeeId") or "Unknown Employee"
 
                         details = tk.get("title") or tk.get("subject") or "Helpdesk Ticket"
-                        ref_id = tk.get("ticketNumber") or tk.get("referenceId") or "N/A"
+                        ref_id = tk.get("ticketNumber") or tk.get("referenceId")
+                        if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                            ref_id = f"TKT-{tk.get('id')}"
 
                         tasks.append({
                             "ID": tk.get("id"),
@@ -1718,6 +2167,37 @@ class WorkflowHelpers:
                             "Details": details,
                             "Date": tk.get("createdAt", "N/A")
                         })
+            
+            # 6. Compensation Proposals
+            try:
+                r_comp = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/compensation/approver/{emp_id}", headers=headers, timeout=5.0)
+                if r_comp.status_code == 200:
+                    comp_data = r_comp.json()
+                    if isinstance(comp_data, list):
+                        for comp in comp_data:
+                            c_status = str(comp.get("status", "")).lower()
+                            if "pending" in c_status or "proposed" in c_status or "details" in c_status or not c_status:
+                                emp_name = comp.get("employeeName") or comp.get("name")
+                                if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                    emp_name = comp.get("employeeId") or "Unknown Employee"
+
+                                hike = comp.get("hikePercentage") or comp.get("hike") or ""
+                                hike_str = f" ({hike}% Hike)" if hike else ""
+                                ref_id = comp.get("referenceId")
+                                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                    ref_id = f"CMP-{comp.get('id')}"
+
+                                tasks.append({
+                                    "ID": comp.get("id"),
+                                    "Reference ID": ref_id,
+                                    "Type": "Compensation Approval",
+                                    "Leave Type": "Hike Proposal",
+                                    "Employee": emp_name,
+                                    "Details": f"Designation: {comp.get('designation', 'N/A')}{hike_str}",
+                                    "Date": comp.get("effectiveDate", comp.get("createdAt", "N/A"))
+                                })
+            except Exception as e:
+                logger.warning(f"Could not fetch compensation tasks: {e}")
         except Exception as e:
             logger.error(f"Error building my tasks: {e}")
             
@@ -1785,8 +2265,8 @@ class WorkflowHelpers:
         """
         
         # Resolve dates to dd-MM-yyyy format (required by Leave APIs)
-        start_date = resolve_relative_date(start_date_str, "dd-MM-yyyy")
-        end_date = resolve_relative_date(end_date_str, "dd-MM-yyyy")
+        start_date = resolve_relative_date(start_date_str or "today", "dd-MM-yyyy")
+        end_date = resolve_relative_date(end_date_str or start_date_str or "today", "dd-MM-yyyy")
         
         # Fetch leave balance
         balance_result = await call_xevyte_api(
@@ -1824,10 +2304,12 @@ class WorkflowHelpers:
         if available_balance <= 0:
             logger.warning(f"Employee has {available_balance} balance for {leave_type_id}, but proceeding anyway to let backend validate.")
         
+        emp_name = user_context.get("name") or user_context.get("employeeName") or user_context.get("employeeId")
         return {
             "status": "ready",
             "payload": {
                 "employeeId": user_context.get("employeeId"),
+                "employeeName": emp_name,
                 "type": leave_type_id,
                 "startDate": start_date,
                 "endDate": end_date,
@@ -1928,6 +2410,15 @@ class WorkflowHelpers:
                         if str(e.get("id")) == str(entry_id):
                             existing_entry = e
                             break
+                    # Fallback if agent passed wrong ID (e.g., employeeId instead of entryId)
+                    if not existing_entry:
+                        today_dmy = now.strftime("%d-%m-%Y")
+                        today_ymd = now.strftime("%Y-%m-%d")
+                        for e in entries:
+                            e_date = e.get("date")
+                            if e_date in (today_dmy, today_ymd) and e.get("status") != "CHECKED_OUT":
+                                existing_entry = e
+                                break
         except Exception as e:
             logger.warning(f"Failed to fetch existing entry {entry_id} for check-out merge: {e}")
             
@@ -1964,9 +2455,181 @@ class WorkflowHelpers:
             payload["totalHours"] = 0.0
             
         return payload
+
+async def prepare_batch_approvals(actions: List[Dict[str, Any]], user_context: dict, token: str) -> dict:
+    pending_actions = []
+    errors = []
+    seen_tasks = set()
+    
+    # Fetch actual pending tasks to validate and auto-resolve types
+    try:
+        pending_list = WorkflowHelpers.build_my_tasks(user_context, token)
+    except Exception as e:
+        logger.error(f"Failed to fetch pending tasks in prepare_batch_approvals: {e}")
+        return {
+            "status": "error",
+            "error": f"Failed to fetch pending tasks: {e}"
+        }
         
+    # Map IDs and Reference IDs to tasks
+    pending_by_id = {}
+    for t in pending_list:
+        t_id = t.get("ID")
+        ref_id = t.get("Reference ID")
+        if t_id is not None:
+            pending_by_id[str(t_id)] = t
+        if ref_id:
+            pending_by_id[str(ref_id).strip().upper()] = t
 
+    for action_item in actions:
+        task_id_raw = action_item.get("task_id")
+        if not task_id_raw:
+            errors.append("Missing task_id in action item")
+            continue
+            
+        task_id_str = str(task_id_raw).strip()
+        if task_id_str in seen_tasks:
+            continue
+        seen_tasks.add(task_id_str)
+        matched_task = None
+        
+        if task_id_str in pending_by_id:
+            matched_task = pending_by_id[task_id_str]
+        elif task_id_str.upper() in pending_by_id:
+            matched_task = pending_by_id[task_id_str.upper()]
+        else:
+            # Extract digits to match numeric ID
+            digits = "".join(c for c in task_id_str if c.isdigit())
+            if digits and digits in pending_by_id:
+                matched_task = pending_by_id[digits]
+                
+        if not matched_task:
+            fallback_type = action_item.get("type") or action_item.get("task_type") or action_item.get("taskType")
+            if fallback_type and any(k in str(fallback_type).lower() for k in ["leave", "claim", "travel", "exit", "resignation", "ticket", "compensation", "hike"]):
+                digits = "".join(c for c in task_id_str if c.isdigit())
+                task_id = int(digits) if digits else task_id_raw
+                task_type = str(fallback_type)
+            else:
+                errors.append(f"Task ID '{task_id_raw}' is not in your pending approvals list.")
+                continue
+        else:
+            task_id = matched_task.get("ID")
+            task_type = matched_task.get("Type")
+        act_value = str(action_item.get("action", "")).strip().capitalize() # "Approve" or "Reject"
+        comment = action_item.get("comment", "") or action_item.get("reason", "") or action_item.get("comments", "")
+        
+        endpoint_id = None
+        path_params = None
+        query_params = None
+        body = None
+        
+        if "leave" in task_type.lower():
+            endpoint_id = "approveLeave" if act_value == "Approve" else "rejectLeave"
+            body = {
+                "leaveRequestId": task_id,
+                "action": act_value,
+                "role": user_context.get("role") or "MANAGER",
+                "approverId": user_context.get("employeeId", "")
+            }
+            if act_value == "Reject":
+                body["remarks"] = comment or "Rejected by manager"
+        elif "claim" in task_type.lower():
+            endpoint_id = "approveClaim" if act_value == "Approve" else "rejectClaim"
+            path_params = {"id": task_id}
+            query_params = {
+                "role": "Manager",
+                "approverId": user_context.get("employeeId", "")
+            }
+            if act_value == "Reject":
+                query_params["reason"] = comment or "Rejected by manager"
+        elif "travel" in task_type.lower() or "booking" in task_type.lower():
+            if "admin" in task_type.lower() or "booking" in task_type.lower():
+                if act_value == "Reject":
+                    endpoint_id = "rejectRequestByAdmin"
+                    path_params = {"id": task_id}
+                    query_params = {
+                        "adminId": user_context.get("employeeId", ""),
+                        "rejectedReason": comment or "Rejected by travel admin"
+                    }
+                    if len(query_params["rejectedReason"]) < 10:
+                        query_params["rejectedReason"] = f"Rejected: {query_params['rejectedReason']} (declined by travel admin)"
+                else:
+                    endpoint_id = "uploadMultipleFiles"
+                    path_params = {"requestId": task_id}
+            else:
+                endpoint_id = "approveRequest" if act_value == "Approve" else "rejectRequest"
+                path_params = {"id": task_id}
+                query_params = {
+                    "managerId": user_context.get("employeeId", "")
+                }
+                if act_value == "Reject":
+                    query_params["rejectedReason"] = comment or "Rejected by manager due to budget limit"
+        elif "exit" in task_type.lower() or "resignation" in task_type.lower():
+            endpoint_id = "approveResignationByManager" if act_value == "Approve" else "rejectResignationByManager"
+            path_params = {"id": task_id}
+            if act_value == "Reject":
+                body = {"comments": comment or "Rejected by manager"}
+        elif "ticket" in task_type.lower():
+            endpoint_id = "managerApproveTicket" if act_value == "Approve" else "managerRejectTicket"
+            path_params = {"ticketId": task_id}
+            if act_value == "Reject":
+                query_params = {"reason": comment or "Rejected by manager"}
+        elif "compensation" in task_type.lower():
+            endpoint_id = "approveCompensation" if act_value == "Approve" else "rejectCompensation"
+            body = {"id": task_id}
+            if act_value == "Reject":
+                body["comments"] = comment or "Rejected by manager"
+        else:
+            errors.append(f"Unknown task type: {task_type}")
+            continue
+            
+        # Get details from catalog for this endpoint
+        endpoint_data = APIECatalog().get_endpoint(endpoint_id)
+        if not endpoint_data:
+            errors.append(f"Endpoint '{endpoint_id}' not found in catalog")
+            continue
+            
+        # Resolve actual path parameters to avoid placeholders in the action_data
+        method = endpoint_data.get("method", "GET").upper()
+        path = endpoint_data.get("path", "")
+        actual_path = path
+        if path_params:
+            for k, v in path_params.items():
+                actual_path = actual_path.replace(f"{{{k}}}", str(v))
+                
+        # Handle special parameter injections that tools.py does in call_xevyte_api
+        if endpoint_id in ("approveClaim", "rejectClaim") and query_params:
+            cur_role = str(query_params.get("role", "")).lower()
+            query_params["role"] = "Finance" if "finance" in cur_role else "Manager"
+            
+        if endpoint_id in ("approveRequest", "rejectRequest") and query_params:
+            if endpoint_id == "rejectRequest":
+                r_reason = query_params.get("rejectedReason") or "Rejected by manager due to budget limit"
+                if len(r_reason) < 10:
+                    r_reason = f"Rejected: {r_reason} (exceeds budget limit)"
+                query_params["rejectedReason"] = r_reason
 
+        # Build action data dict matching confirmation format
+        action_data = {
+            "endpoint_id": endpoint_id,
+            "method": method,
+            "path": actual_path,
+            "query_params": query_params,
+            "body": body
+        }
+        pending_actions.append(action_data)
+        
+    if errors and not pending_actions:
+        return {
+            "status": "error",
+            "error": "; ".join(errors)
+        }
+        
+    return {
+        "status": "pending_confirmation",
+        "batch_actions": pending_actions,
+        "message": f"Successfully prepared {len(pending_actions)} actions." + (f" Errors: {'; '.join(errors)}" if errors else "")
+    }
 
 # ============================================================================
 # EXPORT ALL TOOLS
@@ -1980,5 +2643,6 @@ __all__ = [
     "call_xevyte_api",
     "resolve_relative_date",
     "APIECatalog",
-    "WorkflowHelpers"
+    "WorkflowHelpers",
+    "prepare_batch_approvals"
 ]

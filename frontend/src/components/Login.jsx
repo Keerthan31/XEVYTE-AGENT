@@ -363,15 +363,6 @@ export default function Login({ onLoginSuccess }) {
                 </div>
               </div>
 
-              <div className="flex justify-end mt-1">
-                <button
-                  type="button"
-                  onClick={() => setView('forgot')}
-                  className="text-[11px] text-teal-600 hover:underline font-semibold cursor-pointer"
-                >
-                  Forgot Password?
-                </button>
-              </div>
 
               <button
                 type="submit"

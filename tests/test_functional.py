@@ -95,6 +95,67 @@ def test_resolve_relative_date_explicit_date():
     assert res == "15-10-2026"
 
 
+def test_resolve_relative_date_weekdays():
+    """Test day of week resolution (e.g. 'friday', 'this friday', 'next monday', 'mon', 'tue', etc.)."""
+    today = datetime.now().date()
+    days_map = {
+        "monday": 0, "mon": 0,
+        "tuesday": 1, "tue": 1,
+        "wednesday": 2, "wed": 2,
+        "thursday": 3, "thu": 3, "thrusday": 3,
+        "friday": 4, "fri": 4,
+        "saturday": 5, "sat": 5,
+        "sunday": 6, "sun": 6
+    }
+    
+    # Test "friday" / "fri"
+    fri_ahead = (days_map["friday"] - today.weekday()) % 7
+    expected_fri = today + timedelta(days=fri_ahead)
+    assert resolve_relative_date("friday", format_output="dd-MM-yyyy") == expected_fri.strftime("%d-%m-%Y")
+    assert resolve_relative_date("fri", format_output="dd-MM-yyyy") == expected_fri.strftime("%d-%m-%Y")
+    assert resolve_relative_date("this fri", format_output="dd-MM-yyyy") == expected_fri.strftime("%d-%m-%Y")
+    assert resolve_relative_date("for friday", format_output="dd-MM-yyyy") == expected_fri.strftime("%d-%m-%Y")
+
+    # Test "mon", "tue", "wed", "thu", "thrusday", "sat", "sun"
+    for day_alias in ("mon", "tue", "wed", "thu", "thrusday", "sat", "sun"):
+        t_day = days_map[day_alias]
+        d_ahead = (t_day - today.weekday()) % 7
+        exp = today + timedelta(days=d_ahead)
+        assert resolve_relative_date(day_alias, format_output="dd-MM-yyyy") == exp.strftime("%d-%m-%Y")
+
+    # Test "next day", "day before day", "day after tomorrow"
+    assert resolve_relative_date("next day", format_output="dd-MM-yyyy") == (today + timedelta(days=1)).strftime("%d-%m-%Y")
+    assert resolve_relative_date("day before day", format_output="dd-MM-yyyy") == (today - timedelta(days=1)).strftime("%d-%m-%Y")
+    assert resolve_relative_date("day after tomorrow", format_output="dd-MM-yyyy") == (today + timedelta(days=2)).strftime("%d-%m-%Y")
+
+    # Test formats: dd/mm/yyyy, yyyy/mm/dd, mm/yyyy/dd
+    assert resolve_relative_date("28/08/2026", format_output="dd-MM-yyyy") == "28-08-2026"
+    assert resolve_relative_date("2026/08/28", format_output="dd-MM-yyyy") == "28-08-2026"
+    assert resolve_relative_date("08/2026/28", format_output="dd-MM-yyyy") == "28-08-2026"
+
+
+def test_format_action_summary():
+    """Test action summary markdown generation for confirmation node."""
+    from app.agent.engine import format_action_summary
+    action_data = {
+        "endpoint_id": "applyLeave",
+        "method": "POST",
+        "path": "/api/leaves/apply",
+        "body": {
+            "type": "Sick Leave",
+            "startDate": "28-08-2026",
+            "endDate": "28-08-2026",
+            "reason": "stomach pain"
+        }
+    }
+    summary = format_action_summary(action_data)
+    assert "Apply Leave" in summary
+    assert "Sick Leave" in summary
+    assert "28-08-2026" in summary
+    assert "stomach pain" in summary
+    assert "Approve" in summary
+
+
 # ============================================================================
 # 3. Confirmation Token Generation & Verification
 # ============================================================================

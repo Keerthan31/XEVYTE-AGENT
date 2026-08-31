@@ -11,7 +11,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api/auth/login': {
-        target: 'http://localhost:8083',
+        target: 'http://localhost:8084',
         changeOrigin: true,
         headers: {
           'Origin': 'http://scaloz.localhost:3004'
@@ -23,6 +23,14 @@ export default defineConfig({
       },
       '/downloads': {
         target: 'http://localhost:8000',
+        changeOrigin: true
+      },
+      '/api/customers': {
+        target: 'http://localhost:8082',
+        changeOrigin: true
+      },
+      '/api/contracts': {
+        target: 'http://localhost:8082',
         changeOrigin: true
       }
     }

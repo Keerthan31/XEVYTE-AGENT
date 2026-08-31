@@ -23,7 +23,8 @@ def validate_and_extract_token(token: str) -> Optional[Dict[str, Any]]:
         payload = jwt.decode(
             token, 
             settings.JWT_SECRET, 
-            algorithms=["HS256"]
+            algorithms=["HS256"],
+            leeway=300
             # options={"verify_iss": True, "issuer": settings.jwt_issuer} # Uncomment if issuer is strictly enforced
         )
         
