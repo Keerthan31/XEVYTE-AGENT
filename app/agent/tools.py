@@ -663,7 +663,7 @@ async def call_xevyte_api(
         if not extracted_id or not extracted_id.isdigit():
             # ID is missing or a placeholder string like "<claim_id>"
             # Try to auto-resolve from pending tasks
-            all_tasks = WorkflowHelpers.build_my_tasks(user_context, token)
+            all_tasks = await WorkflowHelpers.build_my_tasks(user_context, token)
             claim_tasks = [t for t in all_tasks if "Claim" in str(t.get("Type", "")) and t.get("ID") is not None]
             
             if len(claim_tasks) == 1:
@@ -707,7 +707,7 @@ async def call_xevyte_api(
         # Auto-resolve leaveRequestId if missing or non-digit
         cur_req_id = str(body.get("leaveRequestId", ""))
         if not cur_req_id or not cur_req_id.isdigit():
-            all_tasks = WorkflowHelpers.build_my_tasks(user_context, token)
+            all_tasks = await WorkflowHelpers.build_my_tasks(user_context, token)
             leave_tasks = [t for t in all_tasks if "Leave" in str(t.get("Type", "")) and t.get("ID") is not None]
             if len(leave_tasks) == 1:
                 body["leaveRequestId"] = leave_tasks[0]["ID"]
@@ -1049,7 +1049,7 @@ async def call_xevyte_api(
     # Special handling for Recent Activities Aggregator
     
     if endpoint_id == "getMyUnifiedTasks":
-        tasks = WorkflowHelpers.build_my_tasks(user_context, token)
+        tasks = await WorkflowHelpers.build_my_tasks(user_context, token)
         return json.dumps(tasks)
 
     if endpoint_id == "getRecentActivities":
@@ -1640,9 +1640,6 @@ async def call_xevyte_api(
             if query_params:
                 request_kwargs["params"] = query_params
             
-            if query_params:
-                request_kwargs["params"] = query_params
-            
             if body and method != "GET":
                 if endpoint_id == "updateProfilePicture":
                     # Multipart file upload handling for profile picture
@@ -1653,7 +1650,8 @@ async def call_xevyte_api(
                     import os
                     for k, v in body.items():
                         if k == "profilePic" and isinstance(v, str) and os.path.isfile(v):
-                            files["profilePic"] = open(v, "rb")
+                            with open(v, "rb") as f:
+                                files["profilePic"] = (os.path.basename(v), f.read(), "image/jpeg")
                         else:
                             data[k] = str(v)
                     
@@ -1680,7 +1678,8 @@ async def call_xevyte_api(
                     files = {}
                     import os
                     if receipt_path and isinstance(receipt_path, str) and os.path.isfile(receipt_path):
-                        files["receiptFile"] = open(receipt_path, "rb")
+                        with open(receipt_path, "rb") as f:
+                            files["receiptFile"] = (os.path.basename(receipt_path), f.read(), "application/octet-stream")
                         
                     request_kwargs["data"] = data
                     if files:
@@ -1980,13 +1979,13 @@ def _get_error_suggestion(status_code: int, endpoint_id: str) -> str:
 
 class WorkflowHelpers:
     @staticmethod
-    def build_my_tasks(user_context: dict, token: str) -> list:
+    async def build_my_tasks(user_context: dict, token: str) -> list:
         emp_id = user_context.get("employeeId")
         headers = {"Authorization": f"Bearer {token}"}
         tasks = []
+        backend_url = get_settings().JAVA_BACKEND_URL
         
         try:
-            # 1. Leaves
             seen_leave_ids = set()
             
             def _process_leave(l):
@@ -2018,186 +2017,199 @@ class WorkflowHelpers:
                     "Date": l.get("createdAt", "N/A")
                 })
 
-            try:
-                r_leaves_mgr = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/manager/{emp_id}", headers=headers, timeout=5.0)
-                if r_leaves_mgr.status_code == 200:
-                    for l in r_leaves_mgr.json():
-                        status = str(l.get("status", "")).lower()
-                        if status == "pending level 1" or status == "pending":
-                            _process_leave(l)
-                            
-                r_leaves_hr = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/leaves/hr/{emp_id}", headers=headers, timeout=5.0)
-                if r_leaves_hr.status_code == 200:
-                    for l in r_leaves_hr.json():
-                        status = str(l.get("status", "")).lower()
-                        if status not in ("rejected", "cancelled", "pending level 1", "pending"):
-                            _process_leave(l)
-            except Exception as e:
-                logger.error(f"Error fetching leaves: {e}")
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                # 1. Leaves (Manager + HR)
+                try:
+                    r_leaves_mgr = await client.get(f"{backend_url}/api/leaves/manager/{emp_id}", headers=headers)
+                    if r_leaves_mgr.status_code == 200:
+                        for l in r_leaves_mgr.json():
+                            status = str(l.get("status", "")).lower()
+                            if status == "pending level 1" or status == "pending":
+                                _process_leave(l)
+                except Exception as e:
+                    logger.debug(f"Could not fetch manager leaves: {e}")
 
-            
-            # 2. Claims
-            r_claims = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/claims/manager/{emp_id}", headers=headers, timeout=5.0)
-            if r_claims.status_code == 200:
-                for c in r_claims.json():
-                    if "pending" in str(c.get("status", "")).lower():
-                        emp_name = c.get("employeeName")
-                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                            emp_name = c.get("employeeId") or "Unknown Employee"
+                try:
+                    r_leaves_hr = await client.get(f"{backend_url}/api/leaves/hr/{emp_id}", headers=headers)
+                    if r_leaves_hr.status_code == 200:
+                        for l in r_leaves_hr.json():
+                            status = str(l.get("status", "")).lower()
+                            if status not in ("rejected", "cancelled", "pending level 1", "pending"):
+                                _process_leave(l)
+                except Exception as e:
+                    logger.debug(f"Could not fetch hr leaves: {e}")
 
-                        exp_type = c.get("expenseType") or "Claim"
-                        amt = c.get("amount") or "0"
-                        ref_id = c.get("claimGroupId") or c.get("referenceId")
-                        if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
-                            ref_id = f"CLM-{c.get('id')}"
+                # 2. Claims
+                try:
+                    r_claims = await client.get(f"{backend_url}/api/claims/manager/{emp_id}", headers=headers)
+                    if r_claims.status_code == 200:
+                        for c in r_claims.json():
+                            if "pending" in str(c.get("status", "")).lower():
+                                emp_name = c.get("employeeName")
+                                if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                    emp_name = c.get("employeeId") or "Unknown Employee"
 
-                        tasks.append({
-                            "ID": c.get("id"),
-                            "Reference ID": ref_id,
-                            "Type": "Claim Approval",
-                            "Leave Type": exp_type,
-                            "Employee": emp_name,
-                            "Details": f"{exp_type} - {amt}",
-                            "Date": c.get("expenseDate", c.get("appliedOn", c.get("createdAt", c.get("date", "N/A"))))
-                        })
-            
-            # 3. Travel (Manager Pending + Admin Assigned)
-            r_travel = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/travel/manager/pending/{emp_id}", headers=headers, timeout=5.0)
-            if r_travel.status_code == 200:
-                for t in r_travel.json():
-                    emp_name = t.get("employeeName")
-                    if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                        emp_name = t.get("employeeId") or "Unknown Employee"
+                                exp_type = c.get("expenseType") or "Claim"
+                                amt = c.get("amount") or "0"
+                                ref_id = c.get("claimGroupId") or c.get("referenceId")
+                                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                    ref_id = f"CLM-{c.get('id')}"
 
-                    purpose = t.get("purposeOfTravel") or t.get("purpose") or "Travel"
-                    from_loc = t.get("fromLocation") or "N/A"
-                    to_loc = t.get("toLocation") or t.get("destination") or "N/A"
-                    mode = t.get("modeOfTravel") or "Trip"
-                    ref_id = t.get("referenceId")
-                    if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
-                        ref_id = f"TRV-{t.get('id')}"
+                                tasks.append({
+                                    "ID": c.get("id"),
+                                    "Reference ID": ref_id,
+                                    "Type": "Claim Approval",
+                                    "Leave Type": exp_type,
+                                    "Employee": emp_name,
+                                    "Details": f"{exp_type} - {amt}",
+                                    "Date": c.get("expenseDate", c.get("appliedOn", c.get("createdAt", c.get("date", "N/A"))))
+                                })
+                except Exception as e:
+                    logger.debug(f"Could not fetch claims: {e}")
 
-                    tasks.append({
-                        "ID": t.get("id"),
-                        "Reference ID": ref_id,
-                        "Type": "Travel Approval",
-                        "Leave Type": purpose,
-                        "Employee": emp_name,
-                        "Details": f"{mode} ({from_loc} -> {to_loc}) - {purpose}",
-                        "Date": t.get("createdAt", t.get("requestDate", "N/A"))
-                    })
-
-            # 3b. Travel Admin Assigned (Pending booking/completion)
-            try:
-                r_travel_admin = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/travel/admin/assigned-requests/{emp_id}", headers=headers, timeout=5.0)
-                if r_travel_admin.status_code == 200:
-                    for t in r_travel_admin.json():
-                        if t.get("status") in ("Approved By Manager", "Pending For Booking", "In Progress"):
+                # 3. Travel (Manager Pending)
+                try:
+                    r_travel = await client.get(f"{backend_url}/api/travel/manager/pending/{emp_id}", headers=headers)
+                    if r_travel.status_code == 200:
+                        for t in r_travel.json():
                             emp_name = t.get("employeeName")
                             if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
                                 emp_name = t.get("employeeId") or "Unknown Employee"
 
-                            purpose = t.get("purposeOfTravel") or t.get("purpose") or "Travel Booking"
+                            purpose = t.get("purposeOfTravel") or t.get("purpose") or "Travel"
                             from_loc = t.get("fromLocation") or "N/A"
                             to_loc = t.get("toLocation") or t.get("destination") or "N/A"
                             mode = t.get("modeOfTravel") or "Trip"
+                            ref_id = t.get("referenceId")
+                            if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                ref_id = f"TRV-{t.get('id')}"
 
                             tasks.append({
                                 "ID": t.get("id"),
-                                "Reference ID": t.get("referenceId") or f"TRV-{t.get('id')}",
-                                "Type": "Travel Admin Booking",
+                                "Reference ID": ref_id,
+                                "Type": "Travel Approval",
                                 "Leave Type": purpose,
                                 "Employee": emp_name,
-                                "Details": f"{mode} ({from_loc} -> {to_loc}) [Ready for Booking Upload]",
-                                "Date": t.get("createdAt", "N/A")
+                                "Details": f"{mode} ({from_loc} -> {to_loc}) - {purpose}",
+                                "Date": t.get("createdAt", t.get("requestDate", "N/A"))
                             })
-            except Exception as e:
-                logger.warning(f"Could not fetch travel admin tasks: {e}")
-            
-            # 5. Exit/Resignation Tasks
-            try:
-                headers_exit = dict(headers)
-                headers_exit["managerId"] = emp_id
-                headers_exit["employeeId"] = emp_id
-                r_exits = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/v1/exit-management/manager/pending-resignations", headers=headers_exit, timeout=5.0)
-                if r_exits.status_code == 200:
-                    for ex in r_exits.json():
-                        if ex.get("status") != "Final Approved - Exit Complete":
-                            emp_name = ex.get("employeeName")
-                            if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                                emp_name = ex.get("employeeId") or "Unknown Employee"
+                except Exception as e:
+                    logger.debug(f"Could not fetch travel tasks: {e}")
 
-                            ref_id = ex.get("referenceId")
-                            if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
-                                ref_id = f"EXT-{ex.get('id')}"
-
-                            date_val = ex.get("submissionDate") or ex.get("createdDate") or ex.get("createdAt")
-                            tasks.append({
-                                "ID": ex.get("id"),
-                                "Reference ID": ref_id,
-                                "Type": "Exit/Resignation Approval",
-                                "Leave Type": "Resignation",
-                                "Employee": emp_name,
-                                "Details": f"Resignation Date: {ex.get('resignationDate') or ex.get('lastWorkingDay') or 'N/A'}",
-                                "Date": date_val if date_val else "N/A"
-                            })
-            except Exception as e:
-                logger.warning(f"Could not fetch exit tasks: {e}")
-
-            # 4. Tickets
-            r_tickets = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/tickets/manager/{emp_id}", headers=headers, timeout=5.0)
-            if r_tickets.status_code == 200:
-                for tk in r_tickets.json():
-                    if "pending" in str(tk.get("status", "")).lower() or "open" in str(tk.get("status", "")).lower():
-                        emp_name = tk.get("employeeName")
-                        if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                            emp_name = tk.get("employeeId") or "Unknown Employee"
-
-                        details = tk.get("title") or tk.get("subject") or "Helpdesk Ticket"
-                        ref_id = tk.get("ticketNumber") or tk.get("referenceId")
-                        if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
-                            ref_id = f"TKT-{tk.get('id')}"
-
-                        tasks.append({
-                            "ID": tk.get("id"),
-                            "Reference ID": ref_id,
-                            "Type": "Ticket Approval",
-                            "Leave Type": tk.get("category", "Helpdesk"),
-                            "Employee": emp_name,
-                            "Details": details,
-                            "Date": tk.get("createdAt", "N/A")
-                        })
-            
-            # 6. Compensation Proposals
-            try:
-                r_comp = httpx.get(f"{get_settings().JAVA_BACKEND_URL}/api/compensation/approver/{emp_id}", headers=headers, timeout=5.0)
-                if r_comp.status_code == 200:
-                    comp_data = r_comp.json()
-                    if isinstance(comp_data, list):
-                        for comp in comp_data:
-                            c_status = str(comp.get("status", "")).lower()
-                            if "pending" in c_status or "proposed" in c_status or "details" in c_status or not c_status:
-                                emp_name = comp.get("employeeName") or comp.get("name")
+                # 3b. Travel Admin Assigned
+                try:
+                    r_travel_admin = await client.get(f"{backend_url}/api/travel/admin/assigned-requests/{emp_id}", headers=headers)
+                    if r_travel_admin.status_code == 200:
+                        for t in r_travel_admin.json():
+                            if t.get("status") in ("Approved By Manager", "Pending For Booking", "In Progress"):
+                                emp_name = t.get("employeeName")
                                 if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
-                                    emp_name = comp.get("employeeId") or "Unknown Employee"
+                                    emp_name = t.get("employeeId") or "Unknown Employee"
 
-                                hike = comp.get("hikePercentage") or comp.get("hike") or ""
-                                hike_str = f" ({hike}% Hike)" if hike else ""
-                                ref_id = comp.get("referenceId")
-                                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
-                                    ref_id = f"CMP-{comp.get('id')}"
+                                purpose = t.get("purposeOfTravel") or t.get("purpose") or "Travel Booking"
+                                from_loc = t.get("fromLocation") or "N/A"
+                                to_loc = t.get("toLocation") or t.get("destination") or "N/A"
+                                mode = t.get("modeOfTravel") or "Trip"
 
                                 tasks.append({
-                                    "ID": comp.get("id"),
-                                    "Reference ID": ref_id,
-                                    "Type": "Compensation Approval",
-                                    "Leave Type": "Hike Proposal",
+                                    "ID": t.get("id"),
+                                    "Reference ID": t.get("referenceId") or f"TRV-{t.get('id')}",
+                                    "Type": "Travel Admin Booking",
+                                    "Leave Type": purpose,
                                     "Employee": emp_name,
-                                    "Details": f"Designation: {comp.get('designation', 'N/A')}{hike_str}",
-                                    "Date": comp.get("effectiveDate", comp.get("createdAt", "N/A"))
+                                    "Details": f"{mode} ({from_loc} -> {to_loc}) [Ready for Booking Upload]",
+                                    "Date": t.get("createdAt", "N/A")
                                 })
-            except Exception as e:
-                logger.warning(f"Could not fetch compensation tasks: {e}")
+                except Exception as e:
+                    logger.debug(f"Could not fetch travel admin tasks: {e}")
+
+                # 4. Tickets
+                try:
+                    r_tickets = await client.get(f"{backend_url}/api/tickets/manager/{emp_id}", headers=headers)
+                    if r_tickets.status_code == 200:
+                        for tk in r_tickets.json():
+                            if "pending" in str(tk.get("status", "")).lower() or "open" in str(tk.get("status", "")).lower():
+                                emp_name = tk.get("employeeName")
+                                if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                    emp_name = tk.get("employeeId") or "Unknown Employee"
+
+                                details = tk.get("title") or tk.get("subject") or "Helpdesk Ticket"
+                                ref_id = tk.get("ticketNumber") or tk.get("referenceId")
+                                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                    ref_id = f"TKT-{tk.get('id')}"
+
+                                tasks.append({
+                                    "ID": tk.get("id"),
+                                    "Reference ID": ref_id,
+                                    "Type": "Ticket Approval",
+                                    "Leave Type": tk.get("category", "Helpdesk"),
+                                    "Employee": emp_name,
+                                    "Details": details,
+                                    "Date": tk.get("createdAt", "N/A")
+                                })
+                except Exception as e:
+                    logger.debug(f"Could not fetch tickets: {e}")
+
+                # 5. Exit/Resignation Tasks
+                try:
+                    headers_exit = dict(headers)
+                    headers_exit["managerId"] = emp_id
+                    headers_exit["employeeId"] = emp_id
+                    r_exits = await client.get(f"{backend_url}/api/v1/exit-management/manager/pending-resignations", headers=headers_exit)
+                    if r_exits.status_code == 200:
+                        for ex in r_exits.json():
+                            if ex.get("status") != "Final Approved - Exit Complete":
+                                emp_name = ex.get("employeeName")
+                                if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                    emp_name = ex.get("employeeId") or "Unknown Employee"
+
+                                ref_id = ex.get("referenceId")
+                                if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                    ref_id = f"EXT-{ex.get('id')}"
+
+                                date_val = ex.get("submissionDate") or ex.get("createdDate") or ex.get("createdAt")
+                                tasks.append({
+                                    "ID": ex.get("id"),
+                                    "Reference ID": ref_id,
+                                    "Type": "Exit/Resignation Approval",
+                                    "Leave Type": "Resignation",
+                                    "Employee": emp_name,
+                                    "Details": f"Resignation Date: {ex.get('resignationDate') or ex.get('lastWorkingDay') or 'N/A'}",
+                                    "Date": date_val if date_val else "N/A"
+                                })
+                except Exception as e:
+                    logger.debug(f"Could not fetch exit tasks: {e}")
+
+                # 6. Compensation Proposals
+                try:
+                    r_comp = await client.get(f"{backend_url}/api/compensation/approver/{emp_id}", headers=headers)
+                    if r_comp.status_code == 200:
+                        comp_data = r_comp.json()
+                        if isinstance(comp_data, list):
+                            for comp in comp_data:
+                                c_status = str(comp.get("status", "")).lower()
+                                if "pending" in c_status or "proposed" in c_status or "details" in c_status or not c_status:
+                                    emp_name = comp.get("employeeName") or comp.get("name")
+                                    if not emp_name or str(emp_name).strip().lower() in ("null null", "null", "none", "unknown", ""):
+                                        emp_name = comp.get("employeeId") or "Unknown Employee"
+
+                                    hike = comp.get("hikePercentage") or comp.get("hike") or ""
+                                    hike_str = f" ({hike}% Hike)" if hike else ""
+                                    ref_id = comp.get("referenceId")
+                                    if not ref_id or str(ref_id).strip().lower() in ("n/a", "none", "null", ""):
+                                        ref_id = f"CMP-{comp.get('id')}"
+
+                                    tasks.append({
+                                        "ID": comp.get("id"),
+                                        "Reference ID": ref_id,
+                                        "Type": "Compensation Approval",
+                                        "Leave Type": "Hike Proposal",
+                                        "Employee": emp_name,
+                                        "Details": f"Designation: {comp.get('designation', 'N/A')}{hike_str}",
+                                        "Date": comp.get("effectiveDate", comp.get("createdAt", "N/A"))
+                                    })
+                except Exception as e:
+                    logger.debug(f"Could not fetch compensation tasks: {e}")
         except Exception as e:
             logger.error(f"Error building my tasks: {e}")
             
@@ -2463,7 +2475,7 @@ async def prepare_batch_approvals(actions: List[Dict[str, Any]], user_context: d
     
     # Fetch actual pending tasks to validate and auto-resolve types
     try:
-        pending_list = WorkflowHelpers.build_my_tasks(user_context, token)
+        pending_list = await WorkflowHelpers.build_my_tasks(user_context, token)
     except Exception as e:
         logger.error(f"Failed to fetch pending tasks in prepare_batch_approvals: {e}")
         return {

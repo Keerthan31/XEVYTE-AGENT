@@ -1,6 +1,7 @@
 import json
 import base64
 import time
+import hashlib
 from cryptography.fernet import Fernet
 import logging
 
@@ -15,13 +16,10 @@ def _get_fernet():
     global _fernet
     if _fernet is None:
         settings = get_settings()
-        # Ensure it's 32 bytes url-safe base64 encoded
-        secret = settings.JWT_SECRET
-        if len(secret) < 32:
-            secret = secret.ljust(32, '0')
-        else:
-            secret = secret[:32]
-        key = base64.urlsafe_b64encode(secret.encode('utf-8'))
+        # Derive a robust 32-byte key using SHA-256 digest
+        secret = settings.JWT_SECRET.encode("utf-8")
+        key_bytes = hashlib.sha256(secret).digest()
+        key = base64.urlsafe_b64encode(key_bytes)
         _fernet = Fernet(key)
     return _fernet
 
@@ -57,6 +55,8 @@ def verify_confirmation_token(token: str, employee_id: str) -> dict:
             
         return payload.get("action", {})
         
+    except ValueError:
+        raise
     except Exception as e:
         logger.error(f"Invalid confirmation token: {e}")
         raise ValueError(f"Invalid confirmation token: {str(e)}")

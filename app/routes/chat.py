@@ -484,7 +484,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            request_kwargs["files"] = {"files": (orig_name, open(temp_path, "rb"), mime or "application/pdf")}
+            with open(temp_path, "rb") as f:
+                request_kwargs["files"] = {"files": (orig_name, f.read(), mime or "application/pdf")}
     elif path == "/api/employees/bulk-onboard":
         import mimetypes
         temp_path = action_data.get("temp_file_path")
@@ -499,7 +500,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
         if temp_path and os.path.exists(temp_path):
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            request_kwargs["files"] = {"file": (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")}
+            with open(temp_path, "rb") as f:
+                request_kwargs["files"] = {"file": (orig_name, f.read(), mime or "application/octet-stream")}
     elif path in ("/api/tickets/submit", "/api/tickets/change-request/submit", "/api/tickets/draft", "/api/tickets/change-request/draft"):
         form_payload = dict(action_data.get("body") or {})
         if "employeeId" not in form_payload:
@@ -512,7 +514,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            request_kwargs["files"] = {"file": (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")}
+            with open(temp_path, "rb") as f:
+                request_kwargs["files"] = {"file": (orig_name, f.read(), mime or "application/octet-stream")}
     elif path == "/api/grievances/anonymous":
         parts = {k: (None, str(v)) for k, v in (action_data.get("body") or {}).items() if v is not None}
         if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
@@ -520,7 +523,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            parts["attachment"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+            with open(temp_path, "rb") as f:
+                parts["attachment"] = (orig_name, f.read(), mime or "application/octet-stream")
         request_kwargs["files"] = parts
     elif path == "/api/customers" or (path.startswith("/api/customers/") and action_data.get("method") == "PUT"):
         parts = {}
@@ -532,7 +536,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            parts["msaDoc"] = (orig_name, open(temp_path, "rb"), mime or "application/pdf")
+            with open(temp_path, "rb") as f:
+                parts["msaDoc"] = (orig_name, f.read(), mime or "application/pdf")
         request_kwargs["files"] = parts
     elif path == "/api/leaves/apply":
         import json
@@ -545,7 +550,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            request_kwargs["files"]["receiptFile"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+            with open(temp_path, "rb") as f:
+                request_kwargs["files"]["receiptFile"] = (orig_name, f.read(), mime or "application/octet-stream")
     elif path == "/api/claims/draft":
         import json
         import mimetypes
@@ -554,7 +560,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             temp_path = action_data["temp_file_path"]
             orig_name = os.path.basename(temp_path).split("_", 1)[-1]
             mime, _ = mimetypes.guess_type(orig_name)
-            request_kwargs["files"]["receiptFile"] = (orig_name, open(temp_path, "rb"), mime or "application/octet-stream")
+            with open(temp_path, "rb") as f:
+                request_kwargs["files"]["receiptFile"] = (orig_name, f.read(), mime or "application/octet-stream")
     elif path.startswith("/api/profile/update/"):
         b = action_data.get("body") or {}
         request_kwargs["data"] = {
@@ -562,7 +569,8 @@ async def _execute_single_action(client: httpx.AsyncClient, action_data: dict, h
             "lastName": b.get("lastName", "")
         }
         if action_data.get("temp_file_path") and os.path.exists(action_data["temp_file_path"]):
-            request_kwargs["files"] = {"profilePic": open(action_data["temp_file_path"], "rb")}
+            with open(action_data["temp_file_path"], "rb") as f:
+                request_kwargs["files"] = {"profilePic": (os.path.basename(action_data["temp_file_path"]), f.read(), "image/jpeg")}
     elif action_data.get("body"):
         req_headers["Content-Type"] = "application/json"
         request_kwargs["json"] = action_data["body"]

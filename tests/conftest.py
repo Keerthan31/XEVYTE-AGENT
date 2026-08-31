@@ -260,16 +260,7 @@ def mock_db_session():
 @pytest.fixture
 def make_confirmation_token():
     """Factory fixture to generate confirmation tokens."""
-    import base64
-    from cryptography.fernet import Fernet
-
-    secret = TEST_JWT_SECRET
-    if len(secret) < 32:
-        secret = secret.ljust(32, '0')
-    else:
-        secret = secret[:32]
-    key = base64.urlsafe_b64encode(secret.encode('utf-8'))
-    fernet = Fernet(key)
+    from app.agent.confirmation import _get_fernet
 
     def _make(action_data: dict, employee_id: str, expired: bool = False):
         payload = {
@@ -278,6 +269,6 @@ def make_confirmation_token():
             "exp": int(time.time()) + (-3600 if expired else 3600),
         }
         payload_bytes = json.dumps(payload).encode('utf-8')
-        return fernet.encrypt(payload_bytes).decode('utf-8')
+        return _get_fernet().encrypt(payload_bytes).decode('utf-8')
 
     return _make
