@@ -29,6 +29,10 @@ TEST_JWT_SECRET = "G7vQ2mX9kL4pR8sT1wN6yH3cD5fJ0zAa"
 TEST_JAVA_BACKEND_URL = "http://localhost:8082"
 CATALOG_PATH = os.path.join(PROJECT_ROOT, "config", "XEVYTE_API_CATALOG.json")
 
+os.environ["JWT_SECRET"] = TEST_JWT_SECRET
+os.environ["OPENAI_API_KEY"] = "sk-test-fake-key"
+os.environ["SESSION_SECRET_KEY"] = "fake-session-secret-key-that-is-at-least-32-bytes"
+
 
 # ============================================================================
 # Asyncio Hook for Async Tests
