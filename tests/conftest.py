@@ -29,6 +29,21 @@ TEST_JWT_SECRET = "G7vQ2mX9kL4pR8sT1wN6yH3cD5fJ0zAa"
 TEST_JAVA_BACKEND_URL = "http://localhost:8082"
 CATALOG_PATH = os.path.join(PROJECT_ROOT, "config", "XEVYTE_API_CATALOG.json")
 
+os.environ["JWT_SECRET"] = TEST_JWT_SECRET
+os.environ["JAVA_BACKEND_URL"] = TEST_JAVA_BACKEND_URL
+os.environ["HRMS_API_BASE_URL"] = TEST_JAVA_BACKEND_URL
+os.environ["CATALOG_PATH"] = CATALOG_PATH
+os.environ["LLM_MODEL"] = "gpt-4o-mini"
+os.environ["LLM_TEMPERATURE"] = "0.0"
+os.environ["LLM_MAX_TOKENS"] = "4096"
+os.environ["OPENAI_API_KEY"] = "sk-test-fake-key"
+os.environ["RAG_POLICIES_DIR"] = os.path.join(PROJECT_ROOT, "data", "policies")
+os.environ["ENABLE_CONFIRMATIONS"] = "True"
+os.environ["ENABLE_RAG"] = "True"
+os.environ["CHROMA_PERSIST_DIR"] = "./data/chroma"
+os.environ["CHROMA_COLLECTION"] = "xevyte_endpoints"
+os.environ["RAG_TOP_K"] = "12"
+os.environ["FERNET_KEY"] = "2L8z7yA0sT9wN6yH3cD5fJ0zAaB1cX2vE4rG5tY8uI0="
 
 # ============================================================================
 # Asyncio Hook for Async Tests
