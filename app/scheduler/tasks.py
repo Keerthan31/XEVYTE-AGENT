@@ -120,7 +120,7 @@ async def run_morning_checkin_reminders(force: bool = False) -> Dict[str, Any]:
             has_checked_in = False
             try:
                 # Check attendance record for today
-                res = await client.get(f"{settings.HRMS_API_BASE_URL}/api/daily-entry/manager/{emp_id}")
+                res = await client.get(f"{settings.HRMS_API_BASE_URL}/api/daily-entry/employee/{emp_id}")
                 if res.is_success and isinstance(res.json(), list):
                     for entry in res.json():
                         e_date = entry.get("date") or ""
@@ -129,7 +129,7 @@ async def run_morning_checkin_reminders(force: bool = False) -> Dict[str, Any]:
                                 has_checked_in = True
                                 break
             except Exception as e:
-                logger.debug(f"Could not verify attendance status for {emp_id}: {e}")
+                logger.error(f"Could not verify attendance status for {emp_id}: {e}")
 
             if not has_checked_in:
                 success = await send_checkin_reminder_email(name, work_email, today_str)
@@ -176,7 +176,7 @@ async def run_evening_checkout_reminders(force: bool = False) -> Dict[str, Any]:
 
             needs_checkout = False
             try:
-                res = await client.get(f"{settings.HRMS_API_BASE_URL}/api/daily-entry/manager/{emp_id}")
+                res = await client.get(f"{settings.HRMS_API_BASE_URL}/api/daily-entry/employee/{emp_id}")
                 if res.is_success and isinstance(res.json(), list):
                     for entry in res.json():
                         e_date = entry.get("date") or ""
@@ -186,7 +186,7 @@ async def run_evening_checkout_reminders(force: bool = False) -> Dict[str, Any]:
                                 needs_checkout = True
                                 break
             except Exception as e:
-                logger.debug(f"Could not verify check-out status for {emp_id}: {e}")
+                logger.error(f"Could not verify check-out status for {emp_id}: {e}")
 
             if needs_checkout:
                 success = await send_checkout_reminder_email(name, work_email, today_str)
