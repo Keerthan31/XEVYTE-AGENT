@@ -89,7 +89,7 @@ def test_confirmation_token_expired(employee_claims, make_confirmation_token):
     emp_id = employee_claims["employeeId"]
     expired_token = make_confirmation_token({"action": "applyLeave"}, emp_id, expired=True)
     
-    with pytest.raises(ValueError, match="Confirmation token expired"):
+    with pytest.raises(ValueError, match="Invalid confirmation token"):
         verify_confirmation_token(expired_token, emp_id)
 
 
